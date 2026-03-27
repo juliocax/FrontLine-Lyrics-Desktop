@@ -12,11 +12,10 @@ import json
 import websockets
 import subprocess
 import socket
-
 import pyaudiowpatch as pyaudio
 from shazamio import Shazam
 from deep_translator import GoogleTranslator
-
+from anyascii import anyascii
 from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
                              QLabel, QPushButton, QLineEdit, QComboBox, 
                              QListWidget, QListWidgetItem, QFrame, QSlider,
@@ -24,7 +23,6 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout,
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject
 from PyQt6.QtGui import QFont, QIcon, QPixmap, QImage
 
-# --- ESCUDO CONTRA CRASH SILENCIOSO ---
 def controle_de_erros(exctype, value, tb):
     print("=== ERRO CRÍTICO ENCONTRADO ===")
     traceback.print_exception(exctype, value, tb)
@@ -107,7 +105,7 @@ class MusicManager:
         return None, None, 0.0, ""
 
     def buscar_letra_lrclib(self, artista, musica):
-        headers = {"User-Agent": "FrontLineLyricsApp/0.0.1"}
+        headers = {"User-Agent": "FrontLineLyricsApp/0.0.2"}
         def extrair_linhas(synced_lyrics):
             linhas = []
             padrao = re.compile(r'\[(\d{2,}):(\d{2}(?:\.\d{1,3})?)\](.*)')
@@ -146,14 +144,22 @@ class MusicManager:
         if not self.letra_original: return False
         if idioma_alvo in self.traducoes_cacheadas: return True 
         try:
-            texto_completo = "\n".join([item['letra'] for item in self.letra_original])
-            texto_traduzido = GoogleTranslator(source='auto', target=idioma_alvo).translate(texto_completo).split('\n')
-            linhas_traduzidas = []
-            for i, item in enumerate(self.letra_original):
-                letra_trad = texto_traduzido[i] if i < len(texto_traduzido) else item['letra']
-                linhas_traduzidas.append({"tempo": item['tempo'], "letra": letra_trad})
-            self.traducoes_cacheadas[idioma_alvo] = linhas_traduzidas
-            return True
+            if idioma_alvo == "romanized":
+                linhas_traduzidas = []
+                for item in self.letra_original:
+                    letra_rom = anyascii(item['letra']).capitalize()
+                    linhas_traduzidas.append({"tempo": item['tempo'], "letra": letra_rom})
+                self.traducoes_cacheadas[idioma_alvo] = linhas_traduzidas
+                return True
+            else:
+                texto_completo = "\n".join([item['letra'] for item in self.letra_original])
+                texto_traduzido = GoogleTranslator(source='auto', target=idioma_alvo).translate(texto_completo).split('\n')
+                linhas_traduzidas = []
+                for i, item in enumerate(self.letra_original):
+                    letra_trad = texto_traduzido[i] if i < len(texto_traduzido) else item['letra']
+                    linhas_traduzidas.append({"tempo": item['tempo'], "letra": letra_trad})
+                self.traducoes_cacheadas[idioma_alvo] = linhas_traduzidas
+                return True
         except Exception: return False
 
     def obter_estado_atual(self):
@@ -404,8 +410,7 @@ class ControlWindow(QWidget):
         lbl_lang.setObjectName("MiniLabel")
         self.cb_lang = QComboBox()
         self.cb_lang.setObjectName("LangCombo")
-        self.cb_lang.addItems(["Original", "Pt-Br", "Espanol", "English"])
-        
+        self.cb_lang.addItems(["Original", "Pt-Br", "Espanol", "English", "Romanized"])
         self.cb_auto_sync = QCheckBox("Auto-Sync")
         self.cb_auto_sync.setChecked(False)
 
@@ -506,7 +511,7 @@ class ControlWindow(QWidget):
         
         credits_html = """
         <div style='text-align: center; font-size: 11px; line-height: 1.2;'>
-            <span style='color: #888888;'>v0.0.1</span><br>
+            <span style='color: #888888;'>v0.0.2</span><br>
             <a href="https://github.com/juliocax" style="color: #a955ff; text-decoration: none; font-weight: bold;">Created by Julio</a>
         </div>
         """
@@ -679,7 +684,7 @@ class ControlWindow(QWidget):
         self.btn_manual_sync.setChecked(False)
 
     def aplicar_traducao_ui(self):
-        lang = {"Original": "original", "Pt-Br": "pt", "Espanol": "es", "English": "en"}.get(self.cb_lang.currentText(), "original")
+        lang = {"Original": "original", "Pt-Br": "pt", "Espanol": "es", "English": "en", "Romanized": "romanized"}.get(self.cb_lang.currentText(), "original")
         if lang == "original": 
             self.manager.letra_sincronizada = self.manager.letra_original
         elif self.manager.gerar_traducao(lang): 
@@ -753,7 +758,7 @@ def encontrar_porta_livre():
 if __name__ == "__main__":
     import ctypes
     try:
-        myappid = 'juliocax.FrontLineLyrics.app.0.0.1'
+        myappid = 'juliocax.FrontLineLyrics.app.0.0.2'
         ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
     except Exception:
         pass
