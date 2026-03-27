@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logocapa.png" alt="FrontLine Lyrics Logo" width="300">
+  <img src="assets/promo.png" alt="FrontLine Lyrics Logo" width="300">
 </p>
 
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
@@ -38,6 +38,62 @@ This project uses a hybrid architecture.
 **Floating Overlay (C# / .NET):**
 * **C# / WPF**: Powers the `FrontLineOverlay.exe`, creating a borderless, transparent, and always-on-top window that renders the lyrics.
 
+---
+
+### Visual Guide & Key Features
+
+Take a quick look at FrontLine Lyrics in action, from identifying a song to manual sync adjustments.
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="assets/placeholder_listening.png" alt="Listening to audio" width="400"/>
+      <br/>
+      <b>1. Identifying a song</b>
+      <p>Click LISTEN and the Deck analyzes your system audio to identify the current track.</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/placeholder_synced.png" alt="Song identified and synced" width="400"/>
+      <br/>
+      <b>2. Seamless Synchronization</b>
+      <p>Album art is fetched, and the floating overlay immediately displays time-synced lyrics.</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/placeholder_manualsync.png" alt="Manual Sync List" width="400"/>
+      <br/>
+      <b>3. Interactive Manual Sync</b>
+      <p>Is the timing slightly off? Open the lyric list and click on the part of the song that will be sung to jump and correct the sync instantly.</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/placeholder_manualsearch.png" alt="Manual Search" width="400"/>
+      <br/>
+      <b>4. Manual Search</b>
+      <p>Audio too quiet or obscure? Search for the Artist and Song manually to force lyric synchronization.</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/placeholder_translation.png" alt="Translated lyrics" width="400"/>
+      <br/>
+      <b>5. On-the-fly Translation</b>
+      <p>Select a different language to translate the lyrics in real-time without losing the beat.</p>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/placeholder_overlay_config.png" alt="Overlay configuration" width="400"/>
+      <br/>
+      <b>6. Overlay Configuration</b>
+      <p>Resize the font or lock the transparent overlay in place directly from the Deck.</p>
+    </td>
+  </tr>
+</table>
 ---
 
 ## Installation Guide
