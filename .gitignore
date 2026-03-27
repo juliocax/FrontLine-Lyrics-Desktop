@@ -3,3 +3,5 @@
 /build
 /.venv
 /.vs
+/bin
+/FrontLineOverlay/FrontLineOverlay/obj
