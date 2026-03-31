@@ -2,16 +2,23 @@
   <img src="assets/promo.png" alt="FrontLine Lyrics Logo" width="300">
 </p>
 
-![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
-![C#](https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white)
-![Windows](https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white)
-![PyQt6](https://img.shields.io/badge/PyQt6-41CD52?style=for-the-badge&logo=qt&logoColor=white)
-![Open Source](https://img.shields.io/badge/Open_Source-4CAF50?style=for-the-badge)
+<p align="center">
+  <a href="https://apps.microsoft.com/detail/9P6LNJCL8ZCC?referrer=appbadge&mode=full" target="_blank"  rel="noopener noreferrer">
+    <img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/>
+  </a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/C%23-239120?style=for-the-badge&logo=c-sharp&logoColor=white" alt="C#">
+  <img src="https://img.shields.io/badge/Windows-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows">
+  <img src="https://img.shields.io/badge/PyQt6-41CD52?style=for-the-badge&logo=qt&logoColor=white" alt="PyQt6">
+  <img src="https://img.shields.io/badge/Open_Source-4CAF50?style=for-the-badge" alt="Open Source">
+</p>
 
 ## Introduction
-**FrontLine Lyrics** is an open-source desktop application that brings live, synchronized lyrics straight to your screen. By listening to your computer's system audio, it automatically identifies the song currently playing and displays its lyrics in a beautiful, and floating transparent overlay. It works seamlessly with Spotify, YouTube, Apple Music, or any media player playing on your Windows PC.
+**FrontLine Lyrics** is an open-source desktop application that brings live, synchronized lyrics straight to your screen. By listening to your computer's system audio, it automatically identifies the song currently playing and displays its lyrics in a beautiful, floating transparent overlay. It works seamlessly with Spotify, YouTube, Apple Music, or any media player playing on your Windows PC.
 
-*Check out the version as a Chrome extension. [FrontLine Lyrics Chrome Extension](https://github.com/juliocax](https://github.com/juliocax/FrontLine-Lyrics-Extension)).*
 
 ## Summary of Features
 * **Automatic Recognition**: Identifies the music being played on your system's standard audio output.
@@ -94,31 +101,29 @@ Take a quick look at FrontLine Lyrics in action, from identifying a song to manu
     </td>
   </tr>
 </table>
+
 ---
 
 ## Installation Guide
 
-Installing FrontLine Lyrics is simple and straightforward using our official Windows installer.
+FrontLine Lyrics is exclusively available through the **Microsoft Store**. This ensures you always have the latest version installed safely and with automatic updates.
 
-### Prerequisites
-* **Windows 10 or 11**.
-* **.NET Desktop Runtime**: Required for the transparent overlay to function. *(Don't worry, the installer will automatically check for this and prompt you to download it if it's missing!)*
+**Prerequisites:** Windows 10 or 11.
 
-### Step-by-Step Installation
-1. **Download the Installer**: Go to the [Releases page](https://github.com/juliocax/FrontLine-Lyrics-Desktop/releases) and download the latest version.
-2. **Run the Installer**: Double-click the downloaded `.exe` file.
-3. **Handle Windows SmartScreen (If prompted)**:
-   * Because this is a new, open-source application from an independent developer, Windows Defender SmartScreen might flag it and say "Windows protected your PC."
-   * This is completely normal for unsigned executable files. To proceed, click **"More info"** and then click **"Run anyway"**.
-4. **Follow the Setup**: Click "Next" through the installation process. You can choose to create a desktop shortcut for easy access.
-5. **Launch**: Once installed, open FrontLine Lyrics from your Start Menu or Desktop.
+1. Click the badge below to open the official download page:
+   <br>
+   <a href="https://apps.microsoft.com/detail/9P6LNJCL8ZCC?referrer=appbadge&mode=full" target="_blank"><img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/></a>
+   <br>
+2. Click **Get** or **Install** in the Microsoft Store app.
+3. The Store will automatically handle the download and install any required dependencies (like the .NET Desktop Runtime) for you.
+4. Launch FrontLine Lyrics directly from your Start Menu!
 
 ---
 
 ## How to Use FrontLine Lyrics
 
 ### The Main Deck
-When you open the application, you'll see the **FrontLine Deck** your main control center.
+When you open the application, you'll see the **FrontLine Deck** — your main control center.
 
 1. **Start Listening**: Play a song on your computer (Spotify, YouTube, etc.) and click the **LISTEN** button. The app will briefly analyze the audio and fetch the lyrics and album art.
 2. **The Overlay**: Once the song is identified, the transparent lyrics overlay will appear on your screen.
@@ -140,9 +145,6 @@ If the lyrics are slightly out of sync with the audio:
 
 ## Troubleshooting & FAQ
 
-* **The installer says I need .NET Desktop Runtime.**
-  The C# overlay requires this Microsoft framework to render the transparent window. Follow the link provided by the installer to download it directly from Microsoft, install it, and then run the FrontLine Setup again.
-
 * **The app is stuck on "Listening..." or says "Lyrics not found."**
   * Ensure your computer's audio is actually playing through the default speakers/headphones. The app cannot "hear" audio routed through exclusive-mode applications or complex virtual audio cables unless set as default.
   * If the song is instrumental or very obscure, lyrics might not exist in the LRCLib database. Use **Manual Search** to try finding them by text.
@@ -152,3 +154,6 @@ If the lyrics are slightly out of sync with the audio:
 
 * **How do I move the overlay?**
   Make sure the **Lock** checkbox at the bottom of the Deck is *unchecked*. Then, simply click and drag anywhere on the lyrics text on your screen to move the window.
+
+
+*Check out the version as a Chrome extension: [FrontLine Lyrics Chrome Extension](https://github.com/juliocax/FrontLine-Lyrics-Extension).*
