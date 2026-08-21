@@ -12,16 +12,18 @@ import json
 import websockets
 import subprocess
 import socket
+import numpy as np
 import pyaudiowpatch as pyaudio
 from shazamio import Shazam
 from deep_translator import GoogleTranslator
 from anyascii import anyascii
-from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout, 
-                             QLabel, QPushButton, QLineEdit, QComboBox, 
+from media_session import MediaSessionWatcher
+from PyQt6.QtWidgets import (QApplication, QWidget, QVBoxLayout, QHBoxLayout,
+                             QLabel, QPushButton, QLineEdit, QComboBox,
                              QListWidget, QListWidgetItem, QFrame, QSlider,
-                             QSizePolicy, QCheckBox)
-from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject
-from PyQt6.QtGui import QFont, QIcon, QPixmap, QImage
+                             QSizePolicy, QCheckBox, QSystemTrayIcon, QMenu)
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal, QObject, QEvent
+from PyQt6.QtGui import QFont, QIcon, QPixmap, QImage, QAction
 
 def controle_de_erros(exctype, value, tb):
     print("=== ERRO CRÍTICO ENCONTRADO ===")
@@ -40,16 +42,31 @@ class Signaler(QObject):
 ui_signals = Signaler()
 
 class MusicManager:
+    ESTADO_PARADO = "parado"
+    ESTADO_RECONHECENDO = "reconhecendo"
+    ESTADO_SINCRONIZADO = "sincronizado"
+
+    GRACA_FIM_LETRA = 2.0          # pausa pós-fim da letra antes de re-ouvir (crossfade)
+    COOLDOWN_FAIXA_ANTERIOR = 25.0  # ignora re-match da faixa anterior logo após transição
+    LIMIAR_SILENCIO = 150.0        # RMS (int16) abaixo disso considera-se silêncio
+    SILENCIO_PARA_PAUSA = 4.0      # s de silêncio até congelar o relógio da letra
+    SILENCIO_PARA_TRANSICAO = 45.0 # s de silêncio até assumir que a reprodução parou
+    TOLERANCIA_SEEK = 4.0          # s de desvio até re-ancorar pela posição do player
+
     def __init__(self):
         self.shazam = Shazam()
         self.session_id = time.time()
-        self.servidor_rodando = True   
+        self.servidor_rodando = True
         self.pyaudio_instance = pyaudio.PyAudio()
         self.device_info = self._configurar_loopback()
         self.overlay_font_size = 26
         self.modo_fantasma = False
-        self.auto_sync_ativado = False
+        self.auto_sync_ativado = True
         self.inicio_escuta = 0.0
+        self._lock = threading.RLock()
+        self._media_busy = False
+        self.suprimir_auto_inicio = False
+        self.watcher = MediaSessionWatcher(self.ao_snapshot_media)
         self.reset_state()
 
     def _configurar_loopback(self):
@@ -63,7 +80,8 @@ class MusicManager:
             return default_speakers
         except Exception: return None
 
-    def gravar_audio_memoria(self, duracao):
+    def gravar_audio_com_nivel(self, duracao):
+        """Grava áudio do loopback e retorna (wav_bytes, rms)."""
         if not self.device_info: raise Exception("Audio device error.")
         CHUNK, canais, taxa = 512, self.device_info["maxInputChannels"], int(self.device_info["defaultSampleRate"])
         stream = self.pyaudio_instance.open(format=pyaudio.paInt16, channels=canais, rate=taxa,
@@ -71,28 +89,234 @@ class MusicManager:
         frames = [stream.read(CHUNK) for _ in range(0, int(taxa / CHUNK * duracao))]
         stream.stop_stream()
         stream.close()
+        dados = b''.join(frames)
+        amostras = np.frombuffer(dados, dtype=np.int16).astype(np.float32)
+        rms = float(np.sqrt(np.mean(amostras * amostras))) if amostras.size else 0.0
         audio_buffer = io.BytesIO()
         wf = wave.open(audio_buffer, 'wb')
         wf.setnchannels(canais)
         wf.setsampwidth(self.pyaudio_instance.get_sample_size(pyaudio.paInt16))
         wf.setframerate(taxa)
-        wf.writeframes(b''.join(frames))
+        wf.writeframes(dados)
         wf.close()
-        return audio_buffer.getvalue() 
+        return audio_buffer.getvalue(), rms
+
+    def gravar_audio_memoria(self, duracao):
+        return self.gravar_audio_com_nivel(duracao)[0]
 
     def reset_state(self):
-        self.session_id = time.time() 
-        self.artista_atual, self.musica_atual = None, None
-        self.tempo_referencia_sistema = 0.0 
-        self.letra_original, self.letra_sincronizada = [], []
-        self.traducoes_cacheadas = {} 
-        self.idioma_atual = "original"
-        self.delay_manual = 0.0 
-        self.escutando, self.busca_concluida, self.letra_pausada = False, False, False
-        self.status_busca = "Ready. Click Listen."
-        self.momento_pausa = 0.0
-        self.inicio_escuta = time.time()
+        with self._lock:
+            self.session_id = time.time()
+            self.estado = self.ESTADO_PARADO
+            self.artista_atual, self.musica_atual = None, None
+            self.fonte_atual = None
+            self.tempo_referencia_sistema = 0.0
+            self.letra_original, self.letra_sincronizada = [], []
+            self.traducoes_cacheadas = {}
+            self.idioma_atual = "original"
+            self.delay_manual = 0.0
+            self.letra_pausada, self.momento_pausa = False, 0.0
+            self.media_baseline = None
+            self.media_pausou = False
+            self.faixa_anterior, self.cooldown_ate = None, 0.0
+            self.silencio_desde, self.silencio_congelado = 0.0, False
+            self.proximo_listen_permitido = 0.0
+            self.proximo_reancoragem = 0.0
+            self._desvio_previo = None
+            self.inicio_escuta = time.time()
         ui_signals.update_cover.emit(b'')
+
+    # ==========================================
+    # MÁQUINA DE ESTADOS / TRANSIÇÕES
+    # ==========================================
+    def iniciar_escuta(self):
+        self.reset_state()
+        with self._lock:
+            self.estado = self.ESTADO_RECONHECENDO
+            self.suprimir_auto_inicio = False
+
+    def iniciar_transicao(self, motivo=""):
+        """Fim da faixa ou troca detectada: limpa estado e volta a reconhecer."""
+        with self._lock:
+            if self.estado != self.ESTADO_SINCRONIZADO:
+                return
+            self.faixa_anterior = (self.musica_atual, self.artista_atual)
+            self.cooldown_ate = time.time() + self.COOLDOWN_FAIXA_ANTERIOR
+            self.estado = self.ESTADO_RECONHECENDO
+            self.artista_atual, self.musica_atual = None, None
+            self.fonte_atual = None
+            self.letra_original, self.letra_sincronizada = [], []
+            self.traducoes_cacheadas = {}
+            self.idioma_atual = "original"
+            self.delay_manual = 0.0
+            self.letra_pausada, self.momento_pausa = False, 0.0
+            self.media_baseline = None
+            self.media_pausou = False
+            self.silencio_desde, self.silencio_congelado = 0.0, False
+            self.proximo_listen_permitido = time.time() + self.GRACA_FIM_LETRA if motivo == "fim_letra" else 0.0
+            self.inicio_escuta = time.time()
+        log(f"Transição ({motivo})", "SYNC")
+        ui_signals.update_cover.emit(b'')
+        ui_signals.song_finished.emit()
+
+    def definir_faixa(self, titulo, artista, tempo_referencia, letra=None, capa_bytes=b'', fonte="shazam"):
+        with self._lock:
+            self.musica_atual, self.artista_atual = titulo, artista
+            self.fonte_atual = fonte
+            self.tempo_referencia_sistema = tempo_referencia
+            self.letra_original = self.letra_sincronizada = letra or []
+            self.traducoes_cacheadas = {}
+            self.idioma_atual = "original"
+            self.delay_manual = 0.0
+            self.letra_pausada, self.momento_pausa = False, 0.0
+            self.media_pausou = False
+            self.silencio_desde, self.silencio_congelado = 0.0, False
+            self.proximo_listen_permitido = 0.0
+            self.proximo_reancoragem = time.time() + 5.0
+            self._desvio_previo = None
+            self.estado = self.ESTADO_SINCRONIZADO
+            self.inicio_escuta = time.time()
+        log(f"Faixa definida: {titulo} - {artista} (fonte={fonte}, {len(letra or [])} linhas)", "SYNC")
+        ui_signals.update_cover.emit(capa_bytes)
+
+    def aplicar_busca_manual(self, artista, musica, letra):
+        with self._lock:
+            self.musica_atual, self.artista_atual = musica, artista
+            self.fonte_atual = "manual"
+            self.letra_original = self.letra_sincronizada = letra
+            self.tempo_referencia_sistema = time.time()
+            self.estado = self.ESTADO_SINCRONIZADO
+            self.media_baseline = None
+        ui_signals.update_cover.emit(b'')
+
+    def pausar_relogio(self):
+        if not self.letra_pausada:
+            self.letra_pausada = True
+            self.momento_pausa = time.time()
+
+    def retomar_relogio(self):
+        if self.letra_pausada:
+            self.letra_pausada = False
+            self.tempo_referencia_sistema += time.time() - self.momento_pausa
+            self.momento_pausa = 0.0
+
+    # ==========================================
+    # SEGUIMENTO DE MÍDIA (troca automática de faixa)
+    # ==========================================
+    def _chave_de(self, titulo, artista):
+        return ((titulo or "").lower().strip(), (artista or "").lower().strip())
+
+    def _faixa_confirmada_tocando(self):
+        """True se o media session confirma que a faixa atual ainda está tocando."""
+        info = self.watcher.ultima_info
+        if not info or not info.tocando:
+            return False
+        return info.chave == self._chave_de(self.musica_atual, self.artista_atual)
+
+    def ao_snapshot_media(self, info):
+        """Callback do MediaSessionWatcher — roda na thread do watcher."""
+        if info is None or not self.auto_sync_ativado:
+            return
+        chave = info.chave
+        self.watcher.preferencia_chave = chave
+
+        # Início automático: música tocando e app parado -> começa a seguir sozinho
+        if (self.estado == self.ESTADO_PARADO and not self.suprimir_auto_inicio
+                and info.tocando and info.titulo):
+            log(f"Auto-inicio: {info.titulo} - {info.artista}", "MEDIA")
+            self.iniciar_escuta()
+
+        if self.estado == self.ESTADO_SINCRONIZADO:
+            faixa_atual_chave = self._chave_de(self.musica_atual, self.artista_atual)
+            if self.media_baseline is None:
+                self.media_baseline = chave
+            elif chave != self.media_baseline and chave != faixa_atual_chave:
+                log(f"Troca de faixa: {self.musica_atual} -> {info.titulo}", "MEDIA")
+                self.media_baseline = chave
+                self._seguir_metadata(info)
+                return
+            if not info.tocando and not self.letra_pausada:
+                log(f"Player pausado: congelando letra em {(time.time() - self.tempo_referencia_sistema):.1f}s", "MEDIA")
+                self.pausar_relogio()
+                self.media_pausou = True
+            elif info.tocando and self.letra_pausada and self.media_pausou:
+                log("Player retomado: descongelando letra", "MEDIA")
+                self.retomar_relogio()
+                self.media_pausou = False
+            if info.tocando and not self.letra_pausada and self.fonte_atual in ("media", "shazam"):
+                esperado = (time.time() - self.tempo_referencia_sistema) + self.delay_manual
+                desvio = esperado - info.posicao
+                if abs(desvio) > self.TOLERANCIA_SEEK and time.time() >= self.proximo_reancoragem:
+                    # Exigir 2 leituras consecutivas em desacordo: uma leitura
+                    # isolada pode ser um relatório atrasado do player
+                    confirmado = (self._desvio_previo is not None
+                                  and time.time() - self._desvio_previo[0] <= 6.0
+                                  and abs(self._desvio_previo[1]) > self.TOLERANCIA_SEEK)
+                    if not confirmado:
+                        self._desvio_previo = (time.time(), desvio)
+                    elif info.posicao < 1.0 and esperado > 15.0:
+                        # Player reportou posição ~0 enquanto toca (bug de alguns
+                        # players/anúncios): ignorar para não rebobinar a letra
+                        log(f"Posição suspeita ignorada: player={info.posicao:.1f}s esperado={esperado:.1f}s", "MEDIA")
+                        self._desvio_previo = None
+                    else:
+                        log(f"Re-ancoragem por seek: {esperado:.1f}s -> {info.posicao:.1f}s", "MEDIA")
+                        self.tempo_referencia_sistema = time.time() + self.delay_manual - info.posicao
+                        self.proximo_reancoragem = time.time() + 10.0
+                        self._desvio_previo = None
+                else:
+                    self._desvio_previo = None
+        elif self.estado == self.ESTADO_RECONHECENDO:
+            mesma_faixa_em_cooldown = (self.faixa_anterior is not None
+                                       and chave == self._chave_de(*self.faixa_anterior)
+                                       and time.time() < self.cooldown_ate)
+            if (info.tocando and info.titulo and not self._media_busy
+                    and time.time() >= self.proximo_listen_permitido
+                    and not mesma_faixa_em_cooldown):
+                self._seguir_metadata(info)
+
+    def _seguir_metadata(self, info):
+        """Troca instantânea via metadados do player (sem Shazam)."""
+        self._media_busy = True
+        try:
+            letra = self.buscar_letra_lrclib(info.artista, info.titulo)
+            if letra:
+                log(f"Letra via metadados: {info.titulo} - {info.artista} ({len(letra)} linhas, pos {info.posicao:.1f}s)", "MEDIA")
+                # Sem delay_manual: o ajuste fino pertence à faixa anterior;
+                # a nova faixa começa com âncora limpa baseada na posição do player.
+                ref = time.time() - info.posicao
+                self.definir_faixa(info.titulo, info.artista, tempo_referencia=ref,
+                                   letra=letra, capa_bytes=info.capa_bytes, fonte="media")
+            elif self.estado == self.ESTADO_SINCRONIZADO:
+                log(f"Sem letra no LRCLib para {info.titulo} - {info.artista}", "MEDIA")
+                self.iniciar_transicao("metadados mudaram sem letra")
+        finally:
+            self._media_busy = False
+
+    # ==========================================
+    # HEURÍSTICA DE SILÊNCIO (fallback sem media session)
+    # ==========================================
+    def audio_silencioso(self):
+        if self.estado != self.ESTADO_SINCRONIZADO or not self.auto_sync_ativado:
+            return
+        agora = time.time()
+        if self.silencio_desde == 0.0:
+            self.silencio_desde = agora
+        duracao = agora - self.silencio_desde
+        if duracao >= self.SILENCIO_PARA_TRANSICAO:
+            self.iniciar_transicao("silêncio prolongado")
+        elif duracao >= self.SILENCIO_PARA_PAUSA and not self.letra_pausada:
+            self.pausar_relogio()
+            self.silencio_congelado = True
+
+    def audio_ativo(self):
+        estava_silencioso = self.silencio_desde > 0.0
+        self.silencio_desde, self.silencio_congelado = 0.0, False
+        if estava_silencioso and self.letra_pausada and not self.media_pausou:
+            self.retomar_relogio()
+        if (estava_silencioso and self.auto_sync_ativado
+                and self.estado == self.ESTADO_SINCRONIZADO and not self.watcher.disponivel):
+            self.iniciar_transicao("áudio retomou após silêncio")
 
     async def reconhecer_snippet(self, audio_bytes):
         try:
@@ -164,24 +388,30 @@ class MusicManager:
 
     def obter_estado_atual(self):
         linha_atual, linha_anterior, linha_futura = "", "", ""
-        if not self.escutando or (self.escutando and not self.musica_atual):
-            overlay_atual = "Waiting for the next song..."
-        elif self.musica_atual and not self.busca_concluida:
-            overlay_atual = f"Synchronizing lyrics for '{self.musica_atual}'..."
-        elif self.busca_concluida and not self.letra_sincronizada:
-            overlay_atual = "Synced lyrics not available."
-        elif self.letra_sincronizada:
+        if self.estado == self.ESTADO_SINCRONIZADO and self.letra_sincronizada:
             tempo_base = self.momento_pausa if self.letra_pausada else time.time()
             tempo_decorrido = (tempo_base - self.tempo_referencia_sistema) + self.delay_manual
-            if self.auto_sync_ativado and tempo_decorrido > self.letra_sincronizada[-1]['tempo'] + 2.0:
-                ui_signals.song_finished.emit()
+            # Fim da letra só dispara troca se o player NÃO confirmar a mesma faixa
+            # ainda tocando (evita loop quando os versos terminam antes do áudio)
+            if (self.auto_sync_ativado and not self.letra_pausada
+                    and tempo_decorrido > self.letra_sincronizada[-1]['tempo'] + self.GRACA_FIM_LETRA
+                    and not self._faixa_confirmada_tocando()):
+                self.iniciar_transicao("fim_letra")
             for i, item in enumerate(self.letra_sincronizada):
                 if tempo_decorrido >= item['tempo']:
                     linha_atual = item['letra']
                     linha_anterior = self.letra_sincronizada[i-1]['letra'] if i > 0 else ""
                     linha_futura = self.letra_sincronizada[i+1]['letra'] if i + 1 < len(self.letra_sincronizada) else ""
                 else: break
+            if linha_atual == "End":
+                linha_atual = "♪"
             overlay_atual = linha_atual or "♫"
+        elif self.estado == self.ESTADO_SINCRONIZADO:
+            overlay_atual = "Synced lyrics not available."
+        elif self.estado == self.ESTADO_RECONHECENDO and self.musica_atual:
+            overlay_atual = f"Synchronizing lyrics for '{self.musica_atual}'..."
+        else:
+            overlay_atual = "Waiting for the next song..."
         return {
             "letra_atual": overlay_atual,
             "letra_anterior": linha_anterior,
@@ -195,32 +425,71 @@ manager = MusicManager()
 async def async_worker_verificacao(manager):
     loop = asyncio.get_event_loop()
     while manager.servidor_rodando:
-        if not manager.escutando or manager.busca_concluida:
-            await asyncio.sleep(1)
-            continue
-        current_session = manager.session_id
-        t_inicio_gravacao = time.time()
         try:
-            audio_bytes = await loop.run_in_executor(None, manager.gravar_audio_memoria, 4)
-        except Exception:
-            manager.device_info = manager._configurar_loopback()
-            await asyncio.sleep(2)
-            continue
-        if manager.session_id != current_session or not manager.escutando: continue
-        nova_musica, novo_artista, offset_shazam, url_capa = await manager.reconhecer_snippet(audio_bytes)
-        if nova_musica and manager.escutando:
-            manager.musica_atual, manager.artista_atual = nova_musica, novo_artista
-            if url_capa:
+            if manager.estado == MusicManager.ESTADO_PARADO or manager._media_busy:
+                await asyncio.sleep(1)
+                continue
+
+            if manager.estado == MusicManager.ESTADO_SINCRONIZADO:
+                # Monitoramento leve: detecta pausas/fim via silêncio (rede de
+                # segurança para players sem media session)
+                if not manager.auto_sync_ativado:
+                    await asyncio.sleep(2)
+                    continue
+                current_session = manager.session_id
                 try:
-                    res = requests.get(url_capa, timeout=3)
-                    if res.status_code == 200: ui_signals.update_cover.emit(res.content)
-                except Exception: pass
-            letra = await loop.run_in_executor(None, manager.buscar_letra_lrclib, novo_artista, nova_musica)
-            manager.busca_concluida = True
-            if letra:
-                manager.letra_original = manager.letra_sincronizada = letra
-                manager.tempo_referencia_sistema = t_inicio_gravacao - offset_shazam
-        await asyncio.sleep(2)
+                    _, rms = await loop.run_in_executor(None, manager.gravar_audio_com_nivel, 1)
+                except Exception:
+                    manager.device_info = manager._configurar_loopback()
+                    await asyncio.sleep(2)
+                    continue
+                if manager.session_id != current_session or manager.estado != MusicManager.ESTADO_SINCRONIZADO:
+                    continue
+                if rms >= manager.LIMIAR_SILENCIO:
+                    manager.audio_ativo()
+                else:
+                    manager.audio_silencioso()
+                await asyncio.sleep(1.5)
+                continue
+
+            # ESTADO_RECONHECENDO
+            if time.time() < manager.proximo_listen_permitido:
+                await asyncio.sleep(0.5)
+                continue
+            current_session = manager.session_id
+            t_inicio_gravacao = time.time()
+            try:
+                audio_bytes, rms = await loop.run_in_executor(None, manager.gravar_audio_com_nivel, 4)
+            except Exception:
+                manager.device_info = manager._configurar_loopback()
+                await asyncio.sleep(2)
+                continue
+            if manager.session_id != current_session or manager.estado != MusicManager.ESTADO_RECONHECENDO:
+                continue
+            if rms < manager.LIMIAR_SILENCIO:
+                await asyncio.sleep(2)
+                continue
+            nova_musica, novo_artista, offset_shazam, url_capa = await manager.reconhecer_snippet(audio_bytes)
+            if nova_musica and manager.estado == MusicManager.ESTADO_RECONHECENDO:
+                if (manager.faixa_anterior and time.time() < manager.cooldown_ate
+                        and (nova_musica, novo_artista) == manager.faixa_anterior):
+                    await asyncio.sleep(2)
+                    continue
+                capa_bytes = b''
+                if url_capa:
+                    try:
+                        res = requests.get(url_capa, timeout=3)
+                        if res.status_code == 200: capa_bytes = res.content
+                    except Exception: pass
+                letra = await loop.run_in_executor(None, manager.buscar_letra_lrclib, novo_artista, nova_musica)
+                if manager.session_id != current_session or manager.estado != MusicManager.ESTADO_RECONHECENDO:
+                    continue
+                manager.definir_faixa(nova_musica, novo_artista,
+                                      tempo_referencia=t_inicio_gravacao - offset_shazam,
+                                      letra=letra, capa_bytes=capa_bytes, fonte="shazam")
+            await asyncio.sleep(2)
+        except Exception:
+            await asyncio.sleep(2)
 
 clientes_conectados = set()
 
@@ -237,6 +506,7 @@ async def broadcast_estado_ui(manager):
         await asyncio.sleep(0.1)
 
 async def main_background(manager, porta):
+    manager.watcher.start()
     asyncio.create_task(async_worker_verificacao(manager))
     asyncio.create_task(broadcast_estado_ui(manager))
     async with websockets.serve(ws_handler, "localhost", porta):
@@ -357,8 +627,24 @@ class ControlWindow(QWidget):
         self.setFixedSize(320, 600) 
         
         caminho_ico = self.obter_caminho_asset("logo.ico")
-        if os.path.exists(caminho_ico): 
+        if os.path.exists(caminho_ico):
             self.setWindowIcon(QIcon(caminho_ico))
+
+        # --- BANDEJA DO SISTEMA (minimizar para a tray) ---
+        self._aviso_tray_mostrado = False
+        self.tray_icon = QSystemTrayIcon(QIcon(caminho_ico) if os.path.exists(caminho_ico) else self.windowIcon(), self)
+        self.tray_icon.setToolTip("FrontLine Lyrics")
+        menu_tray = QMenu()
+        self.acao_abrir = QAction("Open FrontLine Lyrics", menu_tray)
+        self.acao_abrir.triggered.connect(self.mostrar_do_tray)
+        self.acao_sair = QAction("Quit", menu_tray)
+        self.acao_sair.triggered.connect(self.encerrar_aplicacao)
+        menu_tray.addAction(self.acao_abrir)
+        menu_tray.addSeparator()
+        menu_tray.addAction(self.acao_sair)
+        self.tray_icon.setContextMenu(menu_tray)
+        self.tray_icon.activated.connect(self.tray_ativado)
+        self.tray_icon.show()
 
         self.main_layout = QVBoxLayout(self)
         self.main_layout.setContentsMargins(15, 15, 15, 10)
@@ -412,7 +698,7 @@ class ControlWindow(QWidget):
         self.cb_lang.setObjectName("LangCombo")
         self.cb_lang.addItems(["Original", "Pt-Br", "Espanol", "English", "Romanized"])
         self.cb_auto_sync = QCheckBox("Auto-Sync")
-        self.cb_auto_sync.setChecked(False)
+        self.cb_auto_sync.setChecked(True)
 
         config_deck_layout.addStretch()
         config_deck_layout.addWidget(lbl_lang)
@@ -539,7 +825,7 @@ class ControlWindow(QWidget):
         self.btn_reload.clicked.connect(self.iniciar_subprocesso_overlay)
         
         ui_signals.update_cover.connect(self.atualizar_capa_ui)
-        ui_signals.song_finished.connect(self.iniciar_timer_autosync)
+        ui_signals.song_finished.connect(self.ao_musica_terminar)
         ui_signals.search_error.connect(lambda msg: self.lbl_artista.setText(msg))
 
         self.iniciar_subprocesso_overlay()
@@ -559,9 +845,31 @@ class ControlWindow(QWidget):
         try: self.overlay_process = subprocess.Popen([caminho, str(self.porta_servidor)])
         except: pass
 
-    def closeEvent(self, event):
+    def encerrar_aplicacao(self):
         if self.overlay_process: self.overlay_process.terminate()
         QApplication.quit()
+
+    def closeEvent(self, event):
+        self.encerrar_aplicacao()
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        if event.type() == QEvent.Type.WindowStateChange and self.isMinimized():
+            QTimer.singleShot(0, self.hide)
+            if not self._aviso_tray_mostrado:
+                self.tray_icon.showMessage("FrontLine Lyrics",
+                                           "Still running in the tray. Click the icon to reopen.",
+                                           QSystemTrayIcon.MessageIcon.Information, 2500)
+                self._aviso_tray_mostrado = True
+
+    def tray_ativado(self, motivo):
+        if motivo == QSystemTrayIcon.ActivationReason.Trigger:
+            self.mostrar_do_tray()
+
+    def mostrar_do_tray(self):
+        self.showNormal()
+        self.activateWindow()
+        self.raise_()
 
     def atualizar_capa_ui(self, image_bytes):
         pix = QPixmap()
@@ -584,8 +892,7 @@ class ControlWindow(QWidget):
 
     # --- LÓGICA DE UI E SINCRONIZAÇÃO ---
     def action_start_listen(self):
-        self.manager.reset_state()
-        self.manager.escutando = True
+        self.manager.iniciar_escuta()
         self.ultima_musica_traduzida = None
         
         self.update_button_style(self.btn_listen, True)
@@ -602,13 +909,12 @@ class ControlWindow(QWidget):
         self.btn_manual_sync.setDisabled(True)
         self.btn_manual_sync.setChecked(False)
         
-    def iniciar_timer_autosync(self):
+    def ao_musica_terminar(self):
         if self.manager.auto_sync_ativado:
             self.lbl_musica.setStyleSheet("font-size: 22px;")
-            self.lbl_musica.setText("Waiting 3s...")
+            self.lbl_musica.setText("Between tracks...")
             self.lbl_artista.setStyleSheet("font-size: 16px;")
-            self.lbl_artista.setText("Fade out transition")
-            QTimer.singleShot(3000, self.action_start_listen)
+            self.lbl_artista.setText("Detecting the next song")
 
     def action_toggle_search_mode(self, checked):
         self.lbl_musica.setVisible(not checked)
@@ -624,6 +930,7 @@ class ControlWindow(QWidget):
 
     def action_stop(self):
         self.manager.reset_state()
+        self.manager.suprimir_auto_inicio = True
         self.ultima_musica_traduzida = None
         self.lbl_musica.setStyleSheet("font-size: 22px;")
         self.lbl_musica.setText("Ready")
@@ -647,13 +954,10 @@ class ControlWindow(QWidget):
     def action_pause(self):
         if not self.manager.letra_sincronizada: return
         if not self.manager.letra_pausada:
-            self.manager.letra_pausada = True
-            self.manager.momento_pausa = time.time()
+            self.manager.pausar_relogio()
             self.btn_pause.setStyleSheet("background-color: #a955ff;")
         else:
-            self.manager.letra_pausada = False
-            tempo_pausado = time.time() - self.manager.momento_pausa
-            self.manager.tempo_referencia_sistema += tempo_pausado
+            self.manager.retomar_relogio()
             self.btn_pause.setStyleSheet("")
 
     def action_toggle_lyrics_list(self, checked):
@@ -695,8 +999,9 @@ class ControlWindow(QWidget):
     def action_buscar_manual(self):
         art, mus = self.ipt_artista.text(), self.ipt_musica.text()
         if not art or not mus: return
-        self.btn_manual_search.setChecked(False) 
+        self.btn_manual_search.setChecked(False)
         self.manager.reset_state()
+        self.manager.suprimir_auto_inicio = True
         self.ultima_musica_traduzida = None
         self.lbl_musica.setStyleSheet("font-size: 22px;")
         self.lbl_musica.setText("Searching...")
@@ -707,11 +1012,8 @@ class ControlWindow(QWidget):
         self.atualizar_capa_ui(None) 
         def worker():
             letra = self.manager.buscar_letra_lrclib(art, mus)
-            self.manager.busca_concluida = True
             if letra:
-                self.manager.letra_original = self.manager.letra_sincronizada = letra
-                self.manager.musica_atual, self.manager.artista_atual = mus, art
-                self.manager.escutando = True; self.manager.tempo_referencia_sistema = time.time()
+                self.manager.aplicar_busca_manual(art, mus, letra)
             else: ui_signals.search_error.emit("Lyrics not found!")
         threading.Thread(target=worker, daemon=True).start()
 
@@ -719,9 +1021,11 @@ class ControlWindow(QWidget):
     def action_toggle_ghost(self, checked): self.manager.modo_fantasma = checked
 
     def update_ui_loop(self):
+        if self.manager.estado == MusicManager.ESTADO_RECONHECENDO and self.btn_listen.objectName() != "BtnListenActive":
+            self.update_button_style(self.btn_listen, True)
         if self.manager.musica_atual and self.btn_listen.objectName() == "BtnListenActive":
             self.update_button_style(self.btn_listen, False)
-        if self.manager.escutando and not self.manager.musica_atual:
+        if self.manager.estado == MusicManager.ESTADO_RECONHECENDO and not self.manager.musica_atual:
             tempo_espera = time.time() - self.manager.inicio_escuta
             if tempo_espera > 22:
                 self.lbl_artista.setText("Analyzing audio details...")

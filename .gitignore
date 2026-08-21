@@ -5,3 +5,10 @@
 /.vs
 /bin
 /FrontLineOverlay/FrontLineOverlay/obj
+/FrontLineOverlay/FrontLineOverlay/bin
+__pycache__/
+/FrontLineOverlay.exe
+/FrontLineOverlay.dll
+/FrontLineOverlay.pdb
+/FrontLineOverlay.deps.json
+/FrontLineOverlay.runtimeconfig.json

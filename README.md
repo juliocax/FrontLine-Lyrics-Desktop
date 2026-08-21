@@ -23,6 +23,7 @@
 ## Summary of Features
 * **Automatic Recognition**: Identifies the music being played on your system's standard audio output.
 * **Synchronized Lyrics**: Fetches time-synced lyrics from LRCLib and displays them in real-time.
+* **Smart Auto-Follow**: Enabled by default — zero clicks needed. If music is already playing when the app opens (or starts later), it begins following automatically; when a song ends or you skip to the next track, lyrics switch over instantly. It even freezes while your player is paused and re-syncs if you seek.
 * **Glass UI Deck**: Control panel to manage your lyrics, view album art, and toggle settings.
 * **Floating Desktop Overlay**: A borderless, transparent lyrics overlay that sits on top of your screen, completely independent of your browser.
 * **Smart Auto-Sync**: Automatically detects when a song ends and starts listening for the next track seamlessly.
@@ -125,13 +126,13 @@ FrontLine Lyrics is exclusively available through the **Microsoft Store**. This 
 ### The Main Deck
 When you open the application, you'll see the **FrontLine Deck** — your main control center.
 
-1. **Start Listening**: Play a song on your computer (Spotify, YouTube, etc.) and click the **LISTEN** button. The app will briefly analyze the audio and fetch the lyrics and album art.
+1. **Start Listening**: Play a song on your computer (Spotify, YouTube, etc.) — with **Auto-Sync** on, the app starts following it by itself. You can also click the **LISTEN** button to start manually at any time.
 2. **The Overlay**: Once the song is identified, the transparent lyrics overlay will appear on your screen.
 3. **Overlay Settings**: At the bottom of the Deck, you can:
     * Adjust the **Font Size** of the overlay using the slider.
     * Toggle **Lock Mode** to prevent the overlay from being accidentally moved.
     * Click **Reload** if the overlay window accidentally closes.
-4. **Auto-Sync**: Check the **Auto-Sync** box next to the language selector. When your current song ends, the app will automatically wait a few seconds and start listening for the next track.
+4. **Auto-Sync**: Checked by default. The app follows whatever your system is playing: when the current song ends — or when you skip, seek, or pause — the lyrics follow along automatically. Uncheck it if you prefer to control everything manually with the **LISTEN** button.
 
 ### Correcting Lyrics (Manual Sync & Search)
 If the audio is too quiet, live, or obscure:

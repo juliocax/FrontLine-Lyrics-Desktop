@@ -10,6 +10,8 @@ using System.Windows;
 using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
+using System.Windows.Threading;
 
 namespace FrontLineOverlay
 {
@@ -21,9 +23,27 @@ namespace FrontLineOverlay
         [DllImport("user32.dll")]
         private static extern int SetWindowLong(IntPtr hwnd, int index, int newStyle);
 
-        private bool isGhostMode = false;
-        private bool isConnected = false;
+        [DllImport("user32.dll")]
+        private static extern bool GetCursorPos(out POINT lpPoint);
+
+        [DllImport("user32.dll")]
+        private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct POINT { public int X; public int Y; }
+
+        private const int GWL_EXSTYLE = -20;
+        private const int WS_EX_TRANSPARENT = 0x00000020;
+
+        private const byte VK_MEDIA_NEXT_TRACK = 0xB0;
+        private const byte VK_MEDIA_PREV_TRACK = 0xB1;
+        private const uint KEYEVENTF_KEYUP = 0x0002;
+
+        private bool isGhostMode = false;      // Lock (backend): click-through permanente translúcido
+        private bool mouseNoCartao = false;    // cursor sobre o texto -> fundo visível e interativo
         private string serverPort = "8765";
+        private SolidColorBrush fundoAnimado;
+        private DispatcherTimer timerCursor;
 
         public MainWindow()
         {
@@ -39,8 +59,15 @@ namespace FrontLineOverlay
                 serverPort = args[1];
             }
 
-            SetGhostMode(false);
+            fundoAnimado = new SolidColorBrush(Color.FromArgb(0, 0, 0, 0));
+            MainBorder.Background = fundoAnimado;
+
+            DefinirClickThrough(true);
             Task.Run(() => ConnectWebSocket());
+
+            timerCursor = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(100) };
+            timerCursor.Tick += TimerCursor_Tick;
+            timerCursor.Start();
         }
 
         private void Window_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -54,25 +81,104 @@ namespace FrontLineOverlay
             this.Height = Math.Max(100, this.Height + e.VerticalChange);
         }
 
-        private void SetGhostMode(bool enable)
+        // Envia a tecla de mídia direto ao SO: qualquer player em foco global responde.
+        private void EnviarTeclaMidia(byte tecla)
         {
-            isGhostMode = enable;
-            IntPtr hwnd = new WindowInteropHelper(this).Handle;
-            int WS_EX_TRANSPARENT = 0x00000020;
-            int GWL_EXSTYLE = -20;
-            int extendedStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+            keybd_event(tecla, 0, 0, UIntPtr.Zero);
+            keybd_event(tecla, 0, KEYEVENTF_KEYUP, UIntPtr.Zero);
+        }
 
-            if (enable)
+        private void BtnAnterior_Click(object sender, RoutedEventArgs e)
+        {
+            EnviarTeclaMidia(VK_MEDIA_PREV_TRACK);
+        }
+
+        private void BtnProxima_Click(object sender, RoutedEventArgs e)
+        {
+            EnviarTeclaMidia(VK_MEDIA_NEXT_TRACK);
+        }
+
+        private void DefinirClickThrough(bool ativar)
+        {
+            IntPtr hwnd = new WindowInteropHelper(this).Handle;
+            int extendedStyle = GetWindowLong(hwnd, GWL_EXSTYLE);
+            SetWindowLong(hwnd, GWL_EXSTYLE, ativar ? (extendedStyle | WS_EX_TRANSPARENT)
+                                                    : (extendedStyle & ~WS_EX_TRANSPARENT));
+        }
+
+        private void TimerCursor_Tick(object sender, EventArgs e)
+        {
+            if (isGhostMode || !IsLoaded) return;
+
+            GetCursorPos(out POINT p);
+
+            if (!mouseNoCartao)
             {
-                SetWindowLong(hwnd, GWL_EXSTYLE, extendedStyle | WS_EX_TRANSPARENT);
-                MainBorder.Background = new SolidColorBrush(Color.FromArgb(180, 0, 0, 0)); // Translúcido
-                ResizeGrip.Visibility = Visibility.Collapsed;
+                // Apenas o texto "acorda" o cartão.
+                var topoEsq = StackTexto.PointToScreen(new Point(0, 0));
+                var baixoDir = StackTexto.PointToScreen(new Point(StackTexto.ActualWidth, StackTexto.ActualHeight));
+
+                const int margem = 8;
+                bool sobreTexto = p.X >= topoEsq.X - margem && p.X <= baixoDir.X + margem
+                               && p.Y >= topoEsq.Y - margem && p.Y <= baixoDir.Y + margem;
+
+                if (sobreTexto)
+                {
+                    mouseNoCartao = true;
+                    AplicarFlutuacao(true);
+                }
             }
             else
             {
-                SetWindowLong(hwnd, GWL_EXSTYLE, extendedStyle & ~WS_EX_TRANSPARENT);
-                MainBorder.Background = new SolidColorBrush(Color.FromArgb(240, 30, 30, 30)); // Escuro sólido para editar
-                ResizeGrip.Visibility = Visibility.Visible;
+                // Já ativo: permanece enquanto o cursor estiver em QUALQUER parte do cartão,
+                // e só desaparece quando o cursor sai completamente da área de fundo.
+                var cantoA = MainBorder.PointToScreen(new Point(0, 0));
+                var cantoB = MainBorder.PointToScreen(new Point(MainBorder.ActualWidth, MainBorder.ActualHeight));
+
+                bool dentroCartao = p.X >= cantoA.X && p.X <= cantoB.X
+                                 && p.Y >= cantoA.Y && p.Y <= cantoB.Y;
+
+                if (!dentroCartao)
+                {
+                    mouseNoCartao = false;
+                    AplicarFlutuacao(false);
+                }
+            }
+        }
+
+        private void AplicarFlutuacao(bool hovered)
+        {
+            byte alpha = hovered ? (byte)179 : (byte)0;
+            var anim = new ColorAnimation(Color.FromArgb(alpha, 0, 0, 0), TimeSpan.FromMilliseconds(180));
+            fundoAnimado.BeginAnimation(SolidColorBrush.ColorProperty, anim);
+
+            // Sem hover: só o texto fica na tela e cliques atravessam.
+            // Com hover: cartão interativo (arrastar/redimensionar/controlar faixa).
+            DefinirClickThrough(!hovered);
+            ResizeGrip.Visibility = hovered ? Visibility.Visible : Visibility.Collapsed;
+
+            var fadeControles = new DoubleAnimation(hovered ? 1 : 0, TimeSpan.FromMilliseconds(180));
+            PainelControles.BeginAnimation(OpacityProperty, fadeControles);
+            PainelControles.IsHitTestVisible = hovered;
+        }
+
+        private void SetGhostMode(bool enable)
+        {
+            isGhostMode = enable;
+            if (enable)
+            {
+                mouseNoCartao = false;
+                fundoAnimado.BeginAnimation(SolidColorBrush.ColorProperty, null);
+                fundoAnimado.Color = Color.FromArgb(179, 0, 0, 0);
+                DefinirClickThrough(true);
+                ResizeGrip.Visibility = Visibility.Collapsed;
+                PainelControles.BeginAnimation(OpacityProperty, null);
+                PainelControles.Opacity = 0;
+                PainelControles.IsHitTestVisible = false;
+            }
+            else
+            {
+                AplicarFlutuacao(mouseNoCartao);
             }
         }
 
@@ -85,7 +191,6 @@ namespace FrontLineOverlay
                     try
                     {
                         await ws.ConnectAsync(new Uri($"ws://localhost:{serverPort}"), CancellationToken.None);
-                        isConnected = true;
 
                         byte[] buffer = new byte[8192];
                         while (ws.State == WebSocketState.Open)
@@ -99,7 +204,6 @@ namespace FrontLineOverlay
                     }
                     catch (Exception)
                     {
-                        isConnected = false;
                         Dispatcher.Invoke(() => LblAtual.Text = "Looking for FrontLine panel...");
                     }
                 }
