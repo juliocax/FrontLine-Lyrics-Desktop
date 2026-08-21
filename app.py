@@ -51,7 +51,10 @@ class MusicManager:
     LIMIAR_SILENCIO = 150.0        # RMS (int16) abaixo disso considera-se silêncio
     SILENCIO_PARA_PAUSA = 4.0      # s de silêncio até congelar o relógio da letra
     SILENCIO_PARA_TRANSICAO = 45.0 # s de silêncio até assumir que a reprodução parou
-    TOLERANCIA_SEEK = 4.0          # s de desvio até re-ancorar pela posição do player
+    TOLERANCIA_SEEK = 4.0          # s de desvio até tratar como seek (re-ancoragem dura)
+    TOLERANCIA_MINIMA = 0.8        # desvios abaixo disso são ruído do player: ignorar
+    JANELA_CALIBRAGEM = 12.0       # s após definir faixa com correção agressiva
+    CORRECAO_PARCIAL = 0.35        # fração do desvio aplicada por ajuste (regime estável)
 
     def __init__(self):
         self.shazam = Shazam()
@@ -122,6 +125,7 @@ class MusicManager:
             self.silencio_desde, self.silencio_congelado = 0.0, False
             self.proximo_listen_permitido = 0.0
             self.proximo_reancoragem = 0.0
+            self.calibrando_ate = 0.0
             self._desvio_previo = None
             self.inicio_escuta = time.time()
         ui_signals.update_cover.emit(b'')
@@ -173,6 +177,7 @@ class MusicManager:
             self.silencio_desde, self.silencio_congelado = 0.0, False
             self.proximo_listen_permitido = 0.0
             self.proximo_reancoragem = time.time() + 5.0
+            self.calibrando_ate = time.time() + self.JANELA_CALIBRAGEM
             self._desvio_previo = None
             self.estado = self.ESTADO_SINCRONIZADO
             self.inicio_escuta = time.time()
@@ -244,27 +249,42 @@ class MusicManager:
                 self.retomar_relogio()
                 self.media_pausou = False
             if info.tocando and not self.letra_pausada and self.fonte_atual in ("media", "shazam"):
-                esperado = (time.time() - self.tempo_referencia_sistema) + self.delay_manual
+                agora = time.time()
+                esperado = (agora - self.tempo_referencia_sistema) + self.delay_manual
                 desvio = esperado - info.posicao
-                if abs(desvio) > self.TOLERANCIA_SEEK and time.time() >= self.proximo_reancoragem:
-                    # Exigir 2 leituras consecutivas em desacordo: uma leitura
-                    # isolada pode ser um relatório atrasado do player
-                    confirmado = (self._desvio_previo is not None
-                                  and time.time() - self._desvio_previo[0] <= 6.0
-                                  and abs(self._desvio_previo[1]) > self.TOLERANCIA_SEEK)
-                    if not confirmado:
-                        self._desvio_previo = (time.time(), desvio)
-                    elif info.posicao < 1.0 and esperado > 15.0:
+                em_calibragem = agora < self.calibrando_ate
+                limite = self.TOLERANCIA_MINIMA if not em_calibragem else 0.5
+                if abs(desvio) > limite and agora >= self.proximo_reancoragem:
+                    if info.posicao < 1.0 and esperado > 15.0:
                         # Player reportou posição ~0 enquanto toca (bug de alguns
                         # players/anúncios): ignorar para não rebobinar a letra
                         log(f"Posição suspeita ignorada: player={info.posicao:.1f}s esperado={esperado:.1f}s", "MEDIA")
                         self._desvio_previo = None
+                    elif abs(desvio) > self.TOLERANCIA_SEEK:
+                        # Seek real. Fora da calibragem, exigir 2 leituras
+                        # consecutivas em desacordo: uma isolada pode ser um
+                        # relatório atrasado do player.
+                        confirmado = em_calibragem or (
+                            self._desvio_previo is not None
+                            and agora - self._desvio_previo[0] <= 6.0
+                            and abs(self._desvio_previo[1]) > self.TOLERANCIA_SEEK)
+                        if not confirmado:
+                            self._desvio_previo = (agora, desvio)
+                        else:
+                            log(f"Re-ancoragem por seek: {esperado:.1f}s -> {info.posicao:.1f}s", "MEDIA")
+                            self.tempo_referencia_sistema = agora + self.delay_manual - info.posicao
+                            self.proximo_reancoragem = agora + (1.5 if em_calibragem else 10.0)
+                            self._desvio_previo = None
                     else:
-                        log(f"Re-ancoragem por seek: {esperado:.1f}s -> {info.posicao:.1f}s", "MEDIA")
-                        self.tempo_referencia_sistema = time.time() + self.delay_manual - info.posicao
-                        self.proximo_reancoragem = time.time() + 10.0
+                        # Deriva moderada: na calibragem (início da faixa), corrige
+                        # tudo de uma vez; depois, aproxima aos poucos para não
+                        # dar solavancos visíveis na letra.
+                        fator = 1.0 if em_calibragem else self.CORRECAO_PARCIAL
+                        log(f"Ajuste de sincronia ({'calibragem' if em_calibragem else 'parcial'}): desvio {desvio:+.2f}s", "MEDIA")
+                        self.tempo_referencia_sistema += desvio * fator
+                        self.proximo_reancoragem = agora + (1.5 if em_calibragem else 5.0)
                         self._desvio_previo = None
-                else:
+                elif abs(desvio) <= limite:
                     self._desvio_previo = None
         elif self.estado == self.ESTADO_RECONHECENDO:
             mesma_faixa_em_cooldown = (self.faixa_anterior is not None
@@ -281,6 +301,11 @@ class MusicManager:
         try:
             letra = self.buscar_letra_lrclib(info.artista, info.titulo)
             if letra:
+                # A busca demora ~1-2s; nesse intervalo o player pode ter emitido
+                # uma posição mais recente. Ancorar sempre com a leitura mais nova.
+                info_fresca = self.watcher.ultima_info
+                if info_fresca and info_fresca.chave == info.chave:
+                    info = info_fresca
                 log(f"Letra via metadados: {info.titulo} - {info.artista} ({len(letra)} linhas, pos {info.posicao:.1f}s)", "MEDIA")
                 # Sem delay_manual: o ajuste fino pertence à faixa anterior;
                 # a nova faixa começa com âncora limpa baseada na posição do player.
