@@ -1,0 +1,11 @@
+winrt/_winrt_windows_storage_streams.cp313-win_amd64.pyd,sha256=7GmJPRhzGeNpRmZqbilAQpGJ7M4-T5od2aR523cnyLY,423424
+winrt/_winrt_windows_storage_streams.pyi,sha256=taEmcR-uCqYTD7lyYpvQI0WJQQz9HVGYtv6eqXVCGf0,49360
+winrt/windows/storage/streams/__init__.py,sha256=AlGNdDylDmT5ZX90aJwJ3sVt8mNWXh4GwVMUTQMvUXo,2239
+winrt/windows/storage/streams/__pycache__/__init__.cpython-313.pyc,,
+winrt/windows/storage/streams/py.typed,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+winrt_windows_storage_streams-3.2.1.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+winrt_windows_storage_streams-3.2.1.dist-info/METADATA,sha256=yQgybrbFCGarTkyJlNRpKuA8tO_0aHzbscAWhB0GriI,1267
+winrt_windows_storage_streams-3.2.1.dist-info/RECORD,,
+winrt_windows_storage_streams-3.2.1.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+winrt_windows_storage_streams-3.2.1.dist-info/WHEEL,sha256=qV0EIPljj1XC_vuSatRWjn02nZIz3N1t8jsZz7HBr2U,101
+winrt_windows_storage_streams-3.2.1.dist-info/top_level.txt,sha256=BzwQb4dZRt0NxCXi10ARjWsox7Asmtf_lXrw_KR-D_E,6
