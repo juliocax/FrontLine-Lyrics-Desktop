@@ -7,6 +7,16 @@
         Topmost="True" ShowInTaskbar="True" MouseLeftButtonDown="Window_MouseLeftButtonDown">
 
     <Window.Resources>
+        <!-- Halo atrás da letra: glow escuro (ShadowDepth=0), para leitura sobre
+             conteúdo claro quando o overlay flutua. Contribuição de Warith Adetayo. -->
+        <Style x:Key="LyricHalo" TargetType="TextBlock">
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="Black" BlurRadius="12" ShadowDepth="0" Opacity="0.85"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="ToggleSwitchStyle" TargetType="ToggleButton">
             <Setter Property="Background" Value="#33FFFFFF"/>
             <Setter Property="BorderBrush" Value="#55FFFFFF"/>
@@ -387,17 +397,17 @@
 
                     <Grid x:Name="LyricsNormalView" Grid.Row="0" IsHitTestVisible="False">
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock x:Name="LblPrevious" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                            <TextBlock x:Name="LblCurrent" Foreground="#FFCC33" FontSize="26" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
-                            <TextBlock x:Name="LblCurrentOriginal" Foreground="#99FFFFFF" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/>
-                            <TextBlock x:Name="LblNext" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                            <TextBlock x:Name="LblPrevious" Style="{StaticResource LyricHalo}" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                            <TextBlock x:Name="LblCurrent" Style="{StaticResource LyricHalo}" Foreground="#FFCC33" FontSize="26" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="LblCurrentOriginal" Style="{StaticResource LyricHalo}" Foreground="#99FFFFFF" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/>
+                            <TextBlock x:Name="LblNext" Style="{StaticResource LyricHalo}" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0"/>
                         </StackPanel>
                     </Grid>
 
                     <ListBox x:Name="FullLyricsList" Grid.Row="0" Visibility="Collapsed" Background="Transparent" BorderThickness="0" ScrollViewer.VerticalScrollBarVisibility="Hidden" HorizontalContentAlignment="Stretch" SelectionChanged="FullLyricsList_SelectionChanged">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Text}" Foreground="#AAAAAA" FontSize="16" TextAlignment="Center" TextWrapping="Wrap" Padding="0,8" Cursor="Hand"/>
+                                <TextBlock Text="{Binding Text}" Style="{StaticResource LyricHalo}" Foreground="#AAAAAA" FontSize="16" TextAlignment="Center" TextWrapping="Wrap" Padding="0,8" Cursor="Hand"/>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                         <ListBox.ItemContainerStyle>
@@ -439,18 +449,22 @@
                     </Grid>
 
                     <StackPanel x:Name="PlayingControls" Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0" Visibility="Collapsed">
-                        <Button x:Name="BtnPrevTrack" Content="⏮" Style="{StaticResource SquareGlassButton}" Padding="12,6" FontSize="12" Margin="0,0,6,0" Click="BtnPrevTrack_Click" ToolTip="Previous track"/>
+                        <Button x:Name="BtnPrevTrack" Style="{StaticResource SquareGlassButton}" Padding="10,8" MinWidth="36" Margin="0,0,6,0" Click="BtnPrevTrack_Click" ToolTip="Previous track">
+                            <Image x:Name="ImgPrevTrack" Width="14" Height="14" Stretch="Uniform" IsHitTestVisible="False"/>
+                        </Button>
                         <Button x:Name="BtnListenSide" Content="LISTEN" Style="{StaticResource SquareGlassButton}" Padding="15,6" FontSize="10" Margin="0,0,6,0" Click="BtnListen_Click"/>
                         <ToggleButton x:Name="BtnAutoSide" Content="AUTO" Style="{StaticResource ToggleSwitchStyle}" Click="BtnAuto_Click" Margin="0,0,10,0"/>
                         <Button x:Name="BtnResetSide" Content="CLEAR" Style="{StaticResource SquareGlassButton}" Padding="15,6" FontSize="10" Click="BtnReset_Click"/>
                         <Button x:Name="BtnSearchSide" Content="⌕" Style="{StaticResource SquareGlassButton}" Padding="15,6" FontSize="12" Margin="6,0,6,0" Click="BtnSearchShow_Click"/>
-                        <Button x:Name="BtnNextTrack" Content="⏭" Style="{StaticResource SquareGlassButton}" Padding="12,6" FontSize="12" Click="BtnNextTrack_Click" ToolTip="Next track"/>
+                        <Button x:Name="BtnNextTrack" Style="{StaticResource SquareGlassButton}" Padding="10,8" MinWidth="36" Click="BtnNextTrack_Click" ToolTip="Next track">
+                            <Image x:Name="ImgNextTrack" Width="14" Height="14" Stretch="Uniform" IsHitTestVisible="False"/>
+                        </Button>
                     </StackPanel>
 
                     <Viewbox x:Name="HomeControls" Grid.RowSpan="2" Visibility="Visible" StretchDirection="DownOnly" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,10,0">
                         <Border Background="#FA0A0A0A" BorderBrush="#50FFFFFF" BorderThickness="1" CornerRadius="25" Padding="15,8">
                             <StackPanel Orientation="Horizontal">
-                                <Button x:Name="BtnReleaseNotes" Content="FRONTLINE LYRICS v1.1.0" Style="{StaticResource VersionLinkButtonStyle}" Margin="5,0,20,0" Click="BtnReleaseNotes_Click" ToolTip="See what's new in this version"/>
+                                <Button x:Name="BtnReleaseNotes" Content="FRONTLINE LYRICS v1.2.0" Style="{StaticResource VersionLinkButtonStyle}" Margin="5,0,20,0" Click="BtnReleaseNotes_Click" ToolTip="See what's new in this version"/>
                                 <Button x:Name="BtnListenBig" Content="▶ LISTEN" Style="{StaticResource GlassButton}" Margin="0,0,8,0" Click="BtnListen_Click"/>
                                 <Button x:Name="BtnSearchBig" Content="⌕ SEARCH" Style="{StaticResource GlassButton}" Margin="0,0,12,0" Click="BtnSearchShow_Click"/>
                                 <Rectangle Width="1" Fill="#33FFFFFF" Margin="0,5,12,5"/>
@@ -537,7 +551,6 @@
                         </Grid>
                     </StackPanel>
 
-                    <!-- Slider de Opacidade: fica sempre visível (é o controle que a prévia serve) -->
                     <TextBlock Text="OPACIDADE DO FUNDO" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,8"/>
                     <Slider x:Name="SldBgOpacity" Style="{StaticResource GlassSlider}" Minimum="0" Maximum="1" Value="0.8" Margin="0,0,0,5" ValueChanged="SldBgOpacity_ValueChanged"/>
 
@@ -557,10 +570,10 @@
             <Grid Margin="20">
                 <TextBlock x:Name="LblPreviewTag" Text="PREVIEW" Foreground="#33FFFFFF" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Top"/>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock x:Name="LblPreviewPrevious" Foreground="#777777" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                    <TextBlock x:Name="LblPreviewCurrent" Foreground="#FFCC33" FontSize="26" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
-                    <TextBlock x:Name="LblPreviewCurrentOriginal" Foreground="#B3FFFFFF" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/>
-                    <TextBlock x:Name="LblPreviewNext" Foreground="#777777" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                    <TextBlock x:Name="LblPreviewPrevious" Style="{StaticResource LyricHalo}" Foreground="#777777" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="LblPreviewCurrent" Style="{StaticResource LyricHalo}" Foreground="#FFCC33" FontSize="26" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="LblPreviewCurrentOriginal" Style="{StaticResource LyricHalo}" Foreground="#B3FFFFFF" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/>
+                    <TextBlock x:Name="LblPreviewNext" Style="{StaticResource LyricHalo}" Foreground="#777777" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -581,7 +594,8 @@
                     </StackPanel>
 
                     <Grid Margin="15">
-                        <Image x:Name="HelpImage" Stretch="Uniform"/>
+                        <Image x:Name="HelpImage" Stretch="Uniform" SnapsToDevicePixels="True" UseLayoutRounding="True"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
                         <ItemsControl x:Name="HelpTextContainer" IsHitTestVisible="True">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>

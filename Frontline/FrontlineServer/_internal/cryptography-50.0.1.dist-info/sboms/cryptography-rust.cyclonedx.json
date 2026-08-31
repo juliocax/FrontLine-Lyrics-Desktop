@@ -2,9 +2,9 @@
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
   "version": 1,
-  "serialNumber": "urn:uuid:73ec3e06-7fd3-4d57-8b77-74a622b00b52",
+  "serialNumber": "urn:uuid:e897e02d-5261-4bee-83cd-71f88dc949ee",
   "metadata": {
-    "timestamp": "2026-07-31T14:08:59.999352400Z",
+    "timestamp": "2026-08-25T19:34:05.075250700Z",
     "tools": [
       {
         "vendor": "CycloneDX",
@@ -20,24 +20,24 @@
     ],
     "component": {
       "type": "library",
-      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust#cryptography-rust@0.50.0",
+      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust#cryptography-rust@0.50.1",
       "author": "The cryptography developers <cryptography-dev@python.org>",
       "name": "cryptography-rust",
-      "version": "0.50.0",
+      "version": "0.50.1",
       "scope": "required",
       "licenses": [
         {
           "expression": "Apache-2.0 OR BSD-3-Clause"
         }
       ],
-      "purl": "pkg:cargo/cryptography-rust@0.50.0?download_url=file://.",
+      "purl": "pkg:cargo/cryptography-rust@0.50.1?download_url=file://.",
       "components": [
         {
           "type": "library",
-          "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust#cryptography-rust@0.50.0 bin-target-0",
+          "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust#cryptography-rust@0.50.1 bin-target-0",
           "name": "cryptography_rust",
-          "version": "0.50.0",
-          "purl": "pkg:cargo/cryptography-rust@0.50.0?download_url=file://.#src/lib.rs"
+          "version": "0.50.1",
+          "purl": "pkg:cargo/cryptography-rust@0.50.1?download_url=file://.#src/lib.rs"
         }
       ]
     },
@@ -51,101 +51,101 @@
   "components": [
     {
       "type": "library",
-      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-cffi#0.50.0",
+      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-cffi#0.50.1",
       "author": "The cryptography developers <cryptography-dev@python.org>",
       "name": "cryptography-cffi",
-      "version": "0.50.0",
+      "version": "0.50.1",
       "scope": "required",
       "licenses": [
         {
           "expression": "Apache-2.0 OR BSD-3-Clause"
         }
       ],
-      "purl": "pkg:cargo/cryptography-cffi@0.50.0?download_url=file://cryptography-cffi"
+      "purl": "pkg:cargo/cryptography-cffi@0.50.1?download_url=file://cryptography-cffi"
     },
     {
       "type": "library",
-      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-crypto#0.50.0",
+      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-crypto#0.50.1",
       "author": "The cryptography developers <cryptography-dev@python.org>",
       "name": "cryptography-crypto",
-      "version": "0.50.0",
+      "version": "0.50.1",
       "scope": "required",
       "licenses": [
         {
           "expression": "Apache-2.0 OR BSD-3-Clause"
         }
       ],
-      "purl": "pkg:cargo/cryptography-crypto@0.50.0?download_url=file://cryptography-crypto"
+      "purl": "pkg:cargo/cryptography-crypto@0.50.1?download_url=file://cryptography-crypto"
     },
     {
       "type": "library",
-      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-keepalive#0.50.0",
+      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-keepalive#0.50.1",
       "author": "The cryptography developers <cryptography-dev@python.org>",
       "name": "cryptography-keepalive",
-      "version": "0.50.0",
+      "version": "0.50.1",
       "scope": "required",
       "licenses": [
         {
           "expression": "Apache-2.0 OR BSD-3-Clause"
         }
       ],
-      "purl": "pkg:cargo/cryptography-keepalive@0.50.0?download_url=file://cryptography-keepalive"
+      "purl": "pkg:cargo/cryptography-keepalive@0.50.1?download_url=file://cryptography-keepalive"
     },
     {
       "type": "library",
-      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-key-parsing#0.50.0",
+      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-key-parsing#0.50.1",
       "author": "The cryptography developers <cryptography-dev@python.org>",
       "name": "cryptography-key-parsing",
-      "version": "0.50.0",
+      "version": "0.50.1",
       "scope": "required",
       "licenses": [
         {
           "expression": "Apache-2.0 OR BSD-3-Clause"
         }
       ],
-      "purl": "pkg:cargo/cryptography-key-parsing@0.50.0?download_url=file://cryptography-key-parsing"
+      "purl": "pkg:cargo/cryptography-key-parsing@0.50.1?download_url=file://cryptography-key-parsing"
     },
     {
       "type": "library",
-      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-openssl#0.50.0",
+      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-openssl#0.50.1",
       "author": "The cryptography developers <cryptography-dev@python.org>",
       "name": "cryptography-openssl",
-      "version": "0.50.0",
+      "version": "0.50.1",
       "scope": "required",
       "licenses": [
         {
           "expression": "Apache-2.0 OR BSD-3-Clause"
         }
       ],
-      "purl": "pkg:cargo/cryptography-openssl@0.50.0?download_url=file://cryptography-openssl"
+      "purl": "pkg:cargo/cryptography-openssl@0.50.1?download_url=file://cryptography-openssl"
     },
     {
       "type": "library",
-      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-x509#0.50.0",
+      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-x509#0.50.1",
       "author": "The cryptography developers <cryptography-dev@python.org>",
       "name": "cryptography-x509",
-      "version": "0.50.0",
+      "version": "0.50.1",
       "scope": "required",
       "licenses": [
         {
           "expression": "Apache-2.0 OR BSD-3-Clause"
         }
       ],
-      "purl": "pkg:cargo/cryptography-x509@0.50.0?download_url=file://cryptography-x509"
+      "purl": "pkg:cargo/cryptography-x509@0.50.1?download_url=file://cryptography-x509"
     },
     {
       "type": "library",
-      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-x509-verification#0.50.0",
+      "bom-ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-x509-verification#0.50.1",
       "author": "The cryptography developers <cryptography-dev@python.org>",
       "name": "cryptography-x509-verification",
-      "version": "0.50.0",
+      "version": "0.50.1",
       "scope": "required",
       "licenses": [
         {
           "expression": "Apache-2.0 OR BSD-3-Clause"
         }
       ],
-      "purl": "pkg:cargo/cryptography-x509-verification@0.50.0?download_url=file://cryptography-x509-verification"
+      "purl": "pkg:cargo/cryptography-x509-verification@0.50.1?download_url=file://cryptography-x509-verification"
     },
     {
       "type": "library",
@@ -1111,18 +1111,18 @@
   ],
   "dependencies": [
     {
-      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust#cryptography-rust@0.50.0",
+      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust#cryptography-rust@0.50.1",
       "dependsOn": [
         "registry+https://github.com/rust-lang/crates.io-index#asn1@0.24.1",
         "registry+https://github.com/rust-lang/crates.io-index#base64@0.23.0",
         "registry+https://github.com/rust-lang/crates.io-index#cfg-if@1.0.4",
-        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-cffi#0.50.0",
-        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-crypto#0.50.0",
-        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-keepalive#0.50.0",
-        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-key-parsing#0.50.0",
-        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-openssl#0.50.0",
-        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-x509#0.50.0",
-        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-x509-verification#0.50.0",
+        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-cffi#0.50.1",
+        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-crypto#0.50.1",
+        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-keepalive#0.50.1",
+        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-key-parsing#0.50.1",
+        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-openssl#0.50.1",
+        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-x509#0.50.1",
+        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-x509-verification#0.50.1",
         "registry+https://github.com/rust-lang/crates.io-index#foreign-types-shared@0.1.1",
         "registry+https://github.com/rust-lang/crates.io-index#openssl@0.10.81",
         "registry+https://github.com/rust-lang/crates.io-index#openssl-sys@0.9.117",
@@ -1133,7 +1133,7 @@
       ]
     },
     {
-      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-cffi#0.50.0",
+      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-cffi#0.50.1",
       "dependsOn": [
         "registry+https://github.com/rust-lang/crates.io-index#cc@1.4.0",
         "registry+https://github.com/rust-lang/crates.io-index#openssl-sys@0.9.117",
@@ -1142,32 +1142,32 @@
       ]
     },
     {
-      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-crypto#0.50.0",
+      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-crypto#0.50.1",
       "dependsOn": [
         "registry+https://github.com/rust-lang/crates.io-index#openssl@0.10.81"
       ]
     },
     {
-      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-keepalive#0.50.0",
+      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-keepalive#0.50.1",
       "dependsOn": [
         "registry+https://github.com/rust-lang/crates.io-index#pyo3@0.29.0"
       ]
     },
     {
-      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-key-parsing#0.50.0",
+      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-key-parsing#0.50.1",
       "dependsOn": [
         "registry+https://github.com/rust-lang/crates.io-index#asn1@0.24.1",
         "registry+https://github.com/rust-lang/crates.io-index#cfg-if@1.0.4",
-        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-crypto#0.50.0",
-        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-openssl#0.50.0",
-        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-x509#0.50.0",
+        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-crypto#0.50.1",
+        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-openssl#0.50.1",
+        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-x509#0.50.1",
         "registry+https://github.com/rust-lang/crates.io-index#openssl@0.10.81",
         "registry+https://github.com/rust-lang/crates.io-index#openssl-sys@0.9.117",
         "registry+https://github.com/rust-lang/crates.io-index#pem@4.0.0"
       ]
     },
     {
-      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-openssl#0.50.0",
+      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-openssl#0.50.1",
       "dependsOn": [
         "registry+https://github.com/rust-lang/crates.io-index#cfg-if@1.0.4",
         "registry+https://github.com/rust-lang/crates.io-index#foreign-types@0.3.2",
@@ -1177,16 +1177,16 @@
       ]
     },
     {
-      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-x509#0.50.0",
+      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-x509#0.50.1",
       "dependsOn": [
         "registry+https://github.com/rust-lang/crates.io-index#asn1@0.24.1"
       ]
     },
     {
-      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-x509-verification#0.50.0",
+      "ref": "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-x509-verification#0.50.1",
       "dependsOn": [
         "registry+https://github.com/rust-lang/crates.io-index#asn1@0.24.1",
-        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpPD7PY1/cryptography-50.0.0/src/rust/cryptography-x509#0.50.0"
+        "path+file:///D:/a/cryptography/cryptography/wheelhouse/.tmpmxvUr3/cryptography-50.0.1/src/rust/cryptography-x509#0.50.1"
       ]
     },
     {
