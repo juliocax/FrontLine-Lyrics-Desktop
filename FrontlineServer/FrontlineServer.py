@@ -1,5 +1,7 @@
 ﻿import sys
 import os
+from crash_guard import instalar as instalar_crash_guard
+instalar_crash_guard()
 import time
 import asyncio
 import json
@@ -68,6 +70,8 @@ def global_exception_handler(exctype, value, tb):
     logging.critical("=== CRITICAL ERROR ENCOUNTERED ===")
     logging.critical("".join(traceback.format_exception(exctype, value, tb)))
 sys.excepthook = global_exception_handler
+# Envolve o hook acima para também gravar python_crash.log.
+instalar_crash_guard()
 
 _background_tasks: set = set()
 
@@ -77,6 +81,57 @@ def spawn_task(coro):
     _background_tasks.add(task)
     task.add_done_callback(_background_tasks.discard)
     return task
+
+
+# Posição SMTC absurda (NaN, negativa, >12h) é lixo de alguns players.
+MAX_MEDIA_POSITION_S = 12 * 3600
+
+
+def _sane_media_position(value, fallback: Optional[float] = None) -> Optional[float]:
+    """Aceita só posições finitas em [0, 12h]. Usado no servo de sync (Warith Adetayo)."""
+    try:
+        pos = float(value)
+    except (TypeError, ValueError):
+        return fallback
+    if not math.isfinite(pos) or pos < 0.0 or pos > MAX_MEDIA_POSITION_S:
+        return fallback
+    return pos
+
+class AutoHold:
+    """Depois do Limpar, o Auto não religa a faixa atual até ela mudar.
+
+    RESET vai para IDLE; o SMTC (1x/s) via a mesma música tocando e disparava
+    LISTEN de novo. Aqui a chave (título, artista) fica bloqueada até mudar,
+    ou o usuário clicar OUVIR / religar o Auto.
+    """
+
+    def __init__(self, cooldown_s: float = 2.0):
+        self._chave: Optional[Tuple[str, str]] = None
+        self._hold_until: float = 0.0
+        self._cooldown_s = cooldown_s
+
+    def hold(self, chave: Optional[Tuple[str, str]], agora: Optional[float] = None) -> None:
+        agora = time.monotonic() if agora is None else agora
+        self._chave = chave
+        self._hold_until = agora + self._cooldown_s
+
+    @property
+    def ativo(self) -> bool:
+        return self._chave is not None or time.monotonic() < self._hold_until
+
+    def release(self) -> None:
+        self._chave = None
+        self._hold_until = 0.0
+
+    def deve_ignorar(self, chave: Optional[Tuple[str, str]], agora: Optional[float] = None) -> bool:
+        agora = time.monotonic() if agora is None else agora
+        em_cooldown = agora < self._hold_until
+        if self._chave is None:
+            return em_cooldown
+        if chave is None or chave == self._chave:
+            return True
+        self.release()
+        return False
 
 class MusicManager:
     """Manages audio recording, Shazam recognition, lyrics fetching, and synchronization.
@@ -98,9 +153,30 @@ class MusicManager:
         self._lock = threading.RLock()
         self._media_busy = False
         self._main_loop = None
+        self.auto_hold = AutoHold(cooldown_s=2.0)
+        self._last_full_lyrics_sig = None
         # Media Session (SMTC): contribuição de Warith Adetayo, portada do PR #2.
         self.watcher = MediaSessionWatcher(self._on_media_snapshot)
         self.reset_state()
+
+    def _hold_current_track(self):
+        """Limpar: Auto não religa a faixa que está tocando agora."""
+        chave = self.watcher.ignorar_faixa_atual()
+        if not chave or chave == ("", ""):
+            chave = self._track_key(self.current_song, self.current_artist)
+            if chave == ("", ""):
+                chave = None
+            else:
+                self.watcher.ignorar_chave(chave)
+        self.auto_hold.hold(chave)
+        logging.info("Limpar: Auto em hold para %s", chave)
+
+    def _release_auto_hold(self):
+        self.auto_hold.release()
+        self.watcher.limpar_ignorada()
+
+    def _auto_bloqueado(self, chave) -> bool:
+        return self.auto_hold.deve_ignorar(chave) or self.watcher.chave_esta_ignorada(chave)
 
     def _configure_loopback(self) -> Optional[Dict[str, Any]]:
         """Configures WASAPI loopback to record system audio."""
@@ -289,6 +365,26 @@ class MusicManager:
             self.is_listening = True if was_auto else False
         logging.info(f"Transição ({reason})")
 
+    def _fresh_smtc_for(self, chave: Tuple[str, str]):
+        """Último snapshot SMTC da mesma faixa, se ainda for ela."""
+        info = getattr(self.watcher, "ultima_info", None)
+        if info is None:
+            return None
+        try:
+            if info.chave != chave:
+                return None
+        except Exception:
+            return None
+        return info
+
+    def _anchor_reference(self, chave: Tuple[str, str], fallback: float) -> float:
+        """Âncora o relógio na posição SMTC fresca; senão usa fallback (Shazam/now)."""
+        info = self._fresh_smtc_for(chave)
+        pos = _sane_media_position(getattr(info, "posicao", None) if info is not None else None)
+        if pos is None:
+            return fallback
+        return time.time() - pos
+
     def _set_track(
         self,
         title: str,
@@ -309,7 +405,10 @@ class MusicManager:
             self.clock_paused = False
             self.pause_moment = 0.0
             self.media_paused = False
-            self.next_reanchor = time.time() + 5.0
+            # A janela de 12s precisa começar já no lock-in. O +5s antigo
+            # pulava exatamente o trecho em que a âncora SMTC vem velha
+            # Calibragem + servo: Warith Adetayo.
+            self.next_reanchor = time.time()
             self.calibrating_until = time.time() + CALIBRATION_WINDOW
             self._prev_drift = None
             self.not_found_since = None if lyrics else time.time()
@@ -349,12 +448,17 @@ class MusicManager:
         self.watcher.preferencia_chave = chave
 
         # Auto-início só com AUTO ligado: música tocando e app parado.
+        # Depois de Limpar, a mesma faixa é ignorada até mudar título/artista
+        # (ou o usuário clicar OUVIR / religar o Auto).
         if (self.auto_mode and not self.is_listening
                 and info.tocando and info.titulo):
-            logging.info(f"Auto-início SMTC: {info.titulo} - {info.artista}")
-            with self._lock:
-                self.reset_state()
-                self.is_listening = True
+            if self._auto_bloqueado(info.chave):
+                logging.debug("Auto hold: não religar %s", info.chave)
+            else:
+                logging.info(f"Auto-início SMTC: {info.titulo} - {info.artista}")
+                with self._lock:
+                    self.reset_state()
+                    self.is_listening = True
 
         synced = self.is_listening and self.search_completed and bool(self.synced_lyrics)
 
@@ -378,40 +482,47 @@ class MusicManager:
             if (info.tocando and not self.clock_paused
                     and self.track_source in ("media", "shazam")
                     and chave == faixa_atual):
-                agora = time.time()
-                esperado = self._elapsed_now()
-                desvio = esperado - info.posicao
-                em_calibragem = agora < self.calibrating_until
-                limite = MIN_DRIFT if not em_calibragem else 0.5
-                if abs(desvio) > limite and agora >= self.next_reanchor:
-                    if info.posicao < 1.0 and esperado > 15.0:
-                        logging.info(
-                            f"Posição suspeita ignorada: player={info.posicao:.1f}s esperado={esperado:.1f}s"
-                        )
-                        self._prev_drift = None
-                    elif abs(desvio) > SEEK_TOLERANCE:
-                        confirmado = em_calibragem or (
-                            self._prev_drift is not None
-                            and agora - self._prev_drift[0] <= 6.0
-                            and abs(self._prev_drift[1]) > SEEK_TOLERANCE
-                        )
-                        if not confirmado:
-                            self._prev_drift = (agora, desvio)
-                        else:
-                            logging.info(f"Re-ancoragem por seek: {esperado:.1f}s -> {info.posicao:.1f}s")
-                            self.system_reference_time = agora - info.posicao
-                            self.next_reanchor = agora + (1.5 if em_calibragem else 10.0)
+                # Servo de sync (Warith Adetayo): 12s de calibragem com
+                # correção de uma amostra + deriva parcial (~35%) depois,
+                # seeks >4s só confirmados com 2 amostras fora da janela.
+                pos = _sane_media_position(info.posicao)
+                if pos is None:
+                    logging.debug("SMTC posição inválida ignorada: %r", info.posicao)
+                else:
+                    agora = time.time()
+                    esperado = self._elapsed_now()
+                    desvio = esperado - pos
+                    em_calibragem = agora < self.calibrating_until
+                    limite = MIN_DRIFT if not em_calibragem else 0.5
+                    if abs(desvio) > limite and agora >= self.next_reanchor:
+                        if pos < 1.0 and esperado > 15.0:
+                            logging.info(
+                                f"Posição suspeita ignorada: player={pos:.1f}s esperado={esperado:.1f}s"
+                            )
                             self._prev_drift = None
-                    else:
-                        fator = 1.0 if em_calibragem else PARTIAL_CORRECTION
-                        logging.info(
-                            f"Ajuste de sincronia ({'calibragem' if em_calibragem else 'parcial'}): desvio {desvio:+.2f}s"
-                        )
-                        self.system_reference_time += desvio * fator
-                        self.next_reanchor = agora + (1.5 if em_calibragem else 5.0)
+                        elif abs(desvio) > SEEK_TOLERANCE:
+                            confirmado = em_calibragem or (
+                                self._prev_drift is not None
+                                and agora - self._prev_drift[0] <= 6.0
+                                and abs(self._prev_drift[1]) > SEEK_TOLERANCE
+                            )
+                            if not confirmado:
+                                self._prev_drift = (agora, desvio)
+                            else:
+                                logging.info(f"Re-ancoragem por seek: {esperado:.1f}s -> {pos:.1f}s")
+                                self.system_reference_time = agora - pos
+                                self.next_reanchor = agora + (1.5 if em_calibragem else 10.0)
+                                self._prev_drift = None
+                        else:
+                            fator = 1.0 if em_calibragem else PARTIAL_CORRECTION
+                            logging.info(
+                                f"Ajuste de sincronia ({'calibragem' if em_calibragem else 'parcial'}): desvio {desvio:+.2f}s"
+                            )
+                            self.system_reference_time += desvio * fator
+                            self.next_reanchor = agora + (1.5 if em_calibragem else 5.0)
+                            self._prev_drift = None
+                    elif abs(desvio) <= limite:
                         self._prev_drift = None
-                elif abs(desvio) <= limite:
-                    self._prev_drift = None
         elif self.is_listening and not self.search_completed:
             mesma_em_cooldown = self._in_previous_track_cooldown(info.titulo, info.artista)
             if (info.tocando and info.titulo and not self._media_busy
@@ -426,20 +537,23 @@ class MusicManager:
         try:
             letra = self.fetch_lyrics_lrclib(info.artista, info.titulo)
             if letra:
+                # A busca demora ~1–2s; nesse intervalo o player pode ter
+                # emitido uma posição mais recente. Ancorar com a leitura nova.
                 info_fresca = self.watcher.ultima_info
                 if info_fresca and info_fresca.chave == info.chave:
                     info = info_fresca
+                pos = _sane_media_position(info.posicao, fallback=0.0) or 0.0
                 cover = self._cover_bytes_to_url(info.capa_bytes, info.chave)
                 if not cover:
                     cover = self.fetch_cover_art(info.artista, info.titulo)
                 logging.info(
                     f"Letra via metadados: {info.titulo} - {info.artista} "
-                    f"({len(letra)} linhas, pos {info.posicao:.1f}s)"
+                    f"({len(letra)} linhas, pos {pos:.1f}s)"
                 )
                 self._set_track(
                     info.titulo,
                     info.artista,
-                    reference_time=time.time() - info.posicao,
+                    reference_time=time.time() - pos,
                     lyrics=letra,
                     cover=cover,
                     source="media",
@@ -738,7 +852,8 @@ class MusicManager:
         if status != "SYNCED": 
             current_line = overlay_msg
 
-        return {
+        full = [{"timestamp": i["timestamp"], "text": i["text"]} for i in self.synced_lyrics] if self.synced_lyrics else []
+        payload = {
             "status": status,
             "auto_mode": self.auto_mode,
             "is_translating": self.is_translating,
@@ -753,8 +868,13 @@ class MusicManager:
             "song": self.current_song,
             "artist": self.current_artist,
             "cover_art": getattr(self, "current_cover", ""),
-            "full_lyrics": [{"timestamp": i["timestamp"], "text": i["text"]} for i in self.synced_lyrics] if self.synced_lyrics else []
         }
+        # 10 Hz * letra inteira recriava o ListBox no C# e inflava RAM (OOM 8007000e).
+        sig = (id(self.synced_lyrics), self.current_language, len(full), status)
+        if sig != self._last_full_lyrics_sig:
+            self._last_full_lyrics_sig = sig
+            payload["full_lyrics"] = full
+        return payload
 
 manager = MusicManager()
 connected_clients = set()
@@ -765,6 +885,8 @@ AUTO_MAX_RETRY_DELAY = 20.0
 AUTO_BACKOFF_MULTIPLIER = 1.7
 NOT_FOUND_GIVEUP_SECONDS = 10.0
 # Guards de faixa / seek — originados no PR #2 de Warith Adetayo.
+# Calibragem (~12s, correção de uma amostra, tolerância 0.5s) + servo de
+# deriva (~35% por ajuste, seeks >4s exigem duas amostras fora da janela).
 END_OF_LYRICS_GRACE = 2.0
 PREV_TRACK_COOLDOWN = 25.0
 SEEK_TOLERANCE = 4.0
@@ -888,10 +1010,13 @@ async def background_verification_worker(manager: MusicManager):
         if (manager.session_id == current_session and not manager.search_completed
                 and not manager._media_busy):
             if lyrics:
+                offset = _sane_media_position(shazam_offset, fallback=0.0) or 0.0
+                chave = manager._track_key(new_song, new_artist)
+                fallback = record_start_time - offset
                 manager._set_track(
                     new_song,
                     new_artist,
-                    reference_time=record_start_time - shazam_offset,
+                    reference_time=manager._anchor_reference(chave, fallback),
                     lyrics=lyrics,
                     cover=new_cover,
                     source="shazam",
@@ -915,10 +1040,11 @@ async def run_manual_search(manager: MusicManager, artist: str, song: str, curre
             manager.current_cover = cover_art
             
         if lyrics:
+            chave = manager._track_key(song, artist)
             manager._set_track(
                 song,
                 artist,
-                reference_time=time.time(),
+                reference_time=manager._anchor_reference(chave, time.time()),
                 lyrics=lyrics,
                 cover=cover_art or manager.current_cover,
                 source="manual",
@@ -934,14 +1060,19 @@ async def ws_handler(websocket):
                 action = command.get("action")
                 
                 if action == "LISTEN":
+                    manager._release_auto_hold()
                     manager.reset_state()
                     manager.is_listening = True
                 elif action == "AUTO_TOGGLE":
+                    manager._release_auto_hold()
                     manager.auto_mode = not manager.auto_mode
                     if manager.auto_mode and not manager.is_listening:
                         manager.reset_state()
                         manager.is_listening = True
                 elif action == "RESET":
+                    # hold_auto vem do C#; Limpar sempre segura a faixa atual
+                    # mesmo se o campo faltar (compatível com builds antigas).
+                    manager._hold_current_track()
                     manager.reset_state()
                 elif action == "QUIT":
                     manager.server_running = False
@@ -963,6 +1094,7 @@ async def ws_handler(websocket):
                     artist = command.get("artist", "")
                     song = command.get("song", "")
                     if artist and song:
+                        manager._release_auto_hold()
                         manager.reset_state() 
                         manager.manual_mode = True 
                         manager.current_song, manager.current_artist = song, artist
@@ -970,6 +1102,13 @@ async def ws_handler(websocket):
                         spawn_task(run_manual_search(manager, artist, song, manager.session_id))
                 elif action == "SET_SYNC_TIME":
                     new_time = command.get("time", 0.0)
+                    try:
+                        new_time = float(new_time)
+                    except (TypeError, ValueError):
+                        new_time = 0.0
+                    if not math.isfinite(new_time):
+                        new_time = 0.0
+                    new_time = max(0.0, min(new_time, MAX_MEDIA_POSITION_S))
                     manager.system_reference_time = time.time() - new_time
                     manager.clock_paused = False
                     manager.pause_moment = 0.0
@@ -986,12 +1125,16 @@ async def broadcast_ui_state(manager: MusicManager):
             if connected_clients: 
                 websockets.broadcast(connected_clients, json.dumps(manager.get_current_state()))
         except Exception:
-            pass
+            logging.exception("broadcast_ui_state")
         await asyncio.sleep(0.1)
+
+def _asyncio_exception_handler(loop, context):
+    logging.critical("asyncio: %s", context.get("message"), exc_info=context.get("exception"))
 
 async def main_background(manager: MusicManager, port: int):
     """Main background loop initializer."""
     manager._main_loop = asyncio.get_running_loop()
+    manager._main_loop.set_exception_handler(_asyncio_exception_handler)
     manager.watcher.start()
     spawn_task(background_verification_worker(manager))
     spawn_task(broadcast_ui_state(manager))
@@ -1000,7 +1143,7 @@ async def main_background(manager: MusicManager, port: int):
 
 if __name__ == "__main__":
     
-    # pyinstaller --noconfirm --onedir --windowed --collect-all anyascii --collect-all winrt --hidden-import winrt.windows.media.control --hidden-import winrt.windows.storage.streams --name "FrontlineServer" "FrontlineServer.py"
+    # pyinstaller --noconfirm --onedir --windowed --collect-all anyascii --collect-all winrt --hidden-import winrt.windows.media.control --hidden-import winrt.windows.storage.streams --hidden-import crash_guard --hidden-import media_session --name "FrontlineServer" "FrontlineServer.py"
     server_port = 8765 
     
     if len(sys.argv) > 1:
