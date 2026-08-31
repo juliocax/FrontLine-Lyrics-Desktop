@@ -12,6 +12,7 @@
     <Name>FrontlineServer</Name>
     <RootNamespace>FrontlineServer</RootNamespace>
     <InterpreterId>MSBuild|.venv|$(MSBuildProjectFullPath)</InterpreterId>
+    <SuppressPackageInstallationPrompt>True</SuppressPackageInstallationPrompt>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,6 +23,7 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="crash_guard.py" />
     <Compile Include="media_session.py" />
     <Compile Include="FrontlineServer.py" />
   </ItemGroup>

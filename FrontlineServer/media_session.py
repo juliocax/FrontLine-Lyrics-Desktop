@@ -21,7 +21,8 @@ try:
 except ImportError:
     MEDIA_SESSION_DISPONIVEL = False
 
-TAMANHO_MAX_CAPA = 2_000_000
+# 512 KiB de JPEG/PNG
+TAMANHO_MAX_CAPA = 512_000
 
 
 class MediaInfo:
@@ -58,6 +59,7 @@ class MediaSessionWatcher:
         self._thread = None
         self._chave_capa_cacheada = None
         self._capa_cacheada = b""
+        self._chave_ignorada = None
 
     @property
     def disponivel(self):
@@ -73,6 +75,27 @@ class MediaSessionWatcher:
     def stop(self):
         self._rodando = False
 
+    def ignorar_faixa_atual(self):
+        """Clear/RESET to prevent auto-restart (title, artist)."""
+        if self.ultima_info is not None:
+            self._chave_ignorada = self.ultima_info.chave
+        return self._chave_ignorada
+
+    def ignorar_chave(self, chave):
+        self._chave_ignorada = chave
+        return chave
+
+    def limpar_ignorada(self):
+        self._chave_ignorada = None
+
+    def chave_esta_ignorada(self, chave) -> bool:
+        if self._chave_ignorada is None or chave is None:
+            return False
+        if chave == self._chave_ignorada:
+            return True
+        self._chave_ignorada = None
+        return False
+
     def _executar_loop(self):
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
@@ -82,10 +105,15 @@ class MediaSessionWatcher:
             logging.exception("MediaSessionWatcher encerrado por erro")
             self._rodando = False
         finally:
+            try:
+                loop.stop()
+            except Exception:
+                pass
             loop.close()
 
     async def _sondar_para_sempre(self):
         gerenciador = None
+        falhas_seguidas = 0
         while self._rodando:
             try:
                 if gerenciador is None:
@@ -97,32 +125,68 @@ class MediaSessionWatcher:
                         self.callback(info)
                     except Exception:
                         logging.exception("Falha no callback do MediaSessionWatcher")
+                falhas_seguidas = 0
             except Exception:
+                falhas_seguidas += 1
+                logging.exception("MediaSessionWatcher: falha ao sondar (n=%s)", falhas_seguidas)
                 gerenciador = None
+                # Backoff para não girar em AccessViolation/COM falho a 1 Hz.
+                await asyncio.sleep(min(8.0, self.INTERVALO_SONDAGEM * (2 ** min(falhas_seguidas, 3))))
+                continue
             await asyncio.sleep(self.INTERVALO_SONDAGEM)
 
     async def _coletar(self, gerenciador):
-        sessoes = gerenciador.get_sessions()
+        try:
+            sessoes = gerenciador.get_sessions()
+        except Exception:
+            logging.exception("get_sessions falhou")
+            return None
+
         candidatos = []
-        for i in range(sessoes.size):
-            sessao = sessoes.get_at(i)
+        tamanho = 0
+        try:
+            tamanho = sessoes.size
+        except Exception:
+            return None
+
+        for i in range(tamanho):
+            try:
+                sessao = sessoes.get_at(i)
+            except Exception:
+                continue
             try:
                 props = await sessao.try_get_media_properties_async()
             except Exception:
                 continue
-            if not props.title:
+            if not props or not props.title:
                 continue
-            status = sessao.get_playback_info().playback_status
-            timeline = sessao.get_timeline_properties()
+            try:
+                status = sessao.get_playback_info().playback_status
+                timeline = sessao.get_timeline_properties()
+            except Exception:
+                continue
             tocando = status == wmc.GlobalSystemMediaTransportControlsSessionPlaybackStatus.PLAYING
 
-            posicao = timeline.position.total_seconds() if timeline.position else 0.0
-            if tocando and timeline.last_updated_time:
-                # Alguns players só atualizam a posição a cada ~60s; extrapolar
-                # com last_updated_time é o que mantém a posição contínua.
-                delta = (datetime.now(timezone.utc) - timeline.last_updated_time).total_seconds()
-                if 0 <= delta < 3600:
-                    posicao += delta
+            posicao = 0.0
+            try:
+                posicao = timeline.position.total_seconds() if timeline.position else 0.0
+                if tocando and timeline.last_updated_time:
+                    # Alguns players só atualizam a posição a cada ~60s; extrapolar
+                    # com last_updated_time é o que mantém a posição contínua.
+                    last = timeline.last_updated_time
+                    if getattr(last, "tzinfo", None) is None:
+                        last = last.replace(tzinfo=timezone.utc)
+                    delta = (datetime.now(timezone.utc) - last).total_seconds()
+                    if 0 <= delta < 3600:
+                        posicao += delta
+            except Exception:
+                posicao = 0.0
+            try:
+                posicao = float(posicao)
+            except (TypeError, ValueError):
+                posicao = 0.0
+            if posicao != posicao or posicao < 0.0 or posicao > 12 * 3600:
+                posicao = 0.0
 
             duracao = 0.0
             try:
@@ -131,11 +195,16 @@ class MediaSessionWatcher:
             except Exception:
                 pass
 
-            chave = (props.title.lower().strip(), props.artist.lower().strip())
+            chave = (props.title.lower().strip(), (props.artist or "").lower().strip())
             capa = await self._capa_da_sessao(chave, props)
 
+            try:
+                app_id = sessao.source_app_user_model_id
+            except Exception:
+                app_id = ""
+
             candidatos.append((tocando, chave == self.preferencia_chave, props.title,
-                               props.artist, posicao, duracao, sessao.source_app_user_model_id, capa))
+                               props.artist or "", posicao, duracao, app_id, capa))
 
         if not candidatos:
             return None
@@ -148,17 +217,30 @@ class MediaSessionWatcher:
         if chave == self._chave_capa_cacheada:
             return self._capa_cacheada
         capa = b""
+        stream = None
+        reader = None
         try:
             if props.thumbnail:
                 stream = await props.thumbnail.open_read_async()
-                tamanho = min(stream.size, TAMANHO_MAX_CAPA)
-                reader = wss.DataReader(stream)
-                await reader.load_async(tamanho)
-                capa = bytes(reader.read_buffer(tamanho))
-                reader.detach_stream()
-                stream.close()
+                tamanho = int(min(stream.size, TAMANHO_MAX_CAPA))
+                if tamanho > 0:
+                    reader = wss.DataReader(stream)
+                    await reader.load_async(tamanho)
+                    capa = bytes(reader.read_buffer(tamanho))
         except Exception:
+            logging.debug("capa indisponível para %s", chave, exc_info=True)
             capa = b""
+        finally:
+            try:
+                if reader is not None:
+                    reader.detach_stream()
+            except Exception:
+                pass
+            try:
+                if stream is not None:
+                    stream.close()
+            except Exception:
+                pass
         self._chave_capa_cacheada = chave
         self._capa_cacheada = capa
         return capa
