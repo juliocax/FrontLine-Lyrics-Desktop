@@ -97,6 +97,87 @@ def _sane_media_position(value, fallback: Optional[float] = None) -> Optional[fl
         return fallback
     return pos
 
+_LRC_LINE = re.compile(r"\[(\d{2,}):(\d{2}(?:\.\d{1,3})?)\](.*)")
+_PAREN_OR_BRACKET = re.compile(r"\([^)]*\)|\[[^\]]*\]")
+_FEAT_SPLIT = re.compile(r"\s+(?:feat\.?|ft\.?|featuring)\s+", re.I)
+_DASH_SUFFIX = re.compile(
+    r"\s+[\-–—]\s+(official.*|audio|video|lyric.*|from\s+.*|remaster.*|"
+    r"live.*|radio\s+edit.*|slowed.*|sped\s+up.*)$",
+    re.I,
+)
+
+
+def clean_lrclib_query(artist: str, song: str) -> Tuple[str, str]:
+    """Tira lixo típico do Shazam pra chegar perto do que o LRCLib indexa."""
+    raw_song = song or ""
+    raw_artist = artist or ""
+    cleaned_song = _PAREN_OR_BRACKET.sub("", raw_song)
+    cleaned_song = _DASH_SUFFIX.sub("", cleaned_song)
+    cleaned_song = re.sub(r"\s+", " ", cleaned_song).strip(" -")
+    if not cleaned_song:
+        cleaned_song = re.sub(r"\s+", " ", raw_song).strip()
+
+    cleaned_artist = _FEAT_SPLIT.split(raw_artist)[0]
+    cleaned_artist = cleaned_artist.split(",")[0].split("&")[0].split("/")[0].split(";")[0]
+    cleaned_artist = _PAREN_OR_BRACKET.sub("", cleaned_artist)
+    cleaned_artist = re.sub(r"\s+", " ", cleaned_artist).strip()
+    if not cleaned_artist:
+        cleaned_artist = re.sub(r"\s+", " ", raw_artist).strip()
+    return cleaned_artist, cleaned_song
+
+
+def _name_close(query: str, candidate: str) -> bool:
+    q = (query or "").lower().strip()
+    c = (candidate or "").lower().strip()
+    if not q or not c:
+        return False
+    if q == c or q in c or c in q:
+        return True
+    q0 = q.split()[0]
+    c0 = c.split()[0]
+    return len(q0) >= 4 and (q0 in c or c0 in q)
+
+
+def parse_synced_lrc(synced_lyrics: str) -> List[Dict[str, Any]]:
+    lines: List[Dict[str, Any]] = []
+    for line in (synced_lyrics or "").split("\n"):
+        match = _LRC_LINE.match(line)
+        if not match:
+            continue
+        timestamp = (int(match.group(1)) * 60) + float(match.group(2))
+        text = match.group(3).strip()
+        if text:
+            lines.append({"timestamp": timestamp, "text": text})
+    if lines:
+        lines.append({"timestamp": lines[-1]["timestamp"] + 5.0, "text": "End"})
+    return lines
+
+
+def pick_lrclib_search_hit(results: Any, artist: str, song: str) -> Optional[Dict[str, Any]]:
+    """Escolhe um item com letra sincronizada; não exige artista idêntico."""
+    if not isinstance(results, list):
+        return None
+    scored: List[Tuple[int, Dict[str, Any]]] = []
+    for item in results:
+        if not isinstance(item, dict) or not item.get("syncedLyrics"):
+            continue
+        score = 0
+        if _name_close(artist, item.get("artistName") or ""):
+            score += 2
+        if _name_close(song, item.get("trackName") or ""):
+            score += 2
+        if score > 0:
+            scored.append((score, item))
+    if not scored:
+        for item in results:
+            if not isinstance(item, dict) or not item.get("syncedLyrics"):
+                continue
+            if _name_close(song, item.get("trackName") or ""):
+                return item
+        return None
+    scored.sort(key=lambda pair: -pair[0])
+    return scored[0][1]
+
 class AutoHold:
     """Depois do Limpar, o Auto não religa a faixa atual até ela mudar.
 
@@ -152,6 +233,7 @@ class MusicManager:
         self.preferred_language: Optional[str] = None
         self._lock = threading.RLock()
         self._media_busy = False
+        self._lrclib_fail_until: Dict[Tuple[str, str], float] = {}
         self._main_loop = None
         self.auto_hold = AutoHold(cooldown_s=2.0)
         self._last_full_lyrics_sig = None
@@ -275,6 +357,7 @@ class MusicManager:
         self._prev_drift = None
         self.previous_track: Optional[Tuple[str, str]] = None
         self.cooldown_until: float = 0.0
+        self._lrclib_fail_until = {}
 
     def _track_key(self, song: Optional[str], artist: Optional[str]) -> Tuple[str, str]:
         return ((song or "").lower().strip(), (artist or "").lower().strip())
@@ -533,10 +616,14 @@ class MusicManager:
         """Troca instantânea via metadados do player (sem Shazam)."""
         if self._in_previous_track_cooldown(info.titulo, info.artista):
             return
+
+        if time.monotonic() < self._lrclib_fail_until.get(info.chave, 0.0):
+            return
         self._media_busy = True
         try:
             letra = self.fetch_lyrics_lrclib(info.artista, info.titulo)
             if letra:
+                self._lrclib_fail_until.pop(info.chave, None)
                 # A busca demora ~1–2s; nesse intervalo o player pode ter
                 # emitido uma posição mais recente. Ancorar com a leitura nova.
                 info_fresca = self.watcher.ultima_info
@@ -559,9 +646,16 @@ class MusicManager:
                     source="media",
                 )
                 self.media_baseline = info.chave
-            elif self.search_completed and self.synced_lyrics:
-                logging.info(f"Sem letra no LRCLib para {info.titulo} - {info.artista}")
-                self._start_transition("metadados mudaram sem letra")
+            else:
+                self._lrclib_fail_until[info.chave] = time.monotonic() + 15.0
+                if self.search_completed and self.synced_lyrics:
+                    logging.info(f"Sem letra no LRCLib para {info.titulo} - {info.artista}")
+                    self._start_transition("metadados mudaram sem letra")
+                else:
+                    logging.info(
+                        f"LRCLib miss via metadados ({info.titulo} - {info.artista}); "
+                        "Shazam pode tentar com outro nome"
+                    )
         finally:
             self._media_busy = False
 
@@ -579,61 +673,108 @@ class MusicManager:
             logging.error(f"Shazam recognition error: {e}")
             return None, None, 0.0, ""
 
-    def fetch_lyrics_lrclib(self, artist: str, song: str) -> Optional[List[Dict[str, Any]]]:
-        """Fetches synchronized lyrics from the LRCLIB API."""
-        headers = {"User-Agent": "FrontLineLyricsApp/1.0.0"}
-        
-        def extract_lines(synced_lyrics: str) -> List[Dict[str, Any]]:
-            lines = []
-            pattern = re.compile(r'\[(\d{2,}):(\d{2}(?:\.\d{1,3})?)\](.*)')
-            for line in synced_lyrics.split('\n'):
-                match = pattern.match(line)
-                if match:
-                    timestamp = (int(match.group(1)) * 60) + float(match.group(2))
-                    text = match.group(3).strip()
-                    if text: lines.append({"timestamp": timestamp, "text": text})
-            return lines
+    def fetch_lyrics_from_candidates(self, pairs: List[Tuple[str, str]]) -> Optional[List[Dict[str, Any]]]:
+        """Tenta vários (artista, título) até o LRCLib devolver letra sincronizada."""
+        seen = set()
+        for artist, song in pairs:
+            key = ((artist or "").lower().strip(), (song or "").lower().strip())
+            if not key[1] or key in seen:
+                continue
+            seen.add(key)
+            lines = self.fetch_lyrics_lrclib(artist, song)
+            if lines:
+                return lines
+        return None
 
-        clean_song = re.sub(r'\([^)]*\)', '', song).strip()
-        clean_artist = artist.split('feat.')[0].split('&')[0].strip()
+    def fetch_lyrics_lrclib(self, artist: str, song: str) -> Optional[List[Dict[str, Any]]]:
+        """Fetches synchronized lyrics from the LRCLIB API.
+
+        Exact /api/get first (rápido quando o nome é o do Spotify/busca manual),
+        depois /api/search com nome limpo de lixo do Shazam. Timeouts curtos:
+        retry longo em 429 fazia a faixa acabar ainda em SEARCHING.
+        """
+        headers = {"User-Agent": "FrontLineLyricsApp/1.2.0"}
+        clean_artist, clean_song = clean_lrclib_query(artist, song)
+        attempts: List[Tuple[str, str]] = []
+        for pair in ((clean_artist, clean_song), (artist or "", song or "")):
+            key = (pair[0].lower().strip(), pair[1].lower().strip())
+            if not key[1] or key in {(a.lower(), s.lower()) for a, s in attempts}:
+                continue
+            attempts.append(pair)
+        if not attempts:
+            return None
 
         from requests.adapters import HTTPAdapter
         from urllib3.util.retry import Retry
-        
+
         session = requests.Session()
-        retries = Retry(total=2, backoff_factor=1, status_forcelist=[ 429, 500, 502, 503, 504 ])
-        session.mount('https://', HTTPAdapter(max_retries=retries))
+        retries = Retry(
+            total=1,
+            backoff_factor=0.2,
+            status_forcelist=[502, 503, 504],
+        )
+        session.mount("https://", HTTPAdapter(max_retries=retries))
 
-        try:
+        def lookup_get(track: str, who: str) -> Optional[List[Dict[str, Any]]]:
             r = session.get(
-                "https://lrclib.net/api/get", 
-                params={"track_name": clean_song, "artist_name": clean_artist}, 
-                headers=headers, 
-                timeout=10
-            )
-            if r.status_code == 200 and r.json().get("syncedLyrics"):
-                lines = extract_lines(r.json()["syncedLyrics"])
-                if lines: return lines + [{"timestamp": lines[-1]["timestamp"] + 5.0, "text": "End"}]
-        except Exception as e:
-            logging.warning(f"Exact match search failed (lrclib): {e}")
-
-        try:
-            r = session.get(
-                "https://lrclib.net/api/search", 
-                params={"q": f"{clean_song} {clean_artist}"}, 
-                headers=headers, 
-                timeout=10 
+                "https://lrclib.net/api/get",
+                params={"track_name": track, "artist_name": who},
+                headers=headers,
+                timeout=5,
             )
             if r.status_code == 200:
-                results = r.json()
-                for item in results:
-                    if isinstance(item, dict) and item.get("syncedLyrics"):
-                        result_artist = item.get("artistName", "").lower()
-                        if clean_artist.lower() in result_artist or result_artist in clean_artist.lower():
-                            lines = extract_lines(item["syncedLyrics"])
-                            if lines: return lines + [{"timestamp": lines[-1]["timestamp"] + 5.0, "text": "End"}]
-        except Exception as e:
-            logging.warning(f"Broad search failed (lrclib): {e}")
+                payload = r.json()
+                if payload.get("syncedLyrics"):
+                    lines = parse_synced_lrc(payload["syncedLyrics"])
+                    if lines:
+                        return lines
+            return None
+
+        def lookup_search(track: str, who: str, query: str) -> Optional[List[Dict[str, Any]]]:
+            r = session.get(
+                "https://lrclib.net/api/search",
+                params={"q": query},
+                headers=headers,
+                timeout=6,
+            )
+            if r.status_code != 200:
+                return None
+            hit = pick_lrclib_search_hit(r.json(), who, track)
+            if hit and hit.get("syncedLyrics"):
+                lines = parse_synced_lrc(hit["syncedLyrics"])
+                if lines:
+                    return lines
+            return None
+
+        try:
+            for who, track in attempts:
+                try:
+                    lines = lookup_get(track, who)
+                    if lines:
+                        return lines
+                except Exception as e:
+                    logging.warning(f"Exact match search failed (lrclib): {e}")
+
+            who, track = attempts[0]
+            try:
+                lines = lookup_search(track, who, f"{track} {who}".strip())
+                if lines:
+                    return lines
+            except Exception as e:
+                logging.warning(f"Broad search failed (lrclib): {e}")
+
+            if who:
+                try:
+                    lines = lookup_search(track, who, track)
+                    if lines:
+                        return lines
+                except Exception as e:
+                    logging.warning(f"Title-only search failed (lrclib): {e}")
+        finally:
+            try:
+                session.close()
+            except Exception:
+                pass
 
         return None
 
@@ -1005,10 +1146,21 @@ async def background_verification_worker(manager: MusicManager):
         manager.pending_candidate_count = 0
         manager.retry_delay = AUTO_MIN_RETRY_DELAY
 
-        lyrics = await loop.run_in_executor(None, manager.fetch_lyrics_lrclib, new_artist, new_song)
+        # Mesma fonte (LRCLib) que metadado/busca manual. Depois do Shazam o
+        # nome pode ser sujo; se o SMTC já tiver título (Spotify etc.), tenta
+        # esse primeiro — é o caminho rápido. Não descartar a letra se o
+        # SMTC estiver no meio de outra busca (_media_busy): isso deixava a
+        # UI em SEARCHING até a música acabar, regravando 4s + Shazam de novo.
+        queries: List[Tuple[str, str]] = [(new_artist, new_song)]
+        info = manager.watcher.ultima_info
+        if info is not None and info.tocando and info.titulo:
+            queries.insert(0, (info.artista, info.titulo))
 
-        if (manager.session_id == current_session and not manager.search_completed
-                and not manager._media_busy):
+        lyrics = await loop.run_in_executor(
+            None, manager.fetch_lyrics_from_candidates, queries
+        )
+
+        if manager.session_id == current_session and not manager.search_completed:
             if lyrics:
                 offset = _sane_media_position(shazam_offset, fallback=0.0) or 0.0
                 chave = manager._track_key(new_song, new_artist)
@@ -1024,6 +1176,9 @@ async def background_verification_worker(manager: MusicManager):
             else:
                 manager.search_completed = True
                 manager.not_found_since = time.time()
+                logging.info(
+                    f"LRCLib sem letra após Shazam: {new_song} - {new_artist}"
+                )
         await asyncio.sleep(2)
 
 async def run_manual_search(manager: MusicManager, artist: str, song: str, current_session: float):
