@@ -24,6 +24,12 @@
     <None Update="assets\black-button.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="assets\double_arrow_left.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="assets\double_arrow_right.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="assets\help1.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>

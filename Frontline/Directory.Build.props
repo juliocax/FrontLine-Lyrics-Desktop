@@ -1,0 +1,12 @@
+<Project>
+	<PropertyGroup>
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>portable</DebugType>
+	</PropertyGroup>
+	<PropertyGroup Condition="'$(Configuration)'=='Release'">
+		<Optimize>true</Optimize>
+		<DebugSymbols>true</DebugSymbols>
+		<DebugType>portable</DebugType>
+		<!-- NÃO ligar PublishTrimmed / PublishAot -->
+	</PropertyGroup>
+</Project>

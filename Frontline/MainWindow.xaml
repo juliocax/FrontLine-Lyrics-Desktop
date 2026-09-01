@@ -7,6 +7,16 @@
         Topmost="True" ShowInTaskbar="True" MouseLeftButtonDown="Window_MouseLeftButtonDown">
 
     <Window.Resources>
+        <!-- Halo atrás da letra: glow escuro (ShadowDepth=0), para leitura sobre
+             conteúdo claro quando o overlay flutua. Contribuição de Warith Adetayo. -->
+        <Style x:Key="LyricHalo" TargetType="TextBlock">
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect Color="Black" BlurRadius="12" ShadowDepth="0" Opacity="0.85"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style x:Key="ToggleSwitchStyle" TargetType="ToggleButton">
             <Setter Property="Background" Value="#33FFFFFF"/>
             <Setter Property="BorderBrush" Value="#55FFFFFF"/>
@@ -87,6 +97,13 @@
                     </ControlTemplate>
                 </Setter.Value>
             </Setter>
+        </Style>
+
+        <Style x:Key="SkipGlyph" TargetType="Rectangle">
+            <Setter Property="Width" Value="16"/>
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="Fill" Value="#E0E0E0"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
         </Style>
 
         <Style x:Key="ImageOverlayButtonStyle" TargetType="Button">
@@ -177,6 +194,29 @@
                                 <Setter TargetName="BgBorder" Property="Background" Value="#4D7A53E4"/>
                                 <Setter TargetName="BgBorder" Property="BorderBrush" Value="#907A53E4"/>
                                 <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="HistoryHeader" TargetType="GridViewColumnHeader">
+            <Setter Property="Background" Value="#18FFFFFF"/>
+            <Setter Property="Foreground" Value="#AAFFFFFF"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GridViewColumnHeader">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" BorderBrush="#22FFFFFF" BorderThickness="0,0,1,1">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#28FFFFFF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -387,17 +427,17 @@
 
                     <Grid x:Name="LyricsNormalView" Grid.Row="0" IsHitTestVisible="False">
                         <StackPanel VerticalAlignment="Center">
-                            <TextBlock x:Name="LblPrevious" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                            <TextBlock x:Name="LblCurrent" Foreground="#FFCC33" FontSize="26" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
-                            <TextBlock x:Name="LblCurrentOriginal" Foreground="#99FFFFFF" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/>
-                            <TextBlock x:Name="LblNext" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                            <TextBlock x:Name="LblPrevious" Style="{StaticResource LyricHalo}" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                            <TextBlock x:Name="LblCurrent" Style="{StaticResource LyricHalo}" Foreground="#FFCC33" FontSize="26" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
+                            <TextBlock x:Name="LblCurrentOriginal" Style="{StaticResource LyricHalo}" Foreground="#99FFFFFF" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/>
+                            <TextBlock x:Name="LblNext" Style="{StaticResource LyricHalo}" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0"/>
                         </StackPanel>
                     </Grid>
 
                     <ListBox x:Name="FullLyricsList" Grid.Row="0" Visibility="Collapsed" Background="Transparent" BorderThickness="0" ScrollViewer.VerticalScrollBarVisibility="Hidden" HorizontalContentAlignment="Stretch" SelectionChanged="FullLyricsList_SelectionChanged">
                         <ListBox.ItemTemplate>
                             <DataTemplate>
-                                <TextBlock Text="{Binding Text}" Foreground="#AAAAAA" FontSize="16" TextAlignment="Center" TextWrapping="Wrap" Padding="0,8" Cursor="Hand"/>
+                                <TextBlock Text="{Binding Text}" Style="{StaticResource LyricHalo}" Foreground="#AAAAAA" FontSize="16" TextAlignment="Center" TextWrapping="Wrap" Padding="0,8" Cursor="Hand"/>
                             </DataTemplate>
                         </ListBox.ItemTemplate>
                         <ListBox.ItemContainerStyle>
@@ -439,18 +479,22 @@
                     </Grid>
 
                     <StackPanel x:Name="PlayingControls" Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0" Visibility="Collapsed">
-                        <Button x:Name="BtnPrevTrack" Content="⏮" Style="{StaticResource SquareGlassButton}" Padding="12,6" FontSize="12" Margin="0,0,6,0" Click="BtnPrevTrack_Click" ToolTip="Previous track"/>
+                        <Button x:Name="BtnPrevTrack" Style="{StaticResource SquareGlassButton}" Padding="10,8" MinWidth="36" Margin="0,0,6,0" Click="BtnPrevTrack_Click" ToolTip="Previous track">
+                            <Rectangle x:Name="ImgPrevTrack" Style="{StaticResource SkipGlyph}"/>
+                        </Button>
                         <Button x:Name="BtnListenSide" Content="LISTEN" Style="{StaticResource SquareGlassButton}" Padding="15,6" FontSize="10" Margin="0,0,6,0" Click="BtnListen_Click"/>
                         <ToggleButton x:Name="BtnAutoSide" Content="AUTO" Style="{StaticResource ToggleSwitchStyle}" Click="BtnAuto_Click" Margin="0,0,10,0"/>
                         <Button x:Name="BtnResetSide" Content="CLEAR" Style="{StaticResource SquareGlassButton}" Padding="15,6" FontSize="10" Click="BtnReset_Click"/>
                         <Button x:Name="BtnSearchSide" Content="⌕" Style="{StaticResource SquareGlassButton}" Padding="15,6" FontSize="12" Margin="6,0,6,0" Click="BtnSearchShow_Click"/>
-                        <Button x:Name="BtnNextTrack" Content="⏭" Style="{StaticResource SquareGlassButton}" Padding="12,6" FontSize="12" Click="BtnNextTrack_Click" ToolTip="Next track"/>
+                        <Button x:Name="BtnNextTrack" Style="{StaticResource SquareGlassButton}" Padding="10,8" MinWidth="36" Click="BtnNextTrack_Click" ToolTip="Next track">
+                            <Rectangle x:Name="ImgNextTrack" Style="{StaticResource SkipGlyph}"/>
+                        </Button>
                     </StackPanel>
 
                     <Viewbox x:Name="HomeControls" Grid.RowSpan="2" Visibility="Visible" StretchDirection="DownOnly" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,10,0">
                         <Border Background="#FA0A0A0A" BorderBrush="#50FFFFFF" BorderThickness="1" CornerRadius="25" Padding="15,8">
                             <StackPanel Orientation="Horizontal">
-                                <Button x:Name="BtnReleaseNotes" Content="FRONTLINE LYRICS v1.1.0" Style="{StaticResource VersionLinkButtonStyle}" Margin="5,0,20,0" Click="BtnReleaseNotes_Click" ToolTip="See what's new in this version"/>
+                                <Button x:Name="BtnReleaseNotes" Content="FRONTLINE LYRICS v1.2.0" Style="{StaticResource VersionLinkButtonStyle}" Margin="5,0,20,0" Click="BtnReleaseNotes_Click" ToolTip="See what's new in this version"/>
                                 <Button x:Name="BtnListenBig" Content="▶ LISTEN" Style="{StaticResource GlassButton}" Margin="0,0,8,0" Click="BtnListen_Click"/>
                                 <Button x:Name="BtnSearchBig" Content="⌕ SEARCH" Style="{StaticResource GlassButton}" Margin="0,0,12,0" Click="BtnSearchShow_Click"/>
                                 <Rectangle Width="1" Fill="#33FFFFFF" Margin="0,5,12,5"/>
@@ -460,17 +504,93 @@
                         </Border>
                     </Viewbox>
                 </Grid>
-
-                <StackPanel x:Name="TopRightControls" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-10,-10,0">
-                    <ToggleButton x:Name="BtnMenu" Content="⋮" Width="30" Height="30" Style="{StaticResource SoberToggle}" Cursor="Hand" FontSize="18" FontWeight="Bold"/>
-                    <Button x:Name="BtnMinimize" Content="—" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="12" FontWeight="Bold" Click="BtnMinimize_Click"/>
-                    <Button x:Name="BtnRestore" Content="❐" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="14" Visibility="Collapsed" Click="BtnRestore_Click"/>
-                    <Button x:Name="BtnCloseTop" Content="✕" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="12" FontWeight="Bold" Click="BtnExit_Click"/>
-                </StackPanel>
             </Grid>
         </Border>
 
-        <Thumb x:Name="ResizeGrip" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" DragStarted="ResizeGrip_DragStarted" DragDelta="ResizeGrip_DragDelta" DragCompleted="ResizeGrip_DragCompleted">
+        <Grid x:Name="SearchInputPanel" Visibility="Collapsed" Background="#F2050505" ClipToBounds="True">
+            <Border x:Name="SearchContentBorder" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Margin="16,42,16,16" Background="#FF0A0A0A" Padding="18">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="0.38*" MinWidth="180"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="0.62*" MinWidth="180"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" VerticalAlignment="Top">
+                        <TextBlock x:Name="LblManualSearchTitle" Text="MANUAL SEARCH" Foreground="#888" FontSize="10" Margin="0,0,0,16" FontWeight="Bold"/>
+
+                        <TextBlock x:Name="LblArtistSearch" Text="Artist:" Foreground="#888" FontSize="10" Margin="0,0,0,2"/>
+                        <TextBox x:Name="TxtArtist" Background="#111" Foreground="White" BorderBrush="#333" Margin="0,0,0,10" Padding="6" KeyDown="TxtSearch_KeyDown"/>
+
+                        <TextBlock x:Name="LblSongSearch" Text="Song:" Foreground="#888" FontSize="10" Margin="0,0,0,2"/>
+                        <TextBox x:Name="TxtSong" Background="#111" Foreground="White" BorderBrush="#333" Margin="0,0,0,16" Padding="6" KeyDown="TxtSearch_KeyDown"/>
+
+                        <UniformGrid Columns="2">
+                            <Button x:Name="BtnFindSearch" Content="FIND" Style="{StaticResource GlassButton}" Margin="0,0,4,0" Click="BtnManualSearch_Execute"/>
+                            <Button x:Name="BtnCancelSearch" Content="CANCEL" Style="{StaticResource GlassButton}" Margin="4,0,0,0" Click="BtnSearchCancel_Click"/>
+                        </UniformGrid>
+                    </StackPanel>
+
+                    <Rectangle Grid.Column="1" Width="1" Fill="#22FFFFFF" HorizontalAlignment="Center"/>
+
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="LblSearchHistoryTitle" Text="SEARCH HISTORY" Foreground="#888" FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
+                        <ListView x:Name="SearchHistoryList" Grid.Row="1"
+                                  Background="Transparent" BorderThickness="0" Foreground="#E0E0E0"
+                                  FontSize="12" SelectionMode="Single"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  GridViewColumnHeader.Click="HistoryHeader_Click"
+                                  PreviewMouseLeftButtonUp="HistoryList_PreviewMouseLeftButtonUp">
+                            <ListView.Resources>
+                                <Style TargetType="GridViewColumnHeader" BasedOn="{StaticResource HistoryHeader}"/>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Foreground" Value="#E0E0E0"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Padding" Value="0,2"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#18FFFFFF"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#287A53E4"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListView.Resources>
+                            <ListView.View>
+                                <GridView AllowsColumnReorder="False">
+                                    <GridViewColumn x:Name="ColHistoryArtist" Header="Artist" Width="140" DisplayMemberBinding="{Binding Artist}"/>
+                                    <GridViewColumn x:Name="ColHistorySong" Header="Song" Width="160" DisplayMemberBinding="{Binding Song}"/>
+                                    <GridViewColumn x:Name="ColHistoryDate" Header="Date" Width="130" DisplayMemberBinding="{Binding DateLabel}"/>
+                                    <GridViewColumn x:Name="ColHistoryDelete" Header="" Width="40">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="✕" Width="28" Height="24" Padding="0" FontSize="10"
+                                                        Style="{StaticResource SquareGlassButton}"
+                                                        Click="BtnHistoryDelete_Click"
+                                                        ToolTip="Remove"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                        <TextBlock x:Name="LblSearchHistoryEmpty" Grid.Row="1" Text="No searches yet."
+                                   Foreground="#66FFFFFF" FontSize="12" TextWrapping="Wrap"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   IsHitTestVisible="False"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Thumb x:Name="ResizeGrip" Panel.ZIndex="40" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" DragStarted="ResizeGrip_DragStarted" DragDelta="ResizeGrip_DragDelta" DragCompleted="ResizeGrip_DragCompleted">
             <Thumb.Template>
                 <ControlTemplate TargetType="Thumb">
                     <Grid Background="Transparent">
@@ -480,23 +600,12 @@
             </Thumb.Template>
         </Thumb>
 
-        <Border x:Name="SearchInputPanel" Visibility="Collapsed" Background="#F2050505" CornerRadius="12" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center" BorderBrush="#44FFFFFF" BorderThickness="1">
-            <StackPanel Width="220">
-                <TextBlock x:Name="LblManualSearchTitle" Text="MANUAL SEARCH" Foreground="#888" FontSize="10" Margin="0,0,0,15" FontWeight="Bold" HorizontalAlignment="Center"/>
-
-                <TextBlock x:Name="LblArtistSearch" Text="Artist:" Foreground="#888" FontSize="10" Margin="0,0,0,2"/>
-                <TextBox x:Name="TxtArtist" Background="#111" Foreground="White" BorderBrush="#333" Margin="0,0,0,8" Padding="6" KeyDown="TxtSearch_KeyDown"/>
-
-                <TextBlock x:Name="LblSongSearch" Text="Song:" Foreground="#888" FontSize="10" Margin="0,0,0,2"/>
-                <TextBox x:Name="TxtSong" Background="#111" Foreground="White" BorderBrush="#333" Margin="0,0,0,15" Padding="6" KeyDown="TxtSearch_KeyDown"/>
-
-                <UniformGrid Columns="2">
-                    <Button x:Name="BtnFindSearch" Content="FIND" Style="{StaticResource GlassButton}" Margin="0,0,4,0" Click="BtnManualSearch_Execute"/>
-                    <Button x:Name="BtnCancelSearch" Content="CANCEL" Style="{StaticResource GlassButton}" Margin="4,0,0,0" Click="BtnSearchCancel_Click"/>
-                </UniformGrid>
-
-            </StackPanel>
-        </Border>
+        <StackPanel x:Name="TopRightControls" Panel.ZIndex="40" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
+            <ToggleButton x:Name="BtnMenu" Content="⋮" Width="30" Height="30" Style="{StaticResource SoberToggle}" Cursor="Hand" FontSize="18" FontWeight="Bold"/>
+            <Button x:Name="BtnMinimize" Content="—" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="12" FontWeight="Bold" Click="BtnMinimize_Click"/>
+            <Button x:Name="BtnRestore" Content="❐" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="14" Visibility="Collapsed" Click="BtnRestore_Click"/>
+            <Button x:Name="BtnCloseTop" Content="✕" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="12" FontWeight="Bold" Click="BtnExit_Click"/>
+        </StackPanel>
 
         <Popup x:Name="SettingsPopup" IsOpen="{Binding IsChecked, ElementName=BtnMenu}" StaysOpen="False" PlacementTarget="{Binding ElementName=BtnMenu}" Placement="Bottom" HorizontalOffset="-170" VerticalOffset="10" AllowsTransparency="True" Closed="SettingsPopup_Closed">
             <Border x:Name="MenuScaleBorder" Background="#FF0A0A0A" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Padding="15" Width="210">
@@ -553,19 +662,19 @@
             </Border>
         </Popup>
 
-        <Border x:Name="OpacityPreviewOverlay" Visibility="Collapsed" CornerRadius="12" IsHitTestVisible="False">
+        <Border x:Name="OpacityPreviewOverlay" Panel.ZIndex="45" Visibility="Collapsed" CornerRadius="12" IsHitTestVisible="False">
             <Grid Margin="20">
                 <TextBlock x:Name="LblPreviewTag" Text="PREVIEW" Foreground="#33FFFFFF" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Top"/>
                 <StackPanel VerticalAlignment="Center">
-                    <TextBlock x:Name="LblPreviewPrevious" Foreground="#777777" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                    <TextBlock x:Name="LblPreviewCurrent" Foreground="#FFCC33" FontSize="26" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
-                    <TextBlock x:Name="LblPreviewCurrentOriginal" Foreground="#B3FFFFFF" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/>
-                    <TextBlock x:Name="LblPreviewNext" Foreground="#777777" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                    <TextBlock x:Name="LblPreviewPrevious" Style="{StaticResource LyricHalo}" Foreground="#777777" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="LblPreviewCurrent" Style="{StaticResource LyricHalo}" Foreground="#FFCC33" FontSize="26" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="LblPreviewCurrentOriginal" Style="{StaticResource LyricHalo}" Foreground="#B3FFFFFF" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/>
+                    <TextBlock x:Name="LblPreviewNext" Style="{StaticResource LyricHalo}" Foreground="#777777" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0"/>
                 </StackPanel>
             </Grid>
         </Border>
 
-        <Grid x:Name="HelpOverlay" Visibility="Collapsed" Background="#F2050505">
+        <Grid x:Name="HelpOverlay" Panel.ZIndex="50" Visibility="Collapsed" Background="#F2050505">
             <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Margin="20" Background="#111">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -581,7 +690,8 @@
                     </StackPanel>
 
                     <Grid Margin="15">
-                        <Image x:Name="HelpImage" Stretch="Uniform"/>
+                        <Image x:Name="HelpImage" Stretch="Uniform" SnapsToDevicePixels="True" UseLayoutRounding="True"
+                               RenderOptions.BitmapScalingMode="HighQuality"/>
                         <ItemsControl x:Name="HelpTextContainer" IsHitTestVisible="True">
                             <ItemsControl.ItemsPanel>
                                 <ItemsPanelTemplate>
