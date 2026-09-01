@@ -215,6 +215,12 @@ namespace FrontLineOverlay
             SettingsExtras.Visibility = previewing ? Visibility.Collapsed : Visibility.Visible;
             SettingsExtras2.Visibility = previewing ? Visibility.Collapsed : Visibility.Visible;
             LblSettingsTitle.Visibility = previewing ? Visibility.Collapsed : Visibility.Visible;
+            if (SearchInputPanel != null)
+            {
+                bool searchOpen = SearchInputPanel.Visibility == Visibility.Visible;
+                SearchInputPanel.Opacity = (previewing && searchOpen) ? 0 : 1;
+                SearchInputPanel.IsHitTestVisible = !(previewing && searchOpen);
+            }
         }
 
         private void OpacityPreviewTimer_Tick(object? sender, EventArgs e)
@@ -233,12 +239,17 @@ namespace FrontLineOverlay
 
         private void SldFontSize_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
-            if (MainBorder != null)
-            {
-                double scale = e.NewValue / 26.0;
-                MainBorder.LayoutTransform = new ScaleTransform(scale, scale);
-            }
+            ApplyFontScale(e.NewValue);
             if (!_loadingSettings) ScheduleSave();
+        }
+
+        private void ApplyFontScale(double fontSize)
+        {
+            double scale = fontSize / 26.0;
+            if (MainBorder != null)
+                MainBorder.LayoutTransform = new ScaleTransform(scale, scale);
+            if (SearchContentBorder != null)
+                SearchContentBorder.LayoutTransform = new ScaleTransform(scale, scale);
         }
 
         private void BtnResetFont_Click(object sender, RoutedEventArgs e)
@@ -547,7 +558,7 @@ namespace FrontLineOverlay
             long extendedStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE).ToInt64();
             const long transparentBit = 0x20L;
 
-            if (currentAppStatus == "IDLE")
+            if (currentAppStatus == "IDLE" || SearchInputPanel.Visibility == Visibility.Visible)
             {
                 SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(extendedStyle & ~transparentBit));
                 MainBorder.Background = new SolidColorBrush(Color.FromArgb(255, 10, 10, 10));
@@ -589,7 +600,7 @@ namespace FrontLineOverlay
 
         private void ResizeGrip_DragStarted(object sender, DragStartedEventArgs e)
         {
-            if (currentAppStatus != "IDLE")
+            if (currentAppStatus != "IDLE" && SearchInputPanel.Visibility != Visibility.Visible)
             {
                 isResizing = true;
                 SidePanelCol.Width = new GridLength(0);
@@ -605,7 +616,8 @@ namespace FrontLineOverlay
         private void ResizeGrip_DragCompleted(object sender, DragCompletedEventArgs e)
         {
             isResizing = false;
-            if (currentAppStatus != "IDLE") UpdateVisualState(isGhostMode);
+            if (currentAppStatus != "IDLE" && SearchInputPanel.Visibility != Visibility.Visible)
+                UpdateVisualState(isGhostMode);
         }
 
         private async Task ConnectWebSocket()
@@ -1035,6 +1047,8 @@ namespace FrontLineOverlay
                     SendCommand("RESET");
                 }
                 SearchInputPanel.Visibility = Visibility.Visible;
+                ResizeGrip.Visibility = Visibility.Visible;
+                TopRightControls.Visibility = Visibility.Visible;
                 RefreshHistoryEmptyState();
                 Dispatcher.BeginInvoke(() =>
                 {
@@ -1205,7 +1219,7 @@ namespace FrontLineOverlay
         {
             try
             {
-                Process.Start(new ProcessStartInfo("https://buymeacoffee.com/juliocax/frontline-lyrics-1-1-0") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo("https://buymeacoffee.com/juliocax/frontline-lyrics-1-2-0") { UseShellExecute = true });
             }
             catch (Exception ex)
             {

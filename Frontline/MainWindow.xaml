@@ -504,28 +504,11 @@
                         </Border>
                     </Viewbox>
                 </Grid>
-
-                <StackPanel x:Name="TopRightControls" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,-10,-10,0">
-                    <ToggleButton x:Name="BtnMenu" Content="⋮" Width="30" Height="30" Style="{StaticResource SoberToggle}" Cursor="Hand" FontSize="18" FontWeight="Bold"/>
-                    <Button x:Name="BtnMinimize" Content="—" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="12" FontWeight="Bold" Click="BtnMinimize_Click"/>
-                    <Button x:Name="BtnRestore" Content="❐" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="14" Visibility="Collapsed" Click="BtnRestore_Click"/>
-                    <Button x:Name="BtnCloseTop" Content="✕" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="12" FontWeight="Bold" Click="BtnExit_Click"/>
-                </StackPanel>
             </Grid>
         </Border>
 
-        <Thumb x:Name="ResizeGrip" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" DragStarted="ResizeGrip_DragStarted" DragDelta="ResizeGrip_DragDelta" DragCompleted="ResizeGrip_DragCompleted">
-            <Thumb.Template>
-                <ControlTemplate TargetType="Thumb">
-                    <Grid Background="Transparent">
-                        <Path Data="M 16,4 L 4,16 M 16,9 L 9,16 M 16,14 L 14,16" Stroke="#555555" StrokeThickness="2"/>
-                    </Grid>
-                </ControlTemplate>
-            </Thumb.Template>
-        </Thumb>
-
-        <Grid x:Name="SearchInputPanel" Visibility="Collapsed" Background="#F2050505">
-            <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Margin="16" Background="#FF0A0A0A" Padding="18">
+        <Grid x:Name="SearchInputPanel" Visibility="Collapsed" Background="#F2050505" ClipToBounds="True">
+            <Border x:Name="SearchContentBorder" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Margin="16,42,16,16" Background="#FF0A0A0A" Padding="18">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="0.38*" MinWidth="180"/>
@@ -607,6 +590,23 @@
             </Border>
         </Grid>
 
+        <Thumb x:Name="ResizeGrip" Panel.ZIndex="40" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" DragStarted="ResizeGrip_DragStarted" DragDelta="ResizeGrip_DragDelta" DragCompleted="ResizeGrip_DragCompleted">
+            <Thumb.Template>
+                <ControlTemplate TargetType="Thumb">
+                    <Grid Background="Transparent">
+                        <Path Data="M 16,4 L 4,16 M 16,9 L 9,16 M 16,14 L 14,16" Stroke="#555555" StrokeThickness="2"/>
+                    </Grid>
+                </ControlTemplate>
+            </Thumb.Template>
+        </Thumb>
+
+        <StackPanel x:Name="TopRightControls" Panel.ZIndex="40" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
+            <ToggleButton x:Name="BtnMenu" Content="⋮" Width="30" Height="30" Style="{StaticResource SoberToggle}" Cursor="Hand" FontSize="18" FontWeight="Bold"/>
+            <Button x:Name="BtnMinimize" Content="—" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="12" FontWeight="Bold" Click="BtnMinimize_Click"/>
+            <Button x:Name="BtnRestore" Content="❐" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="14" Visibility="Collapsed" Click="BtnRestore_Click"/>
+            <Button x:Name="BtnCloseTop" Content="✕" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="12" FontWeight="Bold" Click="BtnExit_Click"/>
+        </StackPanel>
+
         <Popup x:Name="SettingsPopup" IsOpen="{Binding IsChecked, ElementName=BtnMenu}" StaysOpen="False" PlacementTarget="{Binding ElementName=BtnMenu}" Placement="Bottom" HorizontalOffset="-170" VerticalOffset="10" AllowsTransparency="True" Closed="SettingsPopup_Closed">
             <Border x:Name="MenuScaleBorder" Background="#FF0A0A0A" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Padding="15" Width="210">
                 <StackPanel>
@@ -662,7 +662,7 @@
             </Border>
         </Popup>
 
-        <Border x:Name="OpacityPreviewOverlay" Visibility="Collapsed" CornerRadius="12" IsHitTestVisible="False">
+        <Border x:Name="OpacityPreviewOverlay" Panel.ZIndex="45" Visibility="Collapsed" CornerRadius="12" IsHitTestVisible="False">
             <Grid Margin="20">
                 <TextBlock x:Name="LblPreviewTag" Text="PREVIEW" Foreground="#33FFFFFF" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Top"/>
                 <StackPanel VerticalAlignment="Center">
@@ -674,7 +674,7 @@
             </Grid>
         </Border>
 
-        <Grid x:Name="HelpOverlay" Visibility="Collapsed" Background="#F2050505">
+        <Grid x:Name="HelpOverlay" Panel.ZIndex="50" Visibility="Collapsed" Background="#F2050505">
             <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Margin="20" Background="#111">
                 <Grid>
                     <Grid.RowDefinitions>
