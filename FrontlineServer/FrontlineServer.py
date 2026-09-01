@@ -1069,6 +1069,12 @@ async def ws_handler(websocket):
                     if manager.auto_mode and not manager.is_listening:
                         manager.reset_state()
                         manager.is_listening = True
+                elif action == "AUTO_SET":
+                    manager._release_auto_hold()
+                    manager.auto_mode = bool(command.get("on", False))
+                    if manager.auto_mode and not manager.is_listening:
+                        manager.reset_state()
+                        manager.is_listening = True
                 elif action == "RESET":
                     # hold_auto vem do C#; Limpar sempre segura a faixa atual
                     # mesmo se o campo faltar (compatível com builds antigas).

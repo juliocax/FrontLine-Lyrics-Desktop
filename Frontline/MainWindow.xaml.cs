@@ -16,6 +16,9 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
+using System.Linq;
+using System.Collections.ObjectModel;
+using System.Windows.Data;
 using System.Windows.Input;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
@@ -50,6 +53,7 @@ namespace FrontLineOverlay
         private const uint KEYEVENTF_KEYUP = 0x0002;
         private const int MaxWsMessageBytes = 512_000;
         private const int CoverDecodeWidth = 260;
+        private const int SkipIconDecodeWidth = 64;
         private const int MaxPythonRestarts = 5;
 
         [StructLayout(LayoutKind.Sequential)] public struct Win32Point { public int X; public int Y; }
@@ -88,6 +92,10 @@ namespace FrontLineOverlay
         private bool _suppressWindowSave;
         private bool _wantAuto;
         private bool _autoSyncedWithServer;
+        private readonly ObservableCollection<SearchHistoryEntry> _searchHistory = [];
+        private ICollectionView? _historyView;
+        private string _historySort = "Date";
+        private ListSortDirection _historyDir = ListSortDirection.Descending;
 
         private int helpIndex = 1;
         private readonly int maxHelpImages = 7;
@@ -109,7 +117,10 @@ namespace FrontLineOverlay
                 { "MockPrevious", "♪ this is a preview line ♪" }, { "MockCurrent", "This is how your lyrics will look" },
                 { "MockNext", "♪ next line preview ♪" }, { "MockCurrentOriginal", "(original) this is a preview line" },
                 { "DonateTip", "Leave an optional tip" }, { "ReleaseNotesTooltip", "See what's new in this version" },
-                { "PrevTrack", "Previous track" }, { "NextTrack", "Next track" }
+                { "PrevTrack", "Previous track" }, { "NextTrack", "Next track" },
+                { "SearchHistory", "SEARCH HISTORY" }, { "HistoryArtist", "Artist" },
+                { "HistorySong", "Song" }, { "HistoryDate", "Date" },
+                { "HistoryEmpty", "No searches yet." }, { "HistoryRemove", "Remove" }
             }},
             { "pt", new() {
                 { "Listen", "OUVIR" }, { "Search", "⌕ BUSCAR" }, { "ManualSearch", "BUSCA MANUAL" },
@@ -123,7 +134,10 @@ namespace FrontLineOverlay
                 { "MockPrevious", "♪ esta é uma linha de exemplo ♪" }, { "MockCurrent", "É assim que sua letra vai aparecer" },
                 { "MockNext", "♪ próxima linha de exemplo ♪" }, { "MockCurrentOriginal", "(original) esta é uma linha de exemplo" },
                 { "DonateTip", "Deixe uma gorjeta opcional" }, { "ReleaseNotesTooltip", "Veja as novidades desta versão" },
-                { "PrevTrack", "Faixa anterior" }, { "NextTrack", "Próxima faixa" }
+                { "PrevTrack", "Faixa anterior" }, { "NextTrack", "Próxima faixa" },
+                { "SearchHistory", "HISTÓRICO DE BUSCA" }, { "HistoryArtist", "Artista" },
+                { "HistorySong", "Música" }, { "HistoryDate", "Data" },
+                { "HistoryEmpty", "Nenhuma busca ainda." }, { "HistoryRemove", "Remover" }
             }},
             { "es", new() {
                 { "Listen", "ESCUCHAR" }, { "Search", "⌕ BUSCAR" }, { "ManualSearch", "BÚSQUEDA MANUAL" },
@@ -137,7 +151,10 @@ namespace FrontLineOverlay
                 { "MockPrevious", "♪ esta es una línea de ejemplo ♪" }, { "MockCurrent", "Así se verá tu letra" },
                 { "MockNext", "♪ próxima línea de ejemplo ♪" }, { "MockCurrentOriginal", "(original) esta es una línea de ejemplo" },
                 { "DonateTip", "Deja una propina opcional" }, { "ReleaseNotesTooltip", "Ver las novedades de esta versión" },
-                { "PrevTrack", "Pista anterior" }, { "NextTrack", "Pista siguiente" }
+                { "PrevTrack", "Pista anterior" }, { "NextTrack", "Pista siguiente" },
+                { "SearchHistory", "HISTORIAL DE BÚSQUEDA" }, { "HistoryArtist", "Artista" },
+                { "HistorySong", "Canción" }, { "HistoryDate", "Fecha" },
+                { "HistoryEmpty", "Aún no hay búsquedas." }, { "HistoryRemove", "Quitar" }
             }}
         };
 
@@ -257,6 +274,7 @@ namespace FrontLineOverlay
             _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); PersistSettings(); };
 
             RestoreFontAndAuto();
+            InitSearchHistory();
 
             _mouseTracker.Tick += MouseTracker_Tick;
             _mouseTracker.Start();
@@ -464,6 +482,10 @@ namespace FrontLineOverlay
             BtnReleaseNotes.ToolTip = t["ReleaseNotesTooltip"];
             BtnPrevTrack.ToolTip = t["PrevTrack"];
             BtnNextTrack.ToolTip = t["NextTrack"];
+            LblSearchHistoryTitle.Text = t["SearchHistory"];
+            LblSearchHistoryEmpty.Text = t["HistoryEmpty"];
+            RefreshHistoryHeaders();
+            RefreshHistoryDateLabels();
 
             UpdateHelpImage();
 
@@ -521,12 +543,13 @@ namespace FrontLineOverlay
             isGhostMode = enableGhost;
             IntPtr hwnd = new WindowInteropHelper(this).Handle;
             if (hwnd == IntPtr.Zero) return;
-            int WS_EX_TRANSPARENT = 0x00000020, GWL_EXSTYLE = -20;
-            IntPtr extendedStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE);
+            int GWL_EXSTYLE = -20;
+            long extendedStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE).ToInt64();
+            const long transparentBit = 0x20L;
 
             if (currentAppStatus == "IDLE")
             {
-                SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(extendedStyle.ToInt64() & ~WS_EX_TRANSPARENT));
+                SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(extendedStyle & ~transparentBit));
                 MainBorder.Background = new SolidColorBrush(Color.FromArgb(255, 10, 10, 10));
                 MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(34, 255, 255, 255));
                 SidePanelCol.Width = new GridLength(35, GridUnitType.Star);
@@ -538,7 +561,7 @@ namespace FrontLineOverlay
             }
             else if (isGhostMode)
             {
-                SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(extendedStyle.ToInt64() | WS_EX_TRANSPARENT));
+                SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(extendedStyle | transparentBit));
 
                 byte alpha = (byte)(255 * bgOpacity);
                 MainBorder.Background = new SolidColorBrush(Color.FromArgb(alpha, 5, 5, 5));
@@ -552,7 +575,7 @@ namespace FrontLineOverlay
             }
             else
             {
-                SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(extendedStyle.ToInt64() & ~WS_EX_TRANSPARENT));
+                SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(extendedStyle & ~transparentBit));
                 MainBorder.Background = new SolidColorBrush(Color.FromArgb(255, 10, 10, 10));
                 MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(34, 255, 255, 255));
                 SidePanelCol.Width = new GridLength(35, GridUnitType.Star);
@@ -805,33 +828,112 @@ namespace FrontLineOverlay
         {
             try
             {
-                Color fill = Color.FromRgb(0xE0, 0xE0, 0xE0);
-                ImgPrevTrack.Source = LoadAssetSvg("double_arrow_left.svg", fill);
-                ImgNextTrack.Source = LoadAssetSvg("double_arrow_right.svg", fill);
+                ApplySkipGlyph(ImgPrevTrack, LoadSkipIcon("double_arrow_left"));
+                ApplySkipGlyph(ImgNextTrack, LoadSkipIcon("double_arrow_right"));
             }
             catch (Exception ex) { CrashReporter.Log(ex, "LoadSkipIcons"); }
         }
 
-        private static ImageSource? LoadAssetSvg(string fileName, Color fill)
+        private static void ApplySkipGlyph(System.Windows.Shapes.Rectangle target, ImageSource? source)
         {
-            string disk = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", fileName);
-            DrawingImage? drawing = SvgGlyph.TryLoadFile(disk, fill);
-            if (drawing != null) return drawing;
+            if (source == null)
+            {
+                target.OpacityMask = null;
+                target.Fill = Brushes.Transparent;
+                return;
+            }
+            // OpacityMask usa o alfa do arquivo: PNG preto ou branco no fundo
+            // transparente vira a seta na cor do botão (#E0E0E0).
+            var mask = new ImageBrush(source) { Stretch = Stretch.Uniform };
+            if (mask.CanFreeze) mask.Freeze();
+            target.OpacityMask = mask;
+            target.Fill = new SolidColorBrush(Color.FromRgb(0xE0, 0xE0, 0xE0));
+        }
 
+        private static ImageSource? LoadSkipIcon(string stem)
+        {
+            foreach (string name in new[] { stem + ".png", stem + ".svg" })
+            {
+                string? disk = FindAssetFile(name);
+                if (disk == null) continue;
+                ImageSource? src = LoadSkipFile(disk);
+                if (src != null) return src;
+            }
+
+            foreach (string name in new[] { stem + ".png", stem + ".svg" })
+            {
+                ImageSource? packed = TryLoadPackedSkip(name);
+                if (packed != null) return packed;
+            }
+
+            CrashReporter.Info($"Ícone de skip ausente: {stem}.png / {stem}.svg");
+            return null;
+        }
+
+        private static ImageSource? LoadSkipFile(string path)
+        {
             try
             {
-                var uri = new Uri($"pack://application:,,,/assets/{fileName}", UriKind.Absolute);
-                var streamInfo = Application.GetResourceStream(uri);
-                if (streamInfo?.Stream != null)
-                {
-                    using var reader = new StreamReader(streamInfo.Stream);
-                    return SvgGlyph.TryParse(reader.ReadToEnd(), fill);
-                }
-            }
-            catch (Exception ex) { CrashReporter.Log(ex, "LoadAssetSvg.pack"); }
+                if (path.EndsWith(".png", StringComparison.OrdinalIgnoreCase)
+                    || path.EndsWith(".jpg", StringComparison.OrdinalIgnoreCase)
+                    || path.EndsWith(".jpeg", StringComparison.OrdinalIgnoreCase))
+                    return DecodeBitmap(new Uri(path, UriKind.Absolute), SkipIconDecodeWidth);
 
-            CrashReporter.Info($"Ícone SVG ausente: {fileName}");
+                Color fill = Color.FromRgb(0xE0, 0xE0, 0xE0);
+                return SvgGlyph.TryLoadFile(path, fill);
+            }
+            catch (Exception ex)
+            {
+                CrashReporter.Log(ex, "LoadSkipFile");
+                return null;
+            }
+        }
+
+        private static ImageSource? TryLoadPackedSkip(string fileName)
+        {
+            foreach (string uri in new[]
+            {
+                $"pack://application:,,,/assets/{fileName}",
+                $"pack://siteoforigin:,,,/assets/{fileName}",
+            })
+            {
+                try
+                {
+                    if (fileName.EndsWith(".svg", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var info = Application.GetResourceStream(new Uri(uri, UriKind.Absolute));
+                        if (info?.Stream == null) continue;
+                        using var reader = new StreamReader(info.Stream);
+                        return SvgGlyph.TryParse(reader.ReadToEnd(), Color.FromRgb(0xE0, 0xE0, 0xE0));
+                    }
+                    return DecodeBitmap(new Uri(uri, UriKind.Absolute), SkipIconDecodeWidth);
+                }
+                catch { }
+            }
             return null;
+        }
+
+        private static string? FindAssetFile(string fileName)
+        {
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string dir in AssetSearchDirs())
+            {
+                string path = Path.Combine(dir, fileName);
+                if (seen.Add(path) && File.Exists(path))
+                    return path;
+            }
+            return null;
+        }
+
+        private static IEnumerable<string> AssetSearchDirs()
+        {
+            string? dir = AppDomain.CurrentDomain.BaseDirectory;
+            for (int i = 0; i < 7 && !string.IsNullOrEmpty(dir); i++)
+            {
+                yield return Path.Combine(dir, "assets");
+                yield return Path.Combine(dir, "Frontline", "assets");
+                dir = Directory.GetParent(dir)?.FullName;
+            }
         }
 
         private void LoadCoverArt(string? url)
@@ -874,7 +976,7 @@ namespace FrontLineOverlay
             return bitmap;
         }
 
-        private async void SendCommand(string action, string? lang = null, string? artist = null, string? song = null, double? time = null)
+        private async void SendCommand(string action, string? lang = null, string? artist = null, string? song = null, double? time = null, bool? autoOn = null)
         {
             try
             {
@@ -885,6 +987,7 @@ namespace FrontLineOverlay
                     if (artist != null) p["artist"] = artist;
                     if (song != null) p["song"] = song;
                     if (time != null) p["time"] = time;
+                    if (autoOn != null) p["on"] = autoOn.Value;
                     if (action == "RESET") p["hold_auto"] = true;
                     await _webSocket.SendAsync(
                         new ArraySegment<byte>(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(p))),
@@ -912,17 +1015,69 @@ namespace FrontLineOverlay
             Application.Current.Shutdown();
         }
 
-        private void BtnSearchShow_Click(object sender, RoutedEventArgs e) { SearchInputPanel.Visibility = Visibility.Visible; }
+        private void BtnSearchShow_Click(object sender, RoutedEventArgs e)
+        {
+            OpenManualSearchScreen();
+        }
+
+        private void OpenManualSearchScreen()
+        {
+            try
+            {
+                BtnMenu.IsChecked = false;
+                bool autoOn = _wantAuto || BtnAutoSide.IsChecked == true;
+                bool busy = currentAppStatus != "IDLE";
+                if (autoOn)
+                    TurnAutoOff();
+                if (busy)
+                {
+                    HoldAutoForCurrentTrack();
+                    SendCommand("RESET");
+                }
+                SearchInputPanel.Visibility = Visibility.Visible;
+                RefreshHistoryEmptyState();
+                Dispatcher.BeginInvoke(() =>
+                {
+                    try { TxtArtist.Focus(); } catch { }
+                });
+            }
+            catch (Exception ex) { CrashReporter.Log(ex, "OpenManualSearchScreen"); }
+        }
+
+        private void TurnAutoOff()
+        {
+            _wantAuto = false;
+            BtnAutoSide.IsChecked = false;
+            AppSettings.SetBool("AutoMode", false);
+            if (_autoSyncedWithServer)
+                SendCommand("AUTO_SET", autoOn: false);
+        }
 
         private void TxtSearch_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
-            {
                 BtnManualSearch_Execute(sender, e);
-            }
         }
 
-        private void BtnManualSearch_Execute(object sender, RoutedEventArgs e) { if (!string.IsNullOrWhiteSpace(TxtArtist.Text) && !string.IsNullOrWhiteSpace(TxtSong.Text)) { ReleaseAutoHold(); SendCommand("MANUAL_SEARCH", null, TxtArtist.Text, TxtSong.Text); SearchInputPanel.Visibility = Visibility.Collapsed; } }
+        private void BtnManualSearch_Execute(object sender, RoutedEventArgs e)
+        {
+            string artist = SearchHistoryStore.Clamp(TxtArtist.Text);
+            string song = SearchHistoryStore.Clamp(TxtSong.Text);
+            if (string.IsNullOrWhiteSpace(artist) || string.IsNullOrWhiteSpace(song))
+                return;
+            TxtArtist.Text = artist;
+            TxtSong.Text = song;
+            RememberSearch(artist, song);
+            ReleaseAutoHold();
+            SendCommand("MANUAL_SEARCH", null, artist, song);
+            SearchInputPanel.Visibility = Visibility.Collapsed;
+        }
+
+        private void BtnSearchCancel_Click(object sender, RoutedEventArgs e)
+        {
+            SearchInputPanel.Visibility = Visibility.Collapsed;
+            SearchHistoryList.SelectedItem = null;
+        }
         private void BtnManualSync_Toggle(object sender, RoutedEventArgs e) { isManualSyncMode = !isManualSyncMode; FullLyricsList.Visibility = isManualSyncMode ? Visibility.Visible : Visibility.Collapsed; LyricsNormalView.Visibility = isManualSyncMode ? Visibility.Collapsed : Visibility.Visible; BtnMenu.IsChecked = false; }
         private void FullLyricsList_SelectionChanged(object sender, SelectionChangedEventArgs e) { if (FullLyricsList.SelectedItem is LyricLine s) { SendCommand("SET_SYNC_TIME", null, null, null, s.Timestamp); isManualSyncMode = false; FullLyricsList.Visibility = Visibility.Collapsed; LyricsNormalView.Visibility = Visibility.Visible; FullLyricsList.SelectedItem = null; } }
         private void BtnListen_Click(object sender, RoutedEventArgs e)
@@ -965,7 +1120,6 @@ namespace FrontLineOverlay
             LblCurrentOriginal.Text = lastCurrentLyricsOriginal;
             LblCurrentOriginal.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         }
-        private void BtnSearchCancel_Click(object sender, RoutedEventArgs e) { SearchInputPanel.Visibility = Visibility.Collapsed; }
         private void BtnStartHelp_Click(object sender, RoutedEventArgs e) { OpenHelpScreen(); }
 
         private void OpenHelpScreen()
@@ -1051,13 +1205,165 @@ namespace FrontLineOverlay
         {
             try
             {
-                Process.Start(new ProcessStartInfo("https://buymeacoffee.com/juliocax/frontline-lyrics-1-2-0") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo("https://buymeacoffee.com/juliocax/frontline-lyrics-1-1-0") { UseShellExecute = true });
             }
             catch (Exception ex)
             {
                 CrashReporter.Log(ex, "ReleaseNotes");
                 MessageBox.Show("Não foi possível abrir o link: " + ex.Message);
             }
+        }
+
+        private void InitSearchHistory()
+        {
+            try
+            {
+                _searchHistory.Clear();
+                foreach (var row in SearchHistoryStore.Load())
+                    _searchHistory.Add(row);
+                SearchHistoryList.ItemsSource = _searchHistory;
+                _historyView = CollectionViewSource.GetDefaultView(_searchHistory);
+                ApplyHistorySort();
+                RefreshHistoryDateLabels();
+                RefreshHistoryEmptyState();
+            }
+            catch (Exception ex) { CrashReporter.Log(ex, "InitSearchHistory"); }
+        }
+
+        private void RememberSearch(string artist, string song)
+        {
+            try
+            {
+                string key = $"{artist}|{song}".ToLowerInvariant();
+                var existing = _searchHistory.FirstOrDefault(r => r.Key == key);
+                if (existing != null)
+                    _searchHistory.Remove(existing);
+                var row = new SearchHistoryEntry
+                {
+                    Artist = artist,
+                    Song = song,
+                    SearchedAtUtc = DateTime.UtcNow,
+                };
+                row.Normalize();
+                row.RefreshDateLabel(currentAppLanguage);
+                _searchHistory.Insert(0, row);
+                while (_searchHistory.Count > SearchHistoryStore.MaxEntries)
+                    _searchHistory.RemoveAt(_searchHistory.Count - 1);
+                PersistSearchHistory();
+                ApplyHistorySort();
+                RefreshHistoryEmptyState();
+            }
+            catch (Exception ex) { CrashReporter.Log(ex, "RememberSearch"); }
+        }
+
+        private void PersistSearchHistory() => SearchHistoryStore.Save(_searchHistory);
+
+        private void RefreshHistoryEmptyState()
+        {
+            if (LblSearchHistoryEmpty == null) return;
+            LblSearchHistoryEmpty.Visibility = _searchHistory.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void RefreshHistoryDateLabels()
+        {
+            foreach (var row in _searchHistory)
+                row.RefreshDateLabel(currentAppLanguage);
+            _historyView?.Refresh();
+        }
+
+        private void RefreshHistoryHeaders()
+        {
+            if (!uiStrings.TryGetValue(currentAppLanguage, out var t)) return;
+            if (ColHistoryArtist != null)
+                ColHistoryArtist.Header = HeaderWithArrow(t["HistoryArtist"], "Artist");
+            if (ColHistorySong != null)
+                ColHistorySong.Header = HeaderWithArrow(t["HistorySong"], "Song");
+            if (ColHistoryDate != null)
+                ColHistoryDate.Header = HeaderWithArrow(t["HistoryDate"], "Date");
+        }
+
+        private string HeaderWithArrow(string title, string column)
+        {
+            if (_historySort != column) return title;
+            return _historyDir == ListSortDirection.Ascending ? title + " ▲" : title + " ▼";
+        }
+
+        private void ApplyHistorySort()
+        {
+            if (_historyView == null) return;
+            string prop = _historySort switch
+            {
+                "Artist" => nameof(SearchHistoryEntry.Artist),
+                "Song" => nameof(SearchHistoryEntry.Song),
+                _ => nameof(SearchHistoryEntry.SearchedAtUtc),
+            };
+            _historyView.SortDescriptions.Clear();
+            _historyView.SortDescriptions.Add(new SortDescription(prop, _historyDir));
+            RefreshHistoryHeaders();
+        }
+
+        private void HistoryHeader_Click(object sender, RoutedEventArgs e)
+        {
+            if (e.OriginalSource is not GridViewColumnHeader header) return;
+            if (header.Role == GridViewColumnHeaderRole.Padding) return;
+            if (header.Column == null || header.Column == ColHistoryDelete) return;
+            string column = header.Column == ColHistoryArtist ? "Artist"
+                          : header.Column == ColHistorySong ? "Song"
+                          : "Date";
+            if (_historySort == column)
+                _historyDir = _historyDir == ListSortDirection.Ascending ? ListSortDirection.Descending : ListSortDirection.Ascending;
+            else
+            {
+                _historySort = column;
+                _historyDir = column == "Date" ? ListSortDirection.Descending : ListSortDirection.Ascending;
+            }
+            ApplyHistorySort();
+        }
+
+        private void HistoryList_PreviewMouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (FindParentButton(e.OriginalSource as DependencyObject) != null)
+                return;
+            var item = FindParentListViewItem(e.OriginalSource as DependencyObject);
+            if (item?.DataContext is SearchHistoryEntry row)
+                RunHistorySearch(row);
+        }
+
+        private static ListViewItem? FindParentListViewItem(DependencyObject? node)
+        {
+            while (node != null)
+            {
+                if (node is ListViewItem item) return item;
+                node = VisualTreeHelper.GetParent(node);
+            }
+            return null;
+        }
+
+        private void RunHistorySearch(SearchHistoryEntry row)
+        {
+            TxtArtist.Text = row.Artist;
+            TxtSong.Text = row.Song;
+            BtnManualSearch_Execute(this, new RoutedEventArgs());
+        }
+
+        private void BtnHistoryDelete_Click(object sender, RoutedEventArgs e)
+        {
+            e.Handled = true;
+            if (sender is not FrameworkElement fe || fe.DataContext is not SearchHistoryEntry row)
+                return;
+            _searchHistory.Remove(row);
+            PersistSearchHistory();
+            RefreshHistoryEmptyState();
+        }
+
+        private static Button? FindParentButton(DependencyObject? node)
+        {
+            while (node != null)
+            {
+                if (node is Button b) return b;
+                node = System.Windows.Media.VisualTreeHelper.GetParent(node);
+            }
+            return null;
         }
 
         private void ApplyAutoModeFromServer(bool autoMode)
@@ -1097,6 +1403,8 @@ namespace FrontLineOverlay
 
         private void RestoreWindowPlacement()
         {
+            // Só restaura se o retângulo ainda cabe na área virtual (monitor
+            // pode ter sido desconectado). Contribuição de Warith Adetayo.
             try
             {
                 double w = AppSettings.GetDouble("WindowWidth", double.NaN);

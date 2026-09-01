@@ -99,6 +99,13 @@
             </Setter>
         </Style>
 
+        <Style x:Key="SkipGlyph" TargetType="Rectangle">
+            <Setter Property="Width" Value="16"/>
+            <Setter Property="Height" Value="16"/>
+            <Setter Property="Fill" Value="#E0E0E0"/>
+            <Setter Property="IsHitTestVisible" Value="False"/>
+        </Style>
+
         <Style x:Key="ImageOverlayButtonStyle" TargetType="Button">
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="BorderThickness" Value="0"/>
@@ -187,6 +194,29 @@
                                 <Setter TargetName="BgBorder" Property="Background" Value="#4D7A53E4"/>
                                 <Setter TargetName="BgBorder" Property="BorderBrush" Value="#907A53E4"/>
                                 <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="HistoryHeader" TargetType="GridViewColumnHeader">
+            <Setter Property="Background" Value="#18FFFFFF"/>
+            <Setter Property="Foreground" Value="#AAFFFFFF"/>
+            <Setter Property="FontSize" Value="10"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="GridViewColumnHeader">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}" BorderBrush="#22FFFFFF" BorderThickness="0,0,1,1">
+                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#28FFFFFF"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -450,14 +480,14 @@
 
                     <StackPanel x:Name="PlayingControls" Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,20,0,0" Visibility="Collapsed">
                         <Button x:Name="BtnPrevTrack" Style="{StaticResource SquareGlassButton}" Padding="10,8" MinWidth="36" Margin="0,0,6,0" Click="BtnPrevTrack_Click" ToolTip="Previous track">
-                            <Image x:Name="ImgPrevTrack" Width="14" Height="14" Stretch="Uniform" IsHitTestVisible="False"/>
+                            <Rectangle x:Name="ImgPrevTrack" Style="{StaticResource SkipGlyph}"/>
                         </Button>
                         <Button x:Name="BtnListenSide" Content="LISTEN" Style="{StaticResource SquareGlassButton}" Padding="15,6" FontSize="10" Margin="0,0,6,0" Click="BtnListen_Click"/>
                         <ToggleButton x:Name="BtnAutoSide" Content="AUTO" Style="{StaticResource ToggleSwitchStyle}" Click="BtnAuto_Click" Margin="0,0,10,0"/>
                         <Button x:Name="BtnResetSide" Content="CLEAR" Style="{StaticResource SquareGlassButton}" Padding="15,6" FontSize="10" Click="BtnReset_Click"/>
                         <Button x:Name="BtnSearchSide" Content="⌕" Style="{StaticResource SquareGlassButton}" Padding="15,6" FontSize="12" Margin="6,0,6,0" Click="BtnSearchShow_Click"/>
                         <Button x:Name="BtnNextTrack" Style="{StaticResource SquareGlassButton}" Padding="10,8" MinWidth="36" Click="BtnNextTrack_Click" ToolTip="Next track">
-                            <Image x:Name="ImgNextTrack" Width="14" Height="14" Stretch="Uniform" IsHitTestVisible="False"/>
+                            <Rectangle x:Name="ImgNextTrack" Style="{StaticResource SkipGlyph}"/>
                         </Button>
                     </StackPanel>
 
@@ -494,23 +524,88 @@
             </Thumb.Template>
         </Thumb>
 
-        <Border x:Name="SearchInputPanel" Visibility="Collapsed" Background="#F2050505" CornerRadius="12" Padding="20" VerticalAlignment="Center" HorizontalAlignment="Center" BorderBrush="#44FFFFFF" BorderThickness="1">
-            <StackPanel Width="220">
-                <TextBlock x:Name="LblManualSearchTitle" Text="MANUAL SEARCH" Foreground="#888" FontSize="10" Margin="0,0,0,15" FontWeight="Bold" HorizontalAlignment="Center"/>
+        <Grid x:Name="SearchInputPanel" Visibility="Collapsed" Background="#F2050505">
+            <Border BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Margin="16" Background="#FF0A0A0A" Padding="18">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="0.38*" MinWidth="180"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="0.62*" MinWidth="180"/>
+                    </Grid.ColumnDefinitions>
 
-                <TextBlock x:Name="LblArtistSearch" Text="Artist:" Foreground="#888" FontSize="10" Margin="0,0,0,2"/>
-                <TextBox x:Name="TxtArtist" Background="#111" Foreground="White" BorderBrush="#333" Margin="0,0,0,8" Padding="6" KeyDown="TxtSearch_KeyDown"/>
+                    <StackPanel Grid.Column="0" VerticalAlignment="Top">
+                        <TextBlock x:Name="LblManualSearchTitle" Text="MANUAL SEARCH" Foreground="#888" FontSize="10" Margin="0,0,0,16" FontWeight="Bold"/>
 
-                <TextBlock x:Name="LblSongSearch" Text="Song:" Foreground="#888" FontSize="10" Margin="0,0,0,2"/>
-                <TextBox x:Name="TxtSong" Background="#111" Foreground="White" BorderBrush="#333" Margin="0,0,0,15" Padding="6" KeyDown="TxtSearch_KeyDown"/>
+                        <TextBlock x:Name="LblArtistSearch" Text="Artist:" Foreground="#888" FontSize="10" Margin="0,0,0,2"/>
+                        <TextBox x:Name="TxtArtist" Background="#111" Foreground="White" BorderBrush="#333" Margin="0,0,0,10" Padding="6" KeyDown="TxtSearch_KeyDown"/>
 
-                <UniformGrid Columns="2">
-                    <Button x:Name="BtnFindSearch" Content="FIND" Style="{StaticResource GlassButton}" Margin="0,0,4,0" Click="BtnManualSearch_Execute"/>
-                    <Button x:Name="BtnCancelSearch" Content="CANCEL" Style="{StaticResource GlassButton}" Margin="4,0,0,0" Click="BtnSearchCancel_Click"/>
-                </UniformGrid>
+                        <TextBlock x:Name="LblSongSearch" Text="Song:" Foreground="#888" FontSize="10" Margin="0,0,0,2"/>
+                        <TextBox x:Name="TxtSong" Background="#111" Foreground="White" BorderBrush="#333" Margin="0,0,0,16" Padding="6" KeyDown="TxtSearch_KeyDown"/>
 
-            </StackPanel>
-        </Border>
+                        <UniformGrid Columns="2">
+                            <Button x:Name="BtnFindSearch" Content="FIND" Style="{StaticResource GlassButton}" Margin="0,0,4,0" Click="BtnManualSearch_Execute"/>
+                            <Button x:Name="BtnCancelSearch" Content="CANCEL" Style="{StaticResource GlassButton}" Margin="4,0,0,0" Click="BtnSearchCancel_Click"/>
+                        </UniformGrid>
+                    </StackPanel>
+
+                    <Rectangle Grid.Column="1" Width="1" Fill="#22FFFFFF" HorizontalAlignment="Center"/>
+
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="LblSearchHistoryTitle" Text="SEARCH HISTORY" Foreground="#888" FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
+                        <ListView x:Name="SearchHistoryList" Grid.Row="1"
+                                  Background="Transparent" BorderThickness="0" Foreground="#E0E0E0"
+                                  FontSize="12" SelectionMode="Single"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  GridViewColumnHeader.Click="HistoryHeader_Click"
+                                  PreviewMouseLeftButtonUp="HistoryList_PreviewMouseLeftButtonUp">
+                            <ListView.Resources>
+                                <Style TargetType="GridViewColumnHeader" BasedOn="{StaticResource HistoryHeader}"/>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Foreground" Value="#E0E0E0"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Padding" Value="0,2"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter Property="Background" Value="#18FFFFFF"/>
+                                        </Trigger>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter Property="Background" Value="#287A53E4"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </ListView.Resources>
+                            <ListView.View>
+                                <GridView AllowsColumnReorder="False">
+                                    <GridViewColumn x:Name="ColHistoryArtist" Header="Artist" Width="140" DisplayMemberBinding="{Binding Artist}"/>
+                                    <GridViewColumn x:Name="ColHistorySong" Header="Song" Width="160" DisplayMemberBinding="{Binding Song}"/>
+                                    <GridViewColumn x:Name="ColHistoryDate" Header="Date" Width="130" DisplayMemberBinding="{Binding DateLabel}"/>
+                                    <GridViewColumn x:Name="ColHistoryDelete" Header="" Width="40">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="✕" Width="28" Height="24" Padding="0" FontSize="10"
+                                                        Style="{StaticResource SquareGlassButton}"
+                                                        Click="BtnHistoryDelete_Click"
+                                                        ToolTip="Remove"/>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                        <TextBlock x:Name="LblSearchHistoryEmpty" Grid.Row="1" Text="No searches yet."
+                                   Foreground="#66FFFFFF" FontSize="12" TextWrapping="Wrap"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   IsHitTestVisible="False"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
 
         <Popup x:Name="SettingsPopup" IsOpen="{Binding IsChecked, ElementName=BtnMenu}" StaysOpen="False" PlacementTarget="{Binding ElementName=BtnMenu}" Placement="Bottom" HorizontalOffset="-170" VerticalOffset="10" AllowsTransparency="True" Closed="SettingsPopup_Closed">
             <Border x:Name="MenuScaleBorder" Background="#FF0A0A0A" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Padding="15" Width="210">
@@ -551,6 +646,7 @@
                         </Grid>
                     </StackPanel>
 
+                    <!-- Slider de Opacidade: fica sempre visível (é o controle que a prévia serve) -->
                     <TextBlock Text="OPACIDADE DO FUNDO" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,8"/>
                     <Slider x:Name="SldBgOpacity" Style="{StaticResource GlassSlider}" Minimum="0" Maximum="1" Value="0.8" Margin="0,0,0,5" ValueChanged="SldBgOpacity_ValueChanged"/>
 
