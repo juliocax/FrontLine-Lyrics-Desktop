@@ -178,6 +178,28 @@ def pick_lrclib_search_hit(results: Any, artist: str, song: str) -> Optional[Dic
     scored.sort(key=lambda pair: -pair[0])
     return scored[0][1]
 
+_STREAMING_MUSIC_APP_MARKERS = (
+    "spotify",
+    "applemusic",
+    "apple music",
+    "itunes",
+    "youtubemusic",
+    "youtube.music",
+    "amazonmusic",
+    "amazon.music",
+    "deezer",
+    "tidal",
+    "pandora",
+    "soundcloud",
+    "groove",
+    "zunemusic",
+)
+
+def smtc_trusts_song_clock(app_id: str) -> bool:
+    """True se o SMTC reporta posição da faixa, não do vídeo/página."""
+    blob = (app_id or "").lower().replace("\\", "/")
+    return any(marker in blob for marker in _STREAMING_MUSIC_APP_MARKERS)
+
 class AutoHold:
     """Depois do Limpar, o Auto não religa a faixa atual até ela mudar.
 
@@ -358,6 +380,11 @@ class MusicManager:
         self.previous_track: Optional[Tuple[str, str]] = None
         self.cooldown_until: float = 0.0
         self._lrclib_fail_until = {}
+        # OUVIR sempre; Auto em vídeo/ao vivo: gravar + offset Shazam.
+        # Spotify / YouTube Music: Auto pode usar o timeline do player.
+        self._listen_use_shazam = False
+        self._clock_from_shazam = False
+        self._media_busy = False
 
     def _track_key(self, song: Optional[str], artist: Optional[str]) -> Tuple[str, str]:
         return ((song or "").lower().strip(), (artist or "").lower().strip())
@@ -373,6 +400,17 @@ class MusicManager:
         if not self.previous_track or time.time() >= self.cooldown_until:
             return False
         return self._track_key(song, artist) == self._track_key(*self.previous_track)
+
+    def _session_trusts_song_clock(self, info=None) -> bool:
+        src = info if info is not None else getattr(self.watcher, "ultima_info", None)
+        return smtc_trusts_song_clock(getattr(src, "app", "") if src is not None else "")
+
+    def _should_use_audio_clock(self, info=None) -> bool:
+        """True = fingerprint Shazam (ao vivo / vídeo). False = SMTC (Spotify etc.)."""
+        src = info if info is not None else getattr(self.watcher, "ultima_info", None)
+        if src is None or not getattr(src, "titulo", None):
+            return True
+        return not self._session_trusts_song_clock(src)
 
     def _pause_clock(self):
         if not self.clock_paused:
@@ -446,6 +484,8 @@ class MusicManager:
             self.not_found_since = None
             self.listen_start_time = time.time()
             self.is_listening = True if was_auto else False
+            self._listen_use_shazam = False
+            self._clock_from_shazam = False
         logging.info(f"Transição ({reason})")
 
     def _fresh_smtc_for(self, chave: Tuple[str, str]):
@@ -476,6 +516,7 @@ class MusicManager:
         lyrics: Optional[List[Dict[str, Any]]],
         cover: str = "",
         source: str = "shazam",
+        lock_shazam_clock: bool = False,
     ):
         with self._lock:
             self.current_song, self.current_artist = title, artist
@@ -488,11 +529,16 @@ class MusicManager:
             self.clock_paused = False
             self.pause_moment = 0.0
             self.media_paused = False
-            # A janela de 12s precisa começar já no lock-in. O +5s antigo
-            # pulava exatamente o trecho em que a âncora SMTC vem velha
-            # Calibragem + servo: Warith Adetayo.
-            self.next_reanchor = time.time()
-            self.calibrating_until = time.time() + CALIBRATION_WINDOW
+            self._clock_from_shazam = lock_shazam_clock
+            self._listen_use_shazam = False
+            # Servo SMTC só se o relógio NÃO veio do offset do Shazam (OUVIR).
+            # Senão os 12s de calibragem puxam a letra de volta ao timeline do player.
+            if lock_shazam_clock:
+                self.next_reanchor = time.time() + 86400.0
+                self.calibrating_until = 0.0
+            else:
+                self.next_reanchor = time.time()
+                self.calibrating_until = time.time() + CALIBRATION_WINDOW
             self._prev_drift = None
             self.not_found_since = None if lyrics else time.time()
             self.listen_start_time = time.time()
@@ -542,6 +588,12 @@ class MusicManager:
                 with self._lock:
                     self.reset_state()
                     self.is_listening = True
+                    if not self._session_trusts_song_clock(info):
+                        self._listen_use_shazam = True
+                        logging.info(
+                            "Auto em vídeo/ao vivo (%s): sync pelo Shazam, não pelo tempo do player",
+                            getattr(info, "app", ""),
+                        )
 
         synced = self.is_listening and self.search_completed and bool(self.synced_lyrics)
 
@@ -552,7 +604,13 @@ class MusicManager:
             elif self.auto_mode and chave != self.media_baseline and chave != faixa_atual:
                 logging.info(f"Troca de faixa SMTC: {self.current_song} -> {info.titulo}")
                 self.media_baseline = chave
-                self._follow_metadata(info)
+                if self._session_trusts_song_clock(info):
+                    self._follow_metadata(info)
+                else:
+                    logging.info("Vídeo/ao vivo: não ancora no timeline do player; reescuta")
+                    self._start_transition("vídeo/ao vivo")
+                    self._listen_use_shazam = True
+                    self._clock_from_shazam = False
                 return
             if not info.tocando and not self.clock_paused:
                 logging.info("Player pausado: congelando letra")
@@ -564,6 +622,8 @@ class MusicManager:
                 self.media_paused = False
             if (info.tocando and not self.clock_paused
                     and self.track_source in ("media", "shazam")
+                    and not self._clock_from_shazam
+                    and self._session_trusts_song_clock(info)
                     and chave == faixa_atual):
                 # Servo de sync (Warith Adetayo): 12s de calibragem com
                 # correção de uma amostra + deriva parcial (~35%) depois,
@@ -607,22 +667,54 @@ class MusicManager:
                     elif abs(desvio) <= limite:
                         self._prev_drift = None
         elif self.is_listening and not self.search_completed:
+            if self._listen_use_shazam or not self._session_trusts_song_clock(info):
+                if not self._listen_use_shazam and not self._session_trusts_song_clock(info):
+                    self._listen_use_shazam = True
+                return
             mesma_em_cooldown = self._in_previous_track_cooldown(info.titulo, info.artista)
             if (info.tocando and info.titulo and not self._media_busy
                     and not mesma_em_cooldown):
                 self._follow_metadata(info)
 
+    def _fallback_listen_to_smtc(self, reason: str) -> bool:
+        """Áudio falhou. Só cai no relógio do player se for streaming (Spotify / YT Music).
+
+        Em vídeo/ao vivo o SMTC é o tempo do vídeo, não da música — insistir no Shazam.
+        """
+        info = getattr(self.watcher, "ultima_info", None)
+        if info is None or not info.tocando or not info.titulo:
+            logging.info("Shazam falhou (%s) e não há SMTC; tenta áudio de novo", reason)
+            return False
+        if not self._session_trusts_song_clock(info):
+            logging.info(
+                "Shazam falhou (%s) em vídeo/ao vivo (%s); não usa o tempo do player",
+                reason,
+                getattr(info, "app", ""),
+            )
+            return False
+        self._listen_use_shazam = False
+        logging.info("Shazam falhou (%s); âncora SMTC %s - %s", reason, info.titulo, info.artista)
+        self._follow_metadata(info)
+        return True
+
     def _follow_metadata(self, info):
-        """Troca instantânea via metadados do player (sem Shazam)."""
+        """Troca instantânea via metadados do player (sem Shazam). Só streaming."""
+        if self._listen_use_shazam:
+            return
+        if not self._session_trusts_song_clock(info):
+            logging.info("Ignora lock-in SMTC em vídeo/ao vivo (%s)", getattr(info, "app", ""))
+            return
         if self._in_previous_track_cooldown(info.titulo, info.artista):
             return
-
         if time.monotonic() < self._lrclib_fail_until.get(info.chave, 0.0):
             return
         self._media_busy = True
         try:
             letra = self.fetch_lyrics_lrclib(info.artista, info.titulo)
             if letra:
+                if self._listen_use_shazam:
+                    logging.info("OUVIR em curso: ignora lock-in SMTC tardio")
+                    return
                 self._lrclib_fail_until.pop(info.chave, None)
                 # A busca demora ~1–2s; nesse intervalo o player pode ter
                 # emitido uma posição mais recente. Ancorar com a leitura nova.
@@ -1021,6 +1113,9 @@ manager = MusicManager()
 connected_clients = set()
 
 SILENCE_RMS_THRESHOLD = 180.0
+# Ao vivo (crowd, reverb, mix) precisa de snippet longo. Shazam aceita até ~12s;
+SHAZAM_LIVE_SECONDS = 8.0
+SHAZAM_QUICK_SECONDS = 4.0
 AUTO_MIN_RETRY_DELAY = 2.0
 AUTO_MAX_RETRY_DELAY = 20.0
 AUTO_BACKOFF_MULTIPLIER = 1.7
@@ -1082,11 +1177,18 @@ async def background_verification_worker(manager: MusicManager):
             
         current_session = manager.session_id
         record_start_time = time.time()
+        snippet_s = (
+            SHAZAM_LIVE_SECONDS if manager._listen_use_shazam else SHAZAM_QUICK_SECONDS
+        )
         
         try: 
-            audio_bytes = await loop.run_in_executor(None, manager.record_audio_to_memory, 4)
+            audio_bytes = await loop.run_in_executor(
+                None, manager.record_audio_to_memory, snippet_s
+            )
         except Exception as e:
             logging.warning(f"Audio capture failed, resetting device: {e}")
+            if manager._listen_use_shazam and manager._fallback_listen_to_smtc("falha na captura"):
+                continue
             manager.device_info = manager._configure_loopback()
             await asyncio.sleep(2)
             continue
@@ -1096,7 +1198,9 @@ async def background_verification_worker(manager: MusicManager):
             continue
 
         rms = await loop.run_in_executor(None, manager._pcm_rms, audio_bytes)
-        if rms < SILENCE_RMS_THRESHOLD:
+        # Ao vivo: verso baixo / fala / plateia. Não descartar o snippet —
+        # o PyQt mandava o áudio ao Shazam mesmo assim.
+        if rms < SILENCE_RMS_THRESHOLD and not manager._listen_use_shazam:
             manager.pending_candidate = None
             manager.pending_candidate_count = 0
             if manager.auto_mode:
@@ -1115,6 +1219,8 @@ async def background_verification_worker(manager: MusicManager):
         if not new_song:
             manager.pending_candidate = None
             manager.pending_candidate_count = 0
+            if manager._listen_use_shazam and manager._fallback_listen_to_smtc("sem match"):
+                continue
             if manager.auto_mode:
                 manager.retry_delay = min(AUTO_MAX_RETRY_DELAY, manager.retry_delay * AUTO_BACKOFF_MULTIPLIER)
                 await asyncio.sleep(manager.retry_delay)
@@ -1124,7 +1230,7 @@ async def background_verification_worker(manager: MusicManager):
 
         candidate = (new_song, new_artist)
 
-        if manager.auto_mode:
+        if manager.auto_mode and not manager._listen_use_shazam:
             if manager.pending_candidate == candidate:
                 manager.pending_candidate_count += 1
             else:
@@ -1146,15 +1252,17 @@ async def background_verification_worker(manager: MusicManager):
         manager.pending_candidate_count = 0
         manager.retry_delay = AUTO_MIN_RETRY_DELAY
 
-        # Mesma fonte (LRCLib) que metadado/busca manual. Depois do Shazam o
-        # nome pode ser sujo; se o SMTC já tiver título (Spotify etc.), tenta
-        # esse primeiro — é o caminho rápido. Não descartar a letra se o
-        # SMTC estiver no meio de outra busca (_media_busy): isso deixava a
-        # UI em SEARCHING até a música acabar, regravando 4s + Shazam de novo.
+        # LRCLib: no Spotify o título SMTC é o da faixa. No YouTube ao vivo é o
+        # do VÍDEO ("Artist Live at …") — se for primeiro, a busca erra ou pega
+        # outra música. Ao vivo: nome do Shazam primeiro.
         queries: List[Tuple[str, str]] = [(new_artist, new_song)]
         info = manager.watcher.ultima_info
         if info is not None and info.tocando and info.titulo:
-            queries.insert(0, (info.artista, info.titulo))
+            smtc_pair = (info.artista, info.titulo)
+            if manager._session_trusts_song_clock(info):
+                queries.insert(0, smtc_pair)
+            else:
+                queries.append(smtc_pair)
 
         lyrics = await loop.run_in_executor(
             None, manager.fetch_lyrics_from_candidates, queries
@@ -1165,17 +1273,31 @@ async def background_verification_worker(manager: MusicManager):
                 offset = _sane_media_position(shazam_offset, fallback=0.0) or 0.0
                 chave = manager._track_key(new_song, new_artist)
                 fallback = record_start_time - offset
+                use_shazam_clock = (
+                    manager._listen_use_shazam
+                    and not manager._session_trusts_song_clock()
+                )
+                if use_shazam_clock:
+                    reference_time = fallback
+                    logging.info(
+                        "Ao vivo: âncora Shazam offset=%.1fs (servo de minutagem desligado)",
+                        offset,
+                    )
+                else:
+                    reference_time = manager._anchor_reference(chave, fallback)
                 manager._set_track(
                     new_song,
                     new_artist,
-                    reference_time=manager._anchor_reference(chave, fallback),
+                    reference_time=reference_time,
                     lyrics=lyrics,
                     cover=new_cover,
                     source="shazam",
+                    lock_shazam_clock=use_shazam_clock,
                 )
             else:
                 manager.search_completed = True
                 manager.not_found_since = time.time()
+                manager._listen_use_shazam = False
                 logging.info(
                     f"LRCLib sem letra após Shazam: {new_song} - {new_artist}"
                 )
@@ -1218,18 +1340,31 @@ async def ws_handler(websocket):
                     manager._release_auto_hold()
                     manager.reset_state()
                     manager.is_listening = True
+                    if manager._should_use_audio_clock():
+                        manager._listen_use_shazam = True
+                        logging.info("OUVIR: vídeo/ao vivo — fingerprint Shazam")
+                    else:
+                        manager._listen_use_shazam = False
+                        logging.info(
+                            "OUVIR: streaming (%s) — âncora SMTC (letra segue a minutagem)",
+                            getattr(manager.watcher.ultima_info, "app", ""),
+                        )
                 elif action == "AUTO_TOGGLE":
                     manager._release_auto_hold()
                     manager.auto_mode = not manager.auto_mode
                     if manager.auto_mode and not manager.is_listening:
                         manager.reset_state()
                         manager.is_listening = True
+                        if manager._should_use_audio_clock():
+                            manager._listen_use_shazam = True
                 elif action == "AUTO_SET":
                     manager._release_auto_hold()
                     manager.auto_mode = bool(command.get("on", False))
                     if manager.auto_mode and not manager.is_listening:
                         manager.reset_state()
                         manager.is_listening = True
+                        if manager._should_use_audio_clock():
+                            manager._listen_use_shazam = True
                 elif action == "RESET":
                     # hold_auto vem do C#; Limpar sempre segura a faixa atual
                     # mesmo se o campo faltar (compatível com builds antigas).
