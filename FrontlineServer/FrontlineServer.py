@@ -194,11 +194,104 @@ _STREAMING_MUSIC_APP_MARKERS = (
     "groove",
     "zunemusic",
 )
+VIDEO_DURATION_S = 15 * 60
+VIDEO_POSITION_S = 12 * 60
+TRACK_DURATION_MIN_S = 20.0
+LYRIC_POSITION_SLACK_S = 45.0
+
+_VIDEO_SURFACE_APP_MARKERS = (
+    "chrome",
+    "msedge",
+    "microsoftedge",
+    "firefox",
+    "brave",
+    "opera",
+    "chromium",
+    "vlc",
+    "zunevideo",
+    "moviesandtv",
+    "primevideo",
+    "netflix",
+)
+
 
 def smtc_trusts_song_clock(app_id: str) -> bool:
-    """True se o SMTC reporta posição da faixa, não do vídeo/página."""
+    """True se o AUMID é de app de streaming de faixa."""
     blob = (app_id or "").lower().replace("\\", "/")
     return any(marker in blob for marker in _STREAMING_MUSIC_APP_MARKERS)
+
+
+def smtc_app_is_video_surface(app_id: str) -> bool:
+    """Chrome/Edge/VLC/YouTube vídeo — não um streamer de faixa."""
+    if smtc_trusts_song_clock(app_id):
+        return False
+    blob = (app_id or "").lower().replace("\\", "/")
+    if "youtube" in blob:
+        return True
+    return any(marker in blob for marker in _VIDEO_SURFACE_APP_MARKERS)
+
+
+def _smtc_finite_nonneg(value):
+    try:
+        x = float(value)
+    except (TypeError, ValueError):
+        return None
+    if x != x or x < 0.0 or x > 12 * 3600:
+        return None
+    return x
+
+
+def smtc_timeline_is_video_shaped(duration, position, lyrics_end=None) -> bool:
+    """Show/clipe longo: posição ou duração não cabem numa faixa de 3–8 min."""
+    pos = _smtc_finite_nonneg(position) or 0.0
+    dur = _smtc_finite_nonneg(duration)
+    if pos >= VIDEO_POSITION_S:
+        return True
+    if dur is not None and dur >= VIDEO_DURATION_S:
+        return True
+    if lyrics_end is not None:
+        try:
+            end = float(lyrics_end)
+        except (TypeError, ValueError):
+            end = None
+        if end is not None and end > 0 and pos > end + LYRIC_POSITION_SLACK_S:
+            return True
+    return False
+
+
+def smtc_timeline_is_track_shaped(duration, position) -> bool:
+    if smtc_timeline_is_video_shaped(duration, position):
+        return False
+    pos = _smtc_finite_nonneg(position) or 0.0
+    dur = _smtc_finite_nonneg(duration)
+    if dur is None:
+        return pos < VIDEO_POSITION_S
+    if dur < TRACK_DURATION_MIN_S:
+        return False
+    if pos > dur + 8.0:
+        return False
+    return True
+
+
+def should_trust_smtc_clock(app_id, duration, position, lyrics_end=None) -> bool:
+    """Híbrido: forma de vídeo ganha da allowlist; browser/VLC ficam no Shazam.
+
+    App de streaming desconhecido com duração de faixa (~20 s–15 min) usa SMTC
+    para seek rápido sem esperar nova entrada na allowlist.
+    """
+    if smtc_timeline_is_video_shaped(duration, position, lyrics_end):
+        return False
+    if smtc_trusts_song_clock(app_id):
+        return True
+    if smtc_app_is_video_surface(app_id):
+        return False
+    return smtc_timeline_is_track_shaped(duration, position)
+
+
+def live_fingerprint_drift(elapsed: float, now: float, record_start: float, offset: float) -> float:
+    """elapsed atual vs posição implicada pelo novo offset Shazam."""
+    implied = now - (record_start - offset)
+    return elapsed - implied
 
 class AutoHold:
     """Depois do Limpar, o Auto não religa a faixa atual até ela mudar.
@@ -385,6 +478,9 @@ class MusicManager:
         self._listen_use_shazam = False
         self._clock_from_shazam = False
         self._media_busy = False
+        self._next_live_fingerprint = 0.0
+        self._live_fp_busy = False
+        self._live_fp_drift_hits = 0
 
     def _track_key(self, song: Optional[str], artist: Optional[str]) -> Tuple[str, str]:
         return ((song or "").lower().strip(), (artist or "").lower().strip())
@@ -403,7 +499,16 @@ class MusicManager:
 
     def _session_trusts_song_clock(self, info=None) -> bool:
         src = info if info is not None else getattr(self.watcher, "ultima_info", None)
-        return smtc_trusts_song_clock(getattr(src, "app", "") if src is not None else "")
+        app = getattr(src, "app", "") if src is not None else ""
+        dur = getattr(src, "duracao", None) if src is not None else None
+        pos = getattr(src, "posicao", None) if src is not None else None
+        lyrics_end = None
+        if self.synced_lyrics:
+            try:
+                lyrics_end = float(self.synced_lyrics[-1]["timestamp"])
+            except (TypeError, ValueError, KeyError):
+                lyrics_end = None
+        return should_trust_smtc_clock(app, dur, pos, lyrics_end)
 
     def _should_use_audio_clock(self, info=None) -> bool:
         """True = fingerprint Shazam (ao vivo / vídeo). False = SMTC (Spotify etc.)."""
@@ -486,6 +591,9 @@ class MusicManager:
             self.is_listening = True if was_auto else False
             self._listen_use_shazam = False
             self._clock_from_shazam = False
+            self._next_live_fingerprint = 0.0
+            self._live_fp_busy = False
+            self._live_fp_drift_hits = 0
         logging.info(f"Transição ({reason})")
 
     def _fresh_smtc_for(self, chave: Tuple[str, str]):
@@ -531,14 +639,15 @@ class MusicManager:
             self.media_paused = False
             self._clock_from_shazam = lock_shazam_clock
             self._listen_use_shazam = False
-            # Servo SMTC só se o relógio NÃO veio do offset do Shazam (OUVIR).
-            # Senão os 12s de calibragem puxam a letra de volta ao timeline do player.
+            self._live_fp_drift_hits = 0
             if lock_shazam_clock:
-                self.next_reanchor = time.time() + 86400.0
+                self.next_reanchor = 0.0
                 self.calibrating_until = 0.0
+                self._next_live_fingerprint = time.time() + LIVE_FINGERPRINT_PERIOD
             else:
                 self.next_reanchor = time.time()
                 self.calibrating_until = time.time() + CALIBRATION_WINDOW
+                self._next_live_fingerprint = 0.0
             self._prev_drift = None
             self.not_found_since = None if lyrics else time.time()
             self.listen_start_time = time.time()
@@ -1116,6 +1225,10 @@ SILENCE_RMS_THRESHOLD = 180.0
 # Ao vivo (crowd, reverb, mix) precisa de snippet longo. Shazam aceita até ~12s;
 SHAZAM_LIVE_SECONDS = 8.0
 SHAZAM_QUICK_SECONDS = 4.0
+LIVE_FINGERPRINT_PERIOD = 45.0
+LIVE_FINGERPRINT_SECONDS = 6.0
+LIVE_DRIFT_TOLERANCE = 3.0
+LIVE_DRIFT_CONFIRM = 2
 AUTO_MIN_RETRY_DELAY = 2.0
 AUTO_MAX_RETRY_DELAY = 20.0
 AUTO_BACKOFF_MULTIPLIER = 1.7
@@ -1303,6 +1416,105 @@ async def background_verification_worker(manager: MusicManager):
                 )
         await asyncio.sleep(2)
 
+
+async def live_refingerprint_worker(manager: MusicManager):
+    """Ao vivo: a cada ~45s re-Shazam e só reancora se o offset divergir de verdade.
+
+    Não usa SMTC. Sem match = não mexe. Dois drifts grandes seguidos = reancora.
+    Outra música = troca de faixa no set.
+    """
+    loop = asyncio.get_event_loop()
+    while manager.server_running:
+        await asyncio.sleep(2)
+        if (
+            not manager._clock_from_shazam
+            or not manager.is_listening
+            or not manager.search_completed
+            or not manager.synced_lyrics
+            or manager.manual_mode
+            or manager.clock_paused
+            or manager._live_fp_busy
+            or manager._listen_use_shazam
+        ):
+            continue
+        if time.time() < manager._next_live_fingerprint:
+            continue
+
+        manager._live_fp_busy = True
+        manager._next_live_fingerprint = time.time() + LIVE_FINGERPRINT_PERIOD
+        session = manager.session_id
+        record_start = time.time()
+        try:
+            audio_bytes = await loop.run_in_executor(
+                None, manager.record_audio_to_memory, LIVE_FINGERPRINT_SECONDS
+            )
+            if (
+                session != manager.session_id
+                or not manager._clock_from_shazam
+                or not manager.search_completed
+            ):
+                continue
+            new_song, new_artist, raw_offset, new_cover = await manager.recognize_audio_snippet(
+                audio_bytes
+            )
+            if session != manager.session_id or not manager._clock_from_shazam:
+                continue
+            if not new_song:
+                logging.info("Ao vivo: re-fingerprint sem match; relógio intacto")
+                continue
+
+            offset = _sane_media_position(raw_offset, fallback=0.0) or 0.0
+            same_title = _name_close(manager.current_song or "", new_song or "")
+            same_artist = (not new_artist or not manager.current_artist
+                           or _name_close(manager.current_artist, new_artist))
+            if not (same_title and same_artist):
+                logging.info(
+                    "Ao vivo: re-fingerprint outra faixa %s - %s", new_song, new_artist
+                )
+                lyrics = await loop.run_in_executor(
+                    None, manager.fetch_lyrics_lrclib, new_artist, new_song
+                )
+                if session != manager.session_id:
+                    continue
+                if lyrics:
+                    manager._set_track(
+                        new_song,
+                        new_artist,
+                        reference_time=record_start - offset,
+                        lyrics=lyrics,
+                        cover=new_cover or manager.current_cover,
+                        source="shazam",
+                        lock_shazam_clock=True,
+                    )
+                continue
+
+            now = time.time()
+            drift = live_fingerprint_drift(manager._elapsed_now(), now, record_start, offset)
+            if abs(drift) <= LIVE_DRIFT_TOLERANCE:
+                manager._live_fp_drift_hits = 0
+                logging.info("Ao vivo: re-fingerprint ok (deriva %.2fs)", drift)
+                continue
+
+            manager._live_fp_drift_hits += 1
+            logging.info(
+                "Ao vivo: deriva fingerprint %.2fs (hit %s/%s)",
+                drift,
+                manager._live_fp_drift_hits,
+                LIVE_DRIFT_CONFIRM,
+            )
+            if manager._live_fp_drift_hits < LIVE_DRIFT_CONFIRM:
+                continue
+            manager._live_fp_drift_hits = 0
+            new_ref = record_start - offset
+            with manager._lock:
+                manager.system_reference_time = new_ref
+            logging.info("Ao vivo: reancorou no offset Shazam %.1fs", offset)
+        except Exception:
+            logging.exception("Ao vivo: falha no re-fingerprint")
+        finally:
+            manager._live_fp_busy = False
+
+
 async def run_manual_search(manager: MusicManager, artist: str, song: str, current_session: float):
     """Executa a pesquisa manual de texto para a letra e a capa do álbum."""
     loop = asyncio.get_event_loop()
@@ -1340,6 +1552,8 @@ async def ws_handler(websocket):
                     manager._release_auto_hold()
                     manager.reset_state()
                     manager.is_listening = True
+                    # Equilíbrio: Spotify/YT Music → SMTC (seek/pause na minutagem).
+                    # YouTube/VLC/ao vivo → Shazam 8s (tempo do vídeo ≠ da música).
                     if manager._should_use_audio_clock():
                         manager._listen_use_shazam = True
                         logging.info("OUVIR: vídeo/ao vivo — fingerprint Shazam")
@@ -1433,6 +1647,7 @@ async def main_background(manager: MusicManager, port: int):
     manager._main_loop.set_exception_handler(_asyncio_exception_handler)
     manager.watcher.start()
     spawn_task(background_verification_worker(manager))
+    spawn_task(live_refingerprint_worker(manager))
     spawn_task(broadcast_ui_state(manager))
     async with websockets.serve(ws_handler, "127.0.0.1", port): 
         await asyncio.Future()
