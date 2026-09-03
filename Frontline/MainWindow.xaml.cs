@@ -120,7 +120,9 @@ namespace FrontLineOverlay
                 { "PrevTrack", "Previous track" }, { "NextTrack", "Next track" },
                 { "SearchHistory", "SEARCH HISTORY" }, { "HistoryArtist", "Artist" },
                 { "HistorySong", "Song" }, { "HistoryDate", "Date" },
-                { "HistoryEmpty", "No searches yet." }, { "HistoryRemove", "Remove" }
+                { "HistoryEmpty", "No searches yet." }, { "HistoryRemove", "Remove" },
+                { "FontSizeTitle", "FONT SIZE" },
+                { "BgOpacityTitle", "BACKGROUND OPACITY" }
             }},
             { "pt", new() {
                 { "Listen", "OUVIR" }, { "Search", "⌕ BUSCAR" }, { "ManualSearch", "BUSCA MANUAL" },
@@ -137,7 +139,9 @@ namespace FrontLineOverlay
                 { "PrevTrack", "Faixa anterior" }, { "NextTrack", "Próxima faixa" },
                 { "SearchHistory", "HISTÓRICO DE BUSCA" }, { "HistoryArtist", "Artista" },
                 { "HistorySong", "Música" }, { "HistoryDate", "Data" },
-                { "HistoryEmpty", "Nenhuma busca ainda." }, { "HistoryRemove", "Remover" }
+                { "HistoryEmpty", "Nenhuma busca ainda." }, { "HistoryRemove", "Remover" },
+                { "FontSizeTitle", "TAMANHO DA FONTE" },
+        { "BgOpacityTitle", "OPACIDADE DO FUNDO" }
             }},
             { "es", new() {
                 { "Listen", "ESCUCHAR" }, { "Search", "⌕ BUSCAR" }, { "ManualSearch", "BÚSQUEDA MANUAL" },
@@ -154,7 +158,7 @@ namespace FrontLineOverlay
                 { "PrevTrack", "Pista anterior" }, { "NextTrack", "Pista siguiente" },
                 { "SearchHistory", "HISTORIAL DE BÚSQUEDA" }, { "HistoryArtist", "Artista" },
                 { "HistorySong", "Canción" }, { "HistoryDate", "Fecha" },
-                { "HistoryEmpty", "Aún no hay búsquedas." }, { "HistoryRemove", "Quitar" }
+                { "HistoryEmpty", "Aún no hay búsquedas." }, { "HistoryRemove", "Quitar" },{ "FontSizeTitle", "TAMAÑO DE FUENTE" },{ "BgOpacityTitle", "OPACIDAD DE FONDO" }
             }}
         };
 
@@ -495,6 +499,8 @@ namespace FrontLineOverlay
             BtnNextTrack.ToolTip = t["NextTrack"];
             LblSearchHistoryTitle.Text = t["SearchHistory"];
             LblSearchHistoryEmpty.Text = t["HistoryEmpty"];
+            LblFontSizeTitle.Text = t["FontSizeTitle"];
+            LblBgOpacityTitle.Text = t["BgOpacityTitle"];
             RefreshHistoryHeaders();
             RefreshHistoryDateLabels();
 

@@ -494,7 +494,7 @@
                     <Viewbox x:Name="HomeControls" Grid.RowSpan="2" Visibility="Visible" StretchDirection="DownOnly" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,10,0">
                         <Border Background="#FA0A0A0A" BorderBrush="#50FFFFFF" BorderThickness="1" CornerRadius="25" Padding="15,8">
                             <StackPanel Orientation="Horizontal">
-                                <Button x:Name="BtnReleaseNotes" Content="FRONTLINE LYRICS v1.2.0" Style="{StaticResource VersionLinkButtonStyle}" Margin="5,0,20,0" Click="BtnReleaseNotes_Click" ToolTip="See what's new in this version"/>
+                                <Button x:Name="BtnReleaseNotes" Content="FRONTLINE LYRICS v1.2.1" Style="{StaticResource VersionLinkButtonStyle}" Margin="5,0,20,0" Click="BtnReleaseNotes_Click" ToolTip="See what's new in this version"/>
                                 <Button x:Name="BtnListenBig" Content="▶ LISTEN" Style="{StaticResource GlassButton}" Margin="0,0,8,0" Click="BtnListen_Click"/>
                                 <Button x:Name="BtnSearchBig" Content="⌕ SEARCH" Style="{StaticResource GlassButton}" Margin="0,0,12,0" Click="BtnSearchShow_Click"/>
                                 <Rectangle Width="1" Fill="#33FFFFFF" Margin="0,5,12,5"/>
@@ -635,7 +635,7 @@
                             <ToggleButton x:Name="ChkKeepOriginal" Grid.Column="1" Style="{StaticResource ToggleSwitchNoLabelStyle}" Click="ChkKeepOriginal_Click" VerticalAlignment="Center"/>
                         </Grid>
 
-                        <TextBlock Text="TAMANHO DA FONTE" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,8"/>
+                        <TextBlock x:Name="LblFontSizeTitle" Text="TAMANHO DA FONTE" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,8"/>
                         <Grid Margin="0,0,0,15">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -647,7 +647,7 @@
                     </StackPanel>
 
                     <!-- Slider de Opacidade: fica sempre visível (é o controle que a prévia serve) -->
-                    <TextBlock Text="OPACIDADE DO FUNDO" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="LblBgOpacityTitle" Text="OPACIDADE DO FUNDO" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,8"/>
                     <Slider x:Name="SldBgOpacity" Style="{StaticResource GlassSlider}" Minimum="0" Maximum="1" Value="0.8" Margin="0,0,0,5" ValueChanged="SldBgOpacity_ValueChanged"/>
 
                     <StackPanel x:Name="SettingsExtras2">
