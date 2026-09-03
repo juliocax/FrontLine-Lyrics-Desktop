@@ -120,7 +120,7 @@ If you make changes to the Python backend (`FrontlineServer`), you'll also need 
 
 1. From the `FrontlineServer` folder, rebuild the `.exe` with PyInstaller:
    ```
-   pyinstaller --noconfirm --onedir --windowed --collect-all anyascii --collect-all winrt --hidden-import winrt.windows.media.control --hidden-import winrt.windows.storage.streams --name "FrontlineServer" "FrontlineServer.py"
+   pyinstaller --noconfirm --onedir --windowed --collect-all anyascii --collect-all winrt --hidden-import winrt.windows.media.control --hidden-import winrt.windows.storage.streams --hidden-import crash_guard --hidden-import media_session --name "FrontlineServer" "FrontlineServer.py""
    ```
 2. From the `dist` folder created by PyInstaller, copy the `_internal` folder and `FrontlineServer.exe`, and use them to replace the existing ones in `Frontline/FrontlineServer`.
 3. Run the `Frontline` project again — it will launch your updated server automatically.
