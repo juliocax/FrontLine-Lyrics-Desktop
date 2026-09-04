@@ -1,16 +1,10 @@
 name: Python Unit Tests
 
-# on:
-#   push:
-#     branches: [ "main", "master" ]
-#   pull_request:
-#     branches: [ "main", "master" ]
-
 on:
   push:
-    branches: [ "refactor_py_code" ]
-  
-  workflow_dispatch:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
 
 jobs:
   test:
