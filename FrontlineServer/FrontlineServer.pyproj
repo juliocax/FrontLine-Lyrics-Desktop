@@ -23,8 +23,20 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="crash_guard.py" />
-    <Compile Include="media_session.py" />
+    <Compile Include="engine\audio_capture.py" />
+    <Compile Include="engine\cover_art.py" />
+    <Compile Include="engine\crash_guard.py" />
+    <Compile Include="engine\lyrics.py" />
+    <Compile Include="engine\media_session.py" />
+    <Compile Include="engine\music_manager.py" />
+    <Compile Include="engine\recognition.py" />
+    <Compile Include="engine\smtc_policy.py" />
+    <Compile Include="engine\task_utils.py" />
+    <Compile Include="engine\translation.py" />
+    <Compile Include="engine\tuning.py" />
+    <Compile Include="engine\workers.py" />
+    <Compile Include="engine\ws_server.py" />
+    <Compile Include="engine\__init__.py" />
     <Compile Include="FrontlineServer.py" />
   </ItemGroup>
   <ItemGroup>
@@ -40,6 +52,9 @@
       <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
       <Architecture>X64</Architecture>
     </Interpreter>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="engine\" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
