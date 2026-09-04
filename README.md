@@ -30,6 +30,7 @@
 - [Usage Guide](#usage-guide)
 - [Screenshots](#screenshots)
 - [Building From Source](#building-from-source)
+- [Running Tests](#running-tests)
 - [Contributors](#contributors)
 - [Support the Project](#support-the-project)
 - [License](#license)
@@ -72,6 +73,7 @@ FrontLine Lyrics is split into two cooperating processes:
 | Translation | `deep-translator`, `translators` (parallel multi-backend resolution) |
 | Media metadata (auto-follow) | Windows Runtime — `GlobalSystemMediaTransportControlsSessionManager` via `winrt` |
 | Packaging | PyInstaller (server), MSIX (Microsoft Store) |
+| Testing | `pytest`, `pytest-asyncio`, `pytest-mock`, `requests-mock` |
 
 
 ## Installation
@@ -120,10 +122,37 @@ If you make changes to the Python backend (`FrontlineServer`), you'll also need 
 
 1. From the `FrontlineServer` folder, rebuild the `.exe` with PyInstaller:
    ```
-   pyinstaller --noconfirm --onedir --windowed --collect-all anyascii --collect-all winrt --hidden-import winrt.windows.media.control --hidden-import winrt.windows.storage.streams --hidden-import crash_guard --hidden-import media_session --name "FrontlineServer" "FrontlineServer.py""
+   pyinstaller --noconfirm --onedir --windowed --collect-all anyascii --collect-all winrt \
+     --hidden-import winrt.windows.media.control --hidden-import winrt.windows.storage.streams \
+     --hidden-import engine --hidden-import engine.crash_guard --hidden-import engine.media_session \
+     --hidden-import engine.music_manager --hidden-import engine.audio_capture \
+     --hidden-import engine.recognition --hidden-import engine.lyrics --hidden-import engine.cover_art \
+     --hidden-import engine.translation --hidden-import engine.smtc_policy --hidden-import engine.tuning \
+     --hidden-import engine.task_utils --hidden-import engine.workers --hidden-import engine.ws_server \
+     --name "FrontlineServer" "FrontlineServer.py"
    ```
 2. From the `dist` folder created by PyInstaller, copy the `_internal` folder and `FrontlineServer.exe`, and use them to replace the existing ones in `Frontline/FrontlineServer`.
 3. Run the `Frontline` project again — it will launch your updated server automatically.
+
+## Running Tests
+
+The Python backend (`FrontlineServer/engine`) has a `pytest` suite covering the pure logic modules (SMTC clock-trust heuristics, lyrics parsing/matching, translation racing, cover art caching, `MusicManager` state helpers) with all external network calls mocked, so the tests run offline and don't touch Shazam, LRCLIB, Deezer or the translation backends for real.
+
+1. From the `FrontlineServer` folder, install the runtime and test dependencies:
+   ```
+   pip install -r requirements.txt
+   pip install -r requirements-dev.txt
+   ```
+2. Run the suite:
+   ```
+   pytest
+   ```
+   Or, from the repository root:
+   ```
+   pytest FrontlineServer/tests/
+   ```
+
+Tests run automatically on every pull request via GitHub Actions (see `.github/workflows/python-tests.yml`).
 
 ## Contributors
 
