@@ -3,7 +3,7 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = []
 binaries = []
-hiddenimports = ['winrt.windows.media.control', 'winrt.windows.storage.streams', 'crash_guard', 'media_session']
+hiddenimports = ['winrt.windows.media.control', 'winrt.windows.storage.streams', 'crash_guard', 'media_session', 'music_manager', 'audio_capture', 'recognition', 'lyrics', 'cover_art', 'translation', 'smtc_policy', 'tuning', 'task_utils', 'workers', 'ws_server']
 tmp_ret = collect_all('anyascii')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('winrt')

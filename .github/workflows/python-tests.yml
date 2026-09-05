@@ -1,0 +1,36 @@
+name: Python Unit Tests
+
+on:
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  test:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout do código
+      uses: actions/checkout@v4
+
+    - name: Configurar Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+
+    - name: Instalar dependências
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        
+        # Instala dependências principais
+        if [ -f FrontlineServer/requirements.txt ]; then pip install -r FrontlineServer/requirements.txt; fi
+        
+        # Instala dependências de testes
+        if [ -f FrontlineServer/tests/requirements-dev.txt ]; then pip install -r FrontlineServer/tests/requirements-dev.txt; fi
+        
+        pip install pytest
+
+    - name: Rodar testes
+      shell: bash
+      run: |
+        pytest FrontlineServer/tests/
