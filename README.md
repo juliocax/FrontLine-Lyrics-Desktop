@@ -31,6 +31,7 @@
 - [Screenshots](#screenshots)
 - [Building From Source](#building-from-source)
 - [Running Tests](#running-tests)
+- [Contributing](#contributing)
 - [Contributors](#contributors)
 - [Support the Project](#support-the-project)
 - [License](#license)
@@ -153,6 +154,13 @@ The Python backend (`FrontlineServer/engine`) has a `pytest` suite covering the 
    ```
 
 Tests run automatically on every pull request via GitHub Actions (see `.github/workflows/python-tests.yml`).
+
+## Contributing
+
+Contributions are welcome! Before opening a pull request:
+
+- Read [CONTRIBUTING.md](CONTRIBUTING.md) for how the project is organized, how to get set up on either side, and how to run the test suite.
+- This project follows the [Code of Conduct](CODE_OF_CONDUCT.md), please read it before participating in issues, PRs, or discussions.
 
 ## Contributors
 
