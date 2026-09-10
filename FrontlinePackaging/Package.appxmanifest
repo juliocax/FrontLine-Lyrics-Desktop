@@ -9,7 +9,7 @@
   <Identity
     Name="JulioCesarAlbuquerqueXavi.FrontLineLyrics"
     Publisher="CN=julio"
-    Version="1.2.1.0" />
+    Version="1.3.0.0" />
 
   <Properties>
     <DisplayName>FrontLine Lyrics</DisplayName>
