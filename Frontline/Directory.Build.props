@@ -7,6 +7,5 @@
 		<Optimize>true</Optimize>
 		<DebugSymbols>true</DebugSymbols>
 		<DebugType>portable</DebugType>
-		<!-- NÃO ligar PublishTrimmed / PublishAot -->
 	</PropertyGroup>
 </Project>

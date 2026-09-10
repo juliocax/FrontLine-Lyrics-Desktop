@@ -8,14 +8,14 @@ using System.Text.Json;
 namespace FrontLineOverlay
 {
     /// <summary>
-    /// Preferência: Windows.Storage.ApplicationData.LocalSettings (MSIX, sobrevive
-    /// a atualização da Store). Se o app estiver unpackaged no Visual Studio, cai
-    /// para %LOCALAPPDATA%\FrontLineLyrics\settings.json.
+    /// Preference: Windows.Storage.ApplicationData.LocalSettings (MSIX, survives
+    /// Store updates). If the app is unpackaged in Visual Studio, it falls back to
+    /// %LOCALAPPDATA%\FrontLineLyrics\settings.json.
     ///
-    /// Persistência de fonte / Auto / posição: ideia original de Warith Adetayo
-    /// (%APPDATA% JSON), adaptada para ApplicationData nesta build empacotada.
-    /// Posição fica em LocalSettings de propósito — outro monitor / outro PC
-    /// não deve herdar coordenadas.
+    /// Persistence of font / Auto / position: original idea by Warith Adetayo
+    /// (%APPDATA% JSON), adapted to ApplicationData in this packaged build.
+    /// Position is intentionally kept in LocalSettings — another monitor / another
+    /// PC should not inherit these coordinates.
     /// </summary>
     internal static class AppSettings
     {
