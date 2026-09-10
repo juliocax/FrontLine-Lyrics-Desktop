@@ -97,6 +97,12 @@ class MusicManager:
         self._main_loop = None
         self.auto_hold = AutoHold(cooldown_s=2.0)
         self._last_full_lyrics_sig = None
+        self._last_festival_sig = None
+        # Festival Mode state lives here (not in reset_state()) so RESET/track
+        # transitions during a show don't drop the playlist -- only
+        # exit_festival_mode() clears it.
+        self.festival_mode: bool = False
+        self.festival_playlist: Optional[Dict[str, Any]] = None
         # Media Session (SMTC): contributed by Warith Adetayo, ported from PR #2.
         self.watcher = MediaSessionWatcher(self._on_media_snapshot)
         self.reset_state()
@@ -324,6 +330,176 @@ class MusicManager:
         )
         if lyrics and self.preferred_language:
             self._schedule_on_main(apply_translation_in_background(self, self.preferred_language))
+
+    # -- Festival Mode --
+
+    def enter_festival_mode(self, name: str, songs: List[Tuple[str, str]]):
+        """Starts Festival Mode with an initial (artist, song) list and preloads lyrics.
+
+        `songs` may be empty (no setlist.fm match / no API key) -- the user
+        builds the setlist by hand from there via festival_add_song.
+        """
+        with self._lock:
+            self._release_auto_hold()
+            self.auto_mode = False
+            self.festival_mode = True
+            self.festival_playlist = {
+                "name": name or "Festival",
+                "songs": [
+                    {"artist": a, "song": s, "lyrics": None, "has_lyrics": None} for a, s in songs
+                ],
+                "current_index": 0,
+            }
+        if songs:
+            self._festival_load_song(0)
+        else:
+            self.reset_state()
+            self.is_listening = True
+        self._schedule_on_main(self._festival_preload_all())
+        logging.info(f"Festival Mode iniciado: '{name}' com {len(songs)} música(s)")
+
+    def exit_festival_mode(self):
+        """Leaves Festival Mode. Persistence of the playlist is the frontend's job
+        (it already mirrors festival_playlist via get_current_state)."""
+        with self._lock:
+            self.festival_mode = False
+            self.festival_playlist = None
+        self.reset_state()
+        logging.info("Festival Mode encerrado")
+
+    async def _festival_preload_all(self):
+        """Fetches synced lyrics for every song in the current playlist, in parallel."""
+        playlist = self.festival_playlist
+        if not playlist:
+            return
+        loop = asyncio.get_event_loop()
+        songs = playlist["songs"]
+
+        async def load_one(i: int, entry: Dict[str, Any]):
+            if entry.get("lyrics") is not None or entry.get("has_lyrics") is False:
+                return  # already resolved (e.g. added manually with a hit/miss already known)
+            lines = await loop.run_in_executor(
+                None, lyrics_mod.fetch_lyrics_lrclib, entry["artist"], entry["song"]
+            )
+            if self.festival_playlist is not playlist or i >= len(playlist["songs"]):
+                return  # festival was exited / playlist replaced mid-preload
+            playlist["songs"][i]["lyrics"] = lines
+            playlist["songs"][i]["has_lyrics"] = bool(lines)
+            # Refresh on-screen lyrics if this is the song currently displayed
+            # and it hadn't resolved yet (e.g. it was the very first song).
+            if playlist["current_index"] == i and not self.synced_lyrics and lines:
+                self.original_lyrics = self.synced_lyrics = lines
+
+        await asyncio.gather(*(load_one(i, e) for i, e in enumerate(songs)))
+        logging.info(f"Festival Mode: preload de {len(songs)} música(s) concluído")
+
+    def _festival_load_song(self, index: int):
+        """Makes playlist[index] the current track, parked in manual sync
+        (waiting for the user to tap the first line -- see SET_SYNC_TIME)."""
+        playlist = self.festival_playlist
+        if not playlist:
+            return
+        songs = playlist["songs"]
+        if not (0 <= index < len(songs)):
+            return
+        entry = songs[index]
+        with self._lock:
+            playlist["current_index"] = index
+            self.session_id = time.time()
+            self.current_song, self.current_artist = entry["song"], entry["artist"]
+            self.current_cover = ""
+            self.original_lyrics = self.synced_lyrics = entry.get("lyrics") or []
+            self.cached_translations = {}
+            self.current_language = "original"
+            self.search_completed = True
+            self.manual_mode = True
+            self.is_listening = True
+            self.track_source = "festival"
+            # Clock parked at "now" until the user taps a line in the full-lyrics
+            # view (FullLyricsList_SelectionChanged -> SET_SYNC_TIME) or the
+            # quick prev/next controls (festival_jump_line) move it.
+            self.clock_paused = True
+            self.pause_moment = time.time()
+            self.system_reference_time = time.time()
+            self.media_paused = False
+            self.not_found_since = None if entry.get("has_lyrics") else time.time()
+        logging.info(f"Festival Mode: tocando agora -> {entry['song']} - {entry['artist']}")
+
+    def festival_next_song(self):
+        if not self.festival_playlist:
+            return
+        self._festival_load_song(self.festival_playlist["current_index"] + 1)
+
+    def festival_prev_song(self):
+        if not self.festival_playlist:
+            return
+        self._festival_load_song(self.festival_playlist["current_index"] - 1)
+
+    def festival_jump_line(self, delta: int):
+        """Quick sync correction: move the anchor to the next/previous lyric
+        line without opening the full manual-sync line list."""
+        if not self.synced_lyrics:
+            return
+        elapsed = self._elapsed_now()
+        idx = 0
+        for i, item in enumerate(self.synced_lyrics):
+            if elapsed >= item["timestamp"]:
+                idx = i
+            else:
+                break
+        new_idx = max(0, min(len(self.synced_lyrics) - 1, idx + delta))
+        target_ts = self.synced_lyrics[new_idx]["timestamp"]
+        with self._lock:
+            self.system_reference_time = time.time() - target_ts
+            self.clock_paused = False
+            self.pause_moment = 0.0
+
+    def festival_add_song(self, artist: str, song: str, make_current: bool = False):
+        """Adds a song to the live playlist (or just moves the pointer if it's
+        already there). Lyrics get filled in by _festival_preload_all() or, for
+        a MANUAL_SEARCH hit, by festival_update_song_lyrics()."""
+        playlist = self.festival_playlist
+        if not playlist:
+            return
+        key = self._track_key(song, artist)
+        songs = playlist["songs"]
+        idx = next((i for i, e in enumerate(songs) if self._track_key(e["song"], e["artist"]) == key), None)
+        if idx is None:
+            songs.append({"artist": artist, "song": song, "lyrics": None, "has_lyrics": None})
+            idx = len(songs) - 1
+        if make_current:
+            playlist["current_index"] = idx
+
+    def festival_update_song_lyrics(self, song: str, artist: str, lyrics: Optional[List[Dict[str, Any]]]):
+        """Called after a MANUAL_SEARCH resolves while in Festival Mode, so the
+        playlist entry reflects what was actually found (item 7)."""
+        playlist = self.festival_playlist
+        if not playlist:
+            return
+        key = self._track_key(song, artist)
+        for entry in playlist["songs"]:
+            if self._track_key(entry["song"], entry["artist"]) == key:
+                entry["lyrics"] = lyrics
+                entry["has_lyrics"] = bool(lyrics)
+                return
+
+    def festival_remove_song(self, index: int):
+        playlist = self.festival_playlist
+        if not playlist:
+            return
+        songs = playlist["songs"]
+        if 0 <= index < len(songs):
+            songs.pop(index)
+            if playlist["current_index"] >= len(songs):
+                playlist["current_index"] = max(0, len(songs) - 1)
+
+    def festival_reorder_song(self, from_index: int, to_index: int):
+        playlist = self.festival_playlist
+        if not playlist:
+            return
+        songs = playlist["songs"]
+        if 0 <= from_index < len(songs) and 0 <= to_index < len(songs):
+            songs.insert(to_index, songs.pop(from_index))
 
     def _schedule_on_main(self, coro):
         """Schedule a coroutine on the server's main loop, even if called from the SMTC thread."""
@@ -704,4 +880,19 @@ class MusicManager:
         if sig != self._last_full_lyrics_sig:
             self._last_full_lyrics_sig = sig
             payload["full_lyrics"] = full
+
+        payload["festival_mode"] = self.festival_mode
+        if self.festival_mode and self.festival_playlist:
+            fp = self.festival_playlist
+            fp_sig = (id(fp), fp["current_index"], tuple((e["song"], e["artist"], e["has_lyrics"]) for e in fp["songs"]))
+            if fp_sig != self._last_festival_sig:
+                self._last_festival_sig = fp_sig
+                payload["festival_playlist"] = {
+                    "name": fp["name"],
+                    "current_index": fp["current_index"],
+                    "songs": [
+                        {"artist": e["artist"], "song": e["song"], "has_lyrics": e["has_lyrics"]}
+                        for e in fp["songs"]
+                    ],
+                }
         return payload
