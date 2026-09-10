@@ -8,6 +8,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Navigation;
+using System.Threading.Tasks;
 
 namespace FrontLineOverlay
 {
@@ -18,6 +19,7 @@ namespace FrontLineOverlay
 
         private readonly ObservableCollection<FestivalPlaylistVm> _festivalPlaylists = [];
         private readonly ObservableCollection<FestivalSongEntry> _festivalSongs = [];
+        private readonly ObservableCollection<SetlistFmResult> _festivalSearchResults = [];
 
         private bool _festivalModeActive;
         private bool _festivalAwaitingFirstTap;
@@ -39,8 +41,10 @@ namespace FrontLineOverlay
             {
                 FestivalPlaylistList.ItemsSource = _festivalPlaylists;
                 FestivalSongList.ItemsSource = _festivalSongs;
+                FestivalSetlistSearchList.ItemsSource = _festivalSearchResults;
                 LoadStoredApiKey();
                 RefreshFestivalList();
+                RefreshFestivalCreateMode();
             }
             catch (Exception ex) { CrashReporter.Log(ex, "InitFestivalMode"); }
         }
@@ -64,6 +68,7 @@ namespace FrontLineOverlay
             }
             finally { _apiKeySuppressChange = false; }
             RefreshApiKeyStateLabel();
+            RefreshFestivalCreateMode();
         }
 
         private void RefreshApiKeyStateLabel()
@@ -110,7 +115,7 @@ namespace FrontLineOverlay
             catch (Exception ex)
             {
                 CrashReporter.Log(ex, "FestivalApiLink");
-                MessageBox.Show("Não foi possível abrir o link: " + ex.Message);
+                AlertDark("Não foi possível abrir o link: " + ex.Message);
             }
             e.Handled = true;
         }
@@ -131,6 +136,7 @@ namespace FrontLineOverlay
                 RefreshFestivalList();
                 FestivalHubPanel.Visibility = Visibility.Visible;
                 HomeControls.Visibility = Visibility.Collapsed;
+                SetOverlayBackVisible(true);
                 if (showEditor && _editingPlaylist != null)
                     ShowFestivalEditor(_editingPlaylist);
                 else
@@ -150,7 +156,7 @@ namespace FrontLineOverlay
             _preFestivalHubWidth = Width;
             _preFestivalHubHeight = Height;
             if (Width < 760) Width = 760;
-            if (Height < 430) Height = 430;
+            if (Height < 470) Height = 470;
             _resizedForFestivalHub = true;
         }
 
@@ -166,6 +172,9 @@ namespace FrontLineOverlay
         {
             FestivalHubPanel.Visibility = Visibility.Collapsed;
             LblFestivalFetchStatus.Text = "";
+            ClearFestivalSearchResults();
+            if (SearchInputPanel?.Visibility != Visibility.Visible)
+                SetOverlayBackVisible(false);
             if (restoreHome && !_festivalModeActive && currentAppStatus == "IDLE")
             {
                 HomeControls.Visibility = Visibility.Visible;
@@ -194,6 +203,63 @@ namespace FrontLineOverlay
                 return;
             }
             CloseFestivalHub(restoreHome: true);
+        }
+
+        private void SetOverlayBackVisible(bool visible)
+        {
+            if (BtnOverlayBack != null)
+                BtnOverlayBack.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void BtnOverlayBack_Click(object sender, RoutedEventArgs e)
+        {
+            if (SearchInputPanel.Visibility == Visibility.Visible)
+            {
+                BtnSearchCancel_Click(sender, e);
+                return;
+            }
+            if (FestivalEditorView.Visibility == Visibility.Visible)
+            {
+                BtnFestivalEditorBack_Click(sender, e);
+                return;
+            }
+            BtnFestivalHubClose_Click(sender, e);
+        }
+
+        private bool HasSetlistApiKey => !string.IsNullOrWhiteSpace(_setlistApiKey);
+
+        private void RefreshFestivalCreateMode()
+        {
+            if (LblFestivalNewArtist == null) return;
+            var t = uiStrings[currentAppLanguage];
+            if (FestivalSearchFilters != null)
+                FestivalSearchFilters.Visibility = HasSetlistApiKey ? Visibility.Visible : Visibility.Collapsed;
+            if (HasSetlistApiKey)
+            {
+                LblFestivalNewArtist.Text = t["FestivalSearchArtist"];
+                BtnFestivalCreate.Content = t["FestivalSearch"];
+                LblFestivalEmpty.Text = t["FestivalEmptySearch"];
+            }
+            else
+            {
+                LblFestivalNewArtist.Text = t["FestivalPlaylistName"];
+                BtnFestivalCreate.Content = t["FestivalCreate"];
+                LblFestivalEmpty.Text = t["FestivalEmpty"];
+                ClearFestivalSearchResults();
+            }
+        }
+
+        private void ClearFestivalSearchResults()
+        {
+            _festivalSearchResults.Clear();
+            if (FestivalSearchResultsPanel != null)
+                FestivalSearchResultsPanel.Visibility = Visibility.Collapsed;
+            if (BtnFestivalCreateFromResult != null)
+                BtnFestivalCreateFromResult.Visibility = Visibility.Collapsed;
+            if (LblFestivalNoResults != null)
+                LblFestivalNoResults.Visibility = Visibility.Collapsed;
+            if (FestivalSetlistSearchList != null)
+                FestivalSetlistSearchList.Visibility = Visibility.Visible;
         }
 
         private void ShowFestivalList()
@@ -244,34 +310,101 @@ namespace FrontLineOverlay
 
         private async void BtnFestivalCreate_Click(object sender, RoutedEventArgs e)
         {
-            string artist = (TxtFestivalArtist.Text ?? "").Trim();
-            if (string.IsNullOrEmpty(artist)) return;
+            string query = (TxtFestivalArtist.Text ?? "").Trim();
+            if (string.IsNullOrEmpty(query)) return;
 
-            var t = uiStrings[currentAppLanguage];
-            BtnFestivalCreate.IsEnabled = false;
-            LblFestivalFetchStatus.Text = t["FestivalFetching"];
-            List<FestivalSongEntry>? songs = null;
-            try
+            if (!HasSetlistApiKey)
             {
-                if (!string.IsNullOrEmpty(_setlistApiKey))
-                    songs = await SetlistFmClient.FetchLatestSetlist(_setlistApiKey, artist);
-            }
-            catch (Exception ex) { CrashReporter.Log(ex, "FestivalCreate"); }
-            finally
-            {
-                BtnFestivalCreate.IsEnabled = true;
+                CreateBlankPlaylist(query);
+                return;
             }
 
+            await SearchSetlists(query);
+        }
+
+        private void CreateBlankPlaylist(string name)
+        {
             var entry = new FestivalPlaylistEntry
             {
-                Name = artist,
-                Artist = artist,
-                Songs = songs ?? [],
+                Name = name,
+                Artist = name,
+                Songs = [],
             };
             FestivalPlaylistStore.Upsert(entry);
             TxtFestivalArtist.Text = "";
             RefreshFestivalList();
-            LblFestivalFetchStatus.Text = songs == null || songs.Count == 0 ? t["FestivalNoSetlist"] : "";
+            LblFestivalFetchStatus.Text = "";
+            ShowFestivalEditor(entry);
+        }
+
+        private async Task SearchSetlists(string artist)
+        {
+            var t = uiStrings[currentAppLanguage];
+            BtnFestivalCreate.IsEnabled = false;
+            LblFestivalFetchStatus.Text = t["FestivalFetching"];
+            ClearFestivalSearchResults();
+            try
+            {
+                var results = await SetlistFmClient.FetchRecentSetlists(
+                    _setlistApiKey,
+                    artist,
+                    TxtFestivalCountry.Text,
+                    TxtFestivalVenue.Text,
+                    TxtFestivalYear.Text,
+                    10);
+                _festivalSearchResults.Clear();
+                foreach (var r in results)
+                    _festivalSearchResults.Add(r);
+                bool empty = results.Count == 0;
+                FestivalSearchResultsPanel.Visibility = Visibility.Visible;
+                FestivalSetlistSearchList.Visibility = empty ? Visibility.Collapsed : Visibility.Visible;
+                LblFestivalNoResults.Text = t["FestivalNoResults"];
+                LblFestivalNoResults.Visibility = empty ? Visibility.Visible : Visibility.Collapsed;
+                LblFestivalFetchStatus.Text = "";
+                BtnFestivalCreateFromResult.Visibility = Visibility.Collapsed;
+            }
+            catch (InvalidOperationException)
+            {
+                LblFestivalFetchStatus.Text = t["FestivalApiKeyBad"];
+            }
+            catch (Exception ex)
+            {
+                CrashReporter.Log(ex, "FestivalSearch");
+                FestivalSearchResultsPanel.Visibility = Visibility.Visible;
+                FestivalSetlistSearchList.Visibility = Visibility.Collapsed;
+                LblFestivalNoResults.Text = t["FestivalNoResults"];
+                LblFestivalNoResults.Visibility = Visibility.Visible;
+                LblFestivalFetchStatus.Text = "";
+            }
+            finally
+            {
+                BtnFestivalCreate.IsEnabled = true;
+            }
+        }
+
+        private void FestivalSetlistSearchList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            BtnFestivalCreateFromResult.Visibility =
+                FestivalSetlistSearchList.SelectedItem is SetlistFmResult ? Visibility.Visible : Visibility.Collapsed;
+        }
+
+        private void BtnFestivalCreateFromResult_Click(object sender, RoutedEventArgs e)
+        {
+            if (FestivalSetlistSearchList.SelectedItem is not SetlistFmResult pick) return;
+            var entry = new FestivalPlaylistEntry
+            {
+                Name = pick.SuggestedName,
+                Artist = pick.Artist,
+                Songs = pick.Songs.ToList(),
+            };
+            FestivalPlaylistStore.Upsert(entry);
+            TxtFestivalArtist.Text = "";
+            TxtFestivalCountry.Text = "";
+            TxtFestivalVenue.Text = "";
+            TxtFestivalYear.Text = "";
+            ClearFestivalSearchResults();
+            RefreshFestivalList();
+            LblFestivalFetchStatus.Text = "";
             ShowFestivalEditor(entry);
         }
 
@@ -299,8 +432,7 @@ namespace FrontLineOverlay
             if (sender is not FrameworkElement fe || fe.DataContext is not FestivalPlaylistVm vm)
                 return;
             var t = uiStrings[currentAppLanguage];
-            var result = MessageBox.Show(t["FestivalDeleteConfirm"], t["FestivalMode"], MessageBoxButton.YesNo, MessageBoxImage.Question);
-            if (result != MessageBoxResult.Yes) return;
+            if (!ConfirmDark(t["FestivalMode"], t["FestivalDeleteConfirm"])) return;
             FestivalPlaylistStore.Delete(vm.Entry.Id);
             if (_editingPlaylist?.Id == vm.Entry.Id) _editingPlaylist = null;
             if (_activeFestival?.Id == vm.Entry.Id && _festivalModeActive)
@@ -366,28 +498,188 @@ namespace FrontLineOverlay
             return (sender as FrameworkElement)?.DataContext as FestivalSongEntry;
         }
 
-        private void BtnFestivalSongUp_Click(object sender, RoutedEventArgs e)
+        private Point _festivalDragStart;
+        private FestivalSongEntry? _festivalDragItem;
+        private ListBoxItem? _festivalDragContainer;
+        private Brush? _festivalDragBorderBrush;
+        private Brush? _festivalDragBackground;
+
+        private void FestivalSongList_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            var row = SongFromSender(sender);
-            if (row == null) return;
-            int i = _festivalSongs.IndexOf(row);
-            if (i <= 0) return;
-            _festivalSongs.Move(i, i - 1);
-            PersistEditingPlaylist();
-            if (_festivalModeActive)
-                SendCommand("FESTIVAL_REORDER", extra: new Dictionary<string, object?> { ["from_index"] = i, ["to_index"] = i - 1 });
+            if (FindVisualAncestor<Button>(e.OriginalSource as DependencyObject) != null)
+            {
+                _festivalDragItem = null;
+                return;
+            }
+            _festivalDragStart = e.GetPosition(null);
+            _festivalDragItem = FestivalSongAt(e.OriginalSource as DependencyObject)
+                ?? FestivalSongAtPoint(e.GetPosition(FestivalSongList));
         }
 
-        private void BtnFestivalSongDown_Click(object sender, RoutedEventArgs e)
+        private void FestivalSongList_PreviewMouseMove(object sender, MouseEventArgs e)
         {
-            var row = SongFromSender(sender);
-            if (row == null) return;
-            int i = _festivalSongs.IndexOf(row);
-            if (i < 0 || i >= _festivalSongs.Count - 1) return;
-            _festivalSongs.Move(i, i + 1);
+            if (e.LeftButton != MouseButtonState.Pressed || _festivalDragItem == null) return;
+            Point pos = e.GetPosition(null);
+            if (Math.Abs(pos.X - _festivalDragStart.X) < SystemParameters.MinimumHorizontalDragDistance
+                && Math.Abs(pos.Y - _festivalDragStart.Y) < SystemParameters.MinimumVerticalDragDistance)
+                return;
+
+            var payload = _festivalDragItem;
+            BeginFestivalDragVisual(payload);
+            try
+            {
+                DragDrop.DoDragDrop(FestivalSongList, payload, DragDropEffects.Move);
+            }
+            finally
+            {
+                EndFestivalDragVisual();
+                _festivalDragItem = null;
+            }
+        }
+
+        private void FestivalSongList_GiveFeedback(object sender, GiveFeedbackEventArgs e)
+        {
+            e.UseDefaultCursors = false;
+            Mouse.SetCursor(Cursors.SizeAll);
+            e.Handled = true;
+        }
+
+        private void FestivalSongList_DragOver(object sender, DragEventArgs e)
+        {
+            bool ok = e.Data.GetDataPresent(typeof(FestivalSongEntry));
+            e.Effects = ok ? DragDropEffects.Move : DragDropEffects.None;
+            if (ok)
+                ShowFestivalDropCue(FestivalInsertIndex(e.GetPosition(FestivalSongListHost)));
+            else if (FestivalDropCue != null)
+                FestivalDropCue.Visibility = Visibility.Collapsed;
+            e.Handled = true;
+        }
+
+        private void FestivalSongList_Drop(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetData(typeof(FestivalSongEntry)) is not FestivalSongEntry moved) return;
+            int from = _festivalSongs.IndexOf(moved);
+            if (from < 0) return;
+            int insertAt = FestivalInsertIndex(e.GetPosition(FestivalSongListHost));
+            if (from < insertAt) insertAt--;
+            insertAt = Math.Clamp(insertAt, 0, Math.Max(0, _festivalSongs.Count - 1));
+            if (from == insertAt) return;
+            _festivalSongs.Move(from, insertAt);
             PersistEditingPlaylist();
             if (_festivalModeActive)
-                SendCommand("FESTIVAL_REORDER", extra: new Dictionary<string, object?> { ["from_index"] = i, ["to_index"] = i + 1 });
+            {
+                SendCommand("FESTIVAL_REORDER", extra: new Dictionary<string, object?>
+                {
+                    ["from_index"] = from,
+                    ["to_index"] = insertAt,
+                });
+            }
+            e.Handled = true;
+        }
+
+        private int FestivalInsertIndex(Point posInHost)
+        {
+            int count = _festivalSongs.Count;
+            if (count == 0) return 0;
+            for (int i = 0; i < count; i++)
+            {
+                if (FestivalSongList.ItemContainerGenerator.ContainerFromIndex(i) is not ListBoxItem item)
+                    continue;
+                Point top = item.TranslatePoint(new Point(0, 0), FestivalSongListHost);
+                if (posInHost.Y < top.Y + item.ActualHeight / 2)
+                    return i;
+            }
+            return count;
+        }
+
+        private void ShowFestivalDropCue(int insertAt)
+        {
+            if (FestivalDropCue == null || FestivalSongListHost == null) return;
+            double y;
+            int count = _festivalSongs.Count;
+            if (count == 0)
+            {
+                y = 6;
+            }
+            else if (insertAt >= count)
+            {
+                if (FestivalSongList.ItemContainerGenerator.ContainerFromIndex(count - 1) is not ListBoxItem last)
+                {
+                    FestivalDropCue.Visibility = Visibility.Collapsed;
+                    return;
+                }
+                y = last.TranslatePoint(new Point(0, last.ActualHeight), FestivalSongListHost).Y;
+            }
+            else
+            {
+                if (FestivalSongList.ItemContainerGenerator.ContainerFromIndex(insertAt) is not ListBoxItem item)
+                {
+                    FestivalDropCue.Visibility = Visibility.Collapsed;
+                    return;
+                }
+                y = item.TranslatePoint(new Point(0, 0), FestivalSongListHost).Y;
+            }
+
+            FestivalDropCue.Width = Math.Max(48, FestivalSongListHost.ActualWidth - 16);
+            Canvas.SetLeft(FestivalDropCue, 8);
+            Canvas.SetTop(FestivalDropCue, y - 1.5);
+            FestivalDropCue.Visibility = Visibility.Visible;
+        }
+
+        private void BeginFestivalDragVisual(FestivalSongEntry song)
+        {
+            _festivalDragContainer = FestivalSongList.ItemContainerGenerator.ContainerFromItem(song) as ListBoxItem;
+            if (_festivalDragContainer == null) return;
+            _festivalDragContainer.Opacity = 0.4;
+            _festivalDragContainer.RenderTransformOrigin = new Point(0.5, 0.5);
+            _festivalDragContainer.RenderTransform = new ScaleTransform(0.97, 0.97);
+            if (_festivalDragContainer.Template?.FindName("Bd", _festivalDragContainer) is Border bd)
+            {
+                _festivalDragBackground = bd.Background;
+                _festivalDragBorderBrush = bd.BorderBrush;
+                bd.Background = new SolidColorBrush(Color.FromArgb(0x70, 0x7A, 0x53, 0xE4));
+                bd.BorderBrush = new SolidColorBrush(Color.FromArgb(0xEE, 0xC4, 0xB5, 0xFD));
+            }
+        }
+
+        private void EndFestivalDragVisual()
+        {
+            if (FestivalDropCue != null)
+                FestivalDropCue.Visibility = Visibility.Collapsed;
+            if (_festivalDragContainer != null)
+            {
+                _festivalDragContainer.Opacity = 1;
+                _festivalDragContainer.RenderTransform = Transform.Identity;
+                if (_festivalDragContainer.Template?.FindName("Bd", _festivalDragContainer) is Border bd)
+                {
+                    bd.Background = _festivalDragBackground ?? Brushes.Transparent;
+                    bd.BorderBrush = _festivalDragBorderBrush ?? Brushes.Transparent;
+                }
+            }
+            _festivalDragContainer = null;
+            _festivalDragBackground = null;
+            _festivalDragBorderBrush = null;
+        }
+
+        private FestivalSongEntry? FestivalSongAt(DependencyObject? source)
+        {
+            var item = FindVisualAncestor<ListBoxItem>(source);
+            return item?.DataContext as FestivalSongEntry;
+        }
+
+        private FestivalSongEntry? FestivalSongAtPoint(Point p)
+        {
+            return FestivalSongAt(FestivalSongList.InputHitTest(p) as DependencyObject);
+        }
+
+        private static T? FindVisualAncestor<T>(DependencyObject? current) where T : DependencyObject
+        {
+            while (current != null)
+            {
+                if (current is T match) return match;
+                current = VisualTreeHelper.GetParent(current);
+            }
+            return null;
         }
 
         private void BtnFestivalSongDelete_Click(object sender, RoutedEventArgs e)
@@ -471,6 +763,16 @@ namespace FrontLineOverlay
             OpenFestivalHub(showEditor: true);
         }
 
+        private void BtnFestivalPrevTrack_Click(object sender, RoutedEventArgs e)
+        {
+            SendCommand("FESTIVAL_PREV_SONG");
+        }
+
+        private void BtnFestivalNextTrack_Click(object sender, RoutedEventArgs e)
+        {
+            SendCommand("FESTIVAL_NEXT_SONG");
+        }
+
         private void BtnFestivalPrevLine_Click(object sender, RoutedEventArgs e)
         {
             _festivalAwaitingFirstTap = false;
@@ -494,9 +796,10 @@ namespace FrontLineOverlay
             if (PlayingControlsNormal == null) return;
             PlayingControlsNormal.Visibility = on ? Visibility.Collapsed : Visibility.Visible;
             PlayingControlsFestival.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
+            SyncFestivalLineSkip();
         }
 
-        private void ApplyFestivalFromServer(bool festivalMode, string artist, string song)
+        private void ApplyFestivalFromServer(bool festivalMode, string artist, string song, string status, string? nextSong, string? nextArtist)
         {
             bool wasActive = _festivalModeActive;
             _festivalModeActive = festivalMode;
@@ -513,14 +816,32 @@ namespace FrontLineOverlay
             if (!festivalMode)
                 _lastFestivalSongKey = "";
 
-            if (festivalMode && _festivalAwaitingFirstTap && !string.IsNullOrEmpty(song) && !IsFestivalHubOpen)
+            bool offerAdvance = festivalMode && !string.IsNullOrWhiteSpace(nextSong);
+            UpdateFestivalAdvancePanel(offerAdvance, nextSong, nextArtist);
+
+            bool hasLyricRows = FullLyricsList.ItemsSource is System.Collections.IEnumerable rows
+                && rows.Cast<object>().Any();
+            bool showFirstTap = festivalMode && _festivalAwaitingFirstTap && !offerAdvance
+                && status == "SYNCED" && hasLyricRows && !IsFestivalHubOpen;
+
+            if (offerAdvance)
+            {
+                isManualSyncMode = false;
+                FullLyricsList.Visibility = Visibility.Collapsed;
+                LyricsNormalView.Visibility = Visibility.Collapsed;
+            }
+            else if (showFirstTap)
             {
                 isManualSyncMode = true;
-                if (FullLyricsList.ItemsSource != null)
-                {
-                    FullLyricsList.Visibility = Visibility.Visible;
-                    LyricsNormalView.Visibility = Visibility.Collapsed;
-                }
+                FullLyricsList.Visibility = Visibility.Visible;
+                LyricsNormalView.Visibility = Visibility.Collapsed;
+            }
+            else if (festivalMode && (status == "NOT_FOUND" || status == "SEARCHING"))
+            {
+                isManualSyncMode = false;
+                FullLyricsList.Visibility = Visibility.Collapsed;
+                if (status == "NOT_FOUND")
+                    LyricsNormalView.Visibility = Visibility.Visible;
             }
 
             if (!festivalMode && wasActive && !IsFestivalHubOpen)
@@ -528,8 +849,33 @@ namespace FrontLineOverlay
                 _festivalAwaitingFirstTap = false;
                 isManualSyncMode = false;
                 FullLyricsList.Visibility = Visibility.Collapsed;
+                if (FestivalAdvanceView != null) FestivalAdvanceView.Visibility = Visibility.Collapsed;
                 ApplyFestivalPlayingChrome(false);
             }
+        }
+
+        private void UpdateFestivalAdvancePanel(bool show, string? song, string? artist)
+        {
+            if (FestivalAdvanceView == null) return;
+            if (!show)
+            {
+                FestivalAdvanceView.Visibility = Visibility.Collapsed;
+                return;
+            }
+
+            var t = uiStrings[currentAppLanguage];
+            LblFestivalAdvanceHint.Text = t["FestivalNextUp"];
+            LblFestivalAdvanceSong.Text = song ?? "";
+            LblFestivalAdvanceArtist.Text = artist ?? "";
+            BtnFestivalAdvance.Content = t["FestivalContinue"];
+            FestivalAdvanceView.Visibility = Visibility.Visible;
+        }
+
+        private void BtnFestivalAdvance_Click(object sender, RoutedEventArgs e)
+        {
+            if (FestivalAdvanceView != null)
+                FestivalAdvanceView.Visibility = Visibility.Collapsed;
+            SendCommand("FESTIVAL_NEXT_SONG");
         }
 
         private void OnFestivalLinePicked()
@@ -560,28 +906,32 @@ namespace FrontLineOverlay
         internal void ApplyFestivalUiLanguage()
         {
             if (!uiStrings.TryGetValue(currentAppLanguage, out var t)) return;
-            BtnFestivalBig.Content = t["Festival"];
+            BtnFestivalBig.ToolTip = t["TipFestival"];
+            TxtFestivalBig.Text = t["Festival"];
             LblFestivalTitle.Text = t["FestivalMode"];
             LblFestivalIntro.Text = t["FestivalIntro"];
             LblFestivalApiKey.Text = t["FestivalApiKey"];
             BtnFestivalSaveKey.Content = t["FestivalSaveKey"];
             TxtFestivalApiLink.Text = t["FestivalApiLink"];
-            BtnFestivalHubClose.Content = t["FestivalClose"];
             LblFestivalPlaylists.Text = t["FestivalPlaylists"];
-            LblFestivalNewArtist.Text = t["FestivalNewArtist"];
-            BtnFestivalCreate.Content = t["FestivalCreate"];
-            LblFestivalEmpty.Text = t["FestivalEmpty"];
+            LblFestivalSearchCountry.Text = t["FestivalSearchCountry"];
+            LblFestivalSearchVenue.Text = t["FestivalSearchVenue"];
+            LblFestivalSearchYear.Text = t["FestivalSearchYear"];
+            LblFestivalSearchResults.Text = t["FestivalSearchResults"];
+            LblFestivalNoResults.Text = t["FestivalNoResults"];
+            BtnFestivalCreateFromResult.Content = t["FestivalCreateFromResult"];
             LblFestivalEditorTitle.Text = t["FestivalEditorTitle"];
-            BtnFestivalEditorBack.Content = t["FestivalBack"];
             LblFestivalSongsEmpty.Text = t["FestivalSongsEmpty"];
+            if (FestivalSongList != null) FestivalSongList.ToolTip = t["FestivalDragHint"];
             LblFestivalAddArtist.Text = t["Artist"].TrimEnd(':');
             LblFestivalAddSong.Text = t["Song"].TrimEnd(':');
             BtnFestivalAddSong.Content = t["FestivalAdd"];
             BtnFestivalStart.Content = _festivalModeActive ? t["FestivalDone"] : t["FestivalStart"];
-            BtnFestivalEdit.Content = t["FestivalEdit"];
-            BtnFestivalStop.Content = t["FestivalStop"];
-            BtnFestivalPrevLine.ToolTip = t["FestivalPrevLine"];
-            BtnFestivalNextLine.ToolTip = t["FestivalNextLine"];
+            if (BtnFestivalAdvance != null) BtnFestivalAdvance.Content = t["FestivalContinue"];
+            if (LblFestivalAdvanceHint != null) LblFestivalAdvanceHint.Text = t["FestivalNextUp"];
+            TxtFestivalEdit.Text = t["FestivalEdit"];
+            TxtFestivalStop.Text = t["FestivalStop"];
+            RefreshFestivalCreateMode();
             RefreshApiKeyStateLabel();
             RefreshFestivalList();
         }

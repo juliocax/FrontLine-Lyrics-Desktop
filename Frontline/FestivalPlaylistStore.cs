@@ -8,10 +8,10 @@ using System.Text.Json.Serialization;
 namespace FrontLineOverlay
 {
     /// <summary>
-    /// Playlists de Festival Mode salvas localmente. Propositalmente separado
-    /// de SearchHistory.cs (aquele é o histórico de busca manual, este é a
-    /// tela de "meus festivais salvos").
-    /// Arquivo: %LOCALAPPDATA%\FrontLineLyrics\festival-playlists.json
+    /// Festival Mode playlists saved locally. Intentionally separate
+    /// from SearchHistory.cs (that is the manual search history; this is the
+    /// "my saved festivals" screen).
+    /// File: %LOCALAPPDATA%\FrontLineLyrics\festival-playlists.json
     /// </summary>
     internal static class FestivalPlaylistStore
     {
@@ -48,8 +48,8 @@ namespace FrontLineOverlay
             catch (Exception ex) { CrashReporter.Log(ex, "FestivalPlaylistStore.SaveAll"); }
         }
 
-        /// <summary>Insere ou atualiza por Id e persiste a lista inteira.
-        /// Chamar ao sair do Festival Mode (ou a qualquer momento em "editar depois").</summary>
+        /// <summary>Inserts or updates by Id and persists the entire list.
+        /// Call when leaving Festival Mode (or at any time when "editing later").</summary>
         public static void Upsert(FestivalPlaylistEntry entry)
         {
             var all = Load();
