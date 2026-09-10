@@ -26,10 +26,12 @@
     <Compile Include="engine\audio_capture.py" />
     <Compile Include="engine\cover_art.py" />
     <Compile Include="engine\crash_guard.py" />
+    <Compile Include="engine\festival_ws.py" />
     <Compile Include="engine\lyrics.py" />
     <Compile Include="engine\media_session.py" />
     <Compile Include="engine\music_manager.py" />
     <Compile Include="engine\recognition.py" />
+    <Compile Include="engine\setlistfm_client.py" />
     <Compile Include="engine\smtc_policy.py" />
     <Compile Include="engine\task_utils.py" />
     <Compile Include="engine\translation.py" />
