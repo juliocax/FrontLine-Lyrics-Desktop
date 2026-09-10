@@ -16,6 +16,7 @@ import time
 
 import websockets
 
+from engine.setlistfm_client import fetch_latest_setlist
 from engine.smtc_policy import MAX_MEDIA_POSITION_S
 from engine.task_utils import spawn_task
 from engine.translation import apply_translation_in_background
@@ -29,6 +30,26 @@ def configure(app_manager):
     """Wire up the MusicManager instance this module should drive. Call once, before serving."""
     global manager
     manager = app_manager
+
+
+async def _start_festival(app_manager, name: str, artist: str, api_key: str, songs):
+    """Resolves the initial setlist (if an API key + artist were given and the
+    frontend didn't already send a hand-built list) and enters Festival Mode.
+
+    The setlist.fm call happens here (server side) so the frontend never talks
+    HTTP directly, same as every other lyrics/cover/translation lookup.
+    """
+    loop = asyncio.get_event_loop()
+    if not songs and api_key and artist:
+        try:
+            fetched = await loop.run_in_executor(None, fetch_latest_setlist, api_key, artist)
+        except Exception:
+            logging.exception("setlist.fm: falha ao buscar setlist para %s", artist)
+            fetched = None
+        songs = fetched or []
+        if not songs:
+            logging.info("setlist.fm: nenhum setlist encontrado para '%s'; playlist vazia", artist)
+    app_manager.enter_festival_mode(name, songs)
 
 
 async def ws_handler(websocket):
@@ -103,7 +124,39 @@ async def ws_handler(websocket):
                         manager.manual_mode = True
                         manager.current_song, manager.current_artist = song, artist
                         manager.is_listening = True
+                        if manager.festival_mode:
+                            # Item 7: a manual search during a festival is treated as
+                            # the user correcting a missing/wrong setlist entry.
+                            manager.festival_add_song(artist, song, make_current=True)
                         spawn_task(run_manual_search(manager, artist, song, manager.session_id))
+                elif action == "FESTIVAL_ENTER":
+                    name = command.get("name", "") or command.get("artist", "") or "Festival"
+                    artist = command.get("artist", "")
+                    api_key = command.get("api_key", "")
+                    songs = [
+                        (s.get("artist", ""), s.get("song", ""))
+                        for s in command.get("songs", [])
+                        if s.get("artist") and s.get("song")
+                    ]
+                    spawn_task(_start_festival(manager, name, artist, api_key, songs))
+                elif action == "FESTIVAL_EXIT":
+                    manager.exit_festival_mode()
+                elif action == "FESTIVAL_ADD_SONG":
+                    artist = command.get("artist", "")
+                    song = command.get("song", "")
+                    if artist and song:
+                        manager.festival_add_song(artist, song)
+                        spawn_task(manager._festival_preload_all())
+                elif action == "FESTIVAL_REMOVE_SONG":
+                    manager.festival_remove_song(int(command.get("index", -1)))
+                elif action == "FESTIVAL_REORDER":
+                    manager.festival_reorder_song(int(command.get("from", -1)), int(command.get("to", -1)))
+                elif action == "FESTIVAL_NEXT_SONG":
+                    manager.festival_next_song()
+                elif action == "FESTIVAL_PREV_SONG":
+                    manager.festival_prev_song()
+                elif action == "FESTIVAL_JUMP_LINE":
+                    manager.festival_jump_line(int(command.get("delta", 0)))
                 elif action == "SET_SYNC_TIME":
                     new_time = command.get("time", 0.0)
                     try:
