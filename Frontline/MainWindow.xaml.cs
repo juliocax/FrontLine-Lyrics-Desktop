@@ -122,7 +122,26 @@ namespace FrontLineOverlay
                 { "HistorySong", "Song" }, { "HistoryDate", "Date" },
                 { "HistoryEmpty", "No searches yet." }, { "HistoryRemove", "Remove" },
                 { "FontSizeTitle", "FONT SIZE" },
-                { "BgOpacityTitle", "BACKGROUND OPACITY" }
+                { "BgOpacityTitle", "BACKGROUND OPACITY" },
+                { "Festival", "FESTIVAL" }, { "FestivalMode", "FESTIVAL MODE" },
+                { "FestivalIntro", "At live shows, Shazam often fails. Load a setlist, preload lyrics, then tap the first line when the singer starts." },
+                { "FestivalApiKey", "setlist.fm API key" },
+                { "FestivalApiKeyHint", "Paste your key to import the artist's latest public setlist." },
+                { "FestivalApiKeySaved", "Key saved. Paste a new one to replace it." },
+                { "FestivalApiLink", "Get a free API key" },
+                { "FestivalSaveKey", "SAVE KEY" }, { "FestivalClose", "CLOSE" },
+                { "FestivalPlaylists", "SAVED SETLISTS" },
+                { "FestivalNewArtist", "Artist or band" }, { "FestivalCreate", "CREATE" },
+                { "FestivalEmpty", "No setlists yet. Enter an artist to create one." },
+                { "FestivalFetching", "Fetching the latest setlist…" },
+                { "FestivalNoSetlist", "No setlist found. Starting empty — add songs below." },
+                { "FestivalEditorTitle", "SETLIST" }, { "FestivalBack", "BACK" },
+                { "FestivalSongsEmpty", "Empty setlist. Add songs below or search during the show." },
+                { "FestivalAdd", "ADD" }, { "FestivalStart", "START" }, { "FestivalDone", "DONE" },
+                { "FestivalEdit", "EDIT SETLIST" }, { "FestivalStop", "STOP FESTIVAL" },
+                { "FestivalPrevLine", "Previous lyric line" }, { "FestivalNextLine", "Next lyric line" },
+                { "FestivalSongOne", "1 song" }, { "FestivalSongMany", "{0} songs" },
+                { "FestivalDeleteConfirm", "Delete this setlist?" }
             }},
             { "pt", new() {
                 { "Listen", "OUVIR" }, { "Search", "⌕ BUSCAR" }, { "ManualSearch", "BUSCA MANUAL" },
@@ -141,7 +160,26 @@ namespace FrontLineOverlay
                 { "HistorySong", "Música" }, { "HistoryDate", "Data" },
                 { "HistoryEmpty", "Nenhuma busca ainda." }, { "HistoryRemove", "Remover" },
                 { "FontSizeTitle", "TAMANHO DA FONTE" },
-        { "BgOpacityTitle", "OPACIDADE DO FUNDO" }
+                { "BgOpacityTitle", "OPACIDADE DO FUNDO" },
+                { "Festival", "FESTIVAL" }, { "FestivalMode", "MODO FESTIVAL" },
+                { "FestivalIntro", "Em shows, o Shazam costuma falhar. Carregue o setlist, pré-carregue as letras e toque a primeira linha quando o cantor começar." },
+                { "FestivalApiKey", "Chave da API setlist.fm" },
+                { "FestivalApiKeyHint", "Cole a chave para importar o setlist público mais recente do artista." },
+                { "FestivalApiKeySaved", "Chave salva. Cole outra para substituir." },
+                { "FestivalApiLink", "Obter uma chave grátis" },
+                { "FestivalSaveKey", "SALVAR CHAVE" }, { "FestivalClose", "FECHAR" },
+                { "FestivalPlaylists", "SETLISTS SALVOS" },
+                { "FestivalNewArtist", "Artista ou banda" }, { "FestivalCreate", "CRIAR" },
+                { "FestivalEmpty", "Nenhum setlist ainda. Digite um artista para criar." },
+                { "FestivalFetching", "Buscando o setlist mais recente…" },
+                { "FestivalNoSetlist", "Nenhum setlist encontrado. Lista vazia — adicione músicas abaixo." },
+                { "FestivalEditorTitle", "SETLIST" }, { "FestivalBack", "VOLTAR" },
+                { "FestivalSongsEmpty", "Setlist vazio. Adicione músicas abaixo ou busque durante o show." },
+                { "FestivalAdd", "ADICIONAR" }, { "FestivalStart", "COMEÇAR" }, { "FestivalDone", "PRONTO" },
+                { "FestivalEdit", "EDITAR SETLIST" }, { "FestivalStop", "PARAR FESTIVAL" },
+                { "FestivalPrevLine", "Linha anterior" }, { "FestivalNextLine", "Próxima linha" },
+                { "FestivalSongOne", "1 música" }, { "FestivalSongMany", "{0} músicas" },
+                { "FestivalDeleteConfirm", "Excluir este setlist?" }
             }},
             { "es", new() {
                 { "Listen", "ESCUCHAR" }, { "Search", "⌕ BUSCAR" }, { "ManualSearch", "BÚSQUEDA MANUAL" },
@@ -158,7 +196,28 @@ namespace FrontLineOverlay
                 { "PrevTrack", "Pista anterior" }, { "NextTrack", "Pista siguiente" },
                 { "SearchHistory", "HISTORIAL DE BÚSQUEDA" }, { "HistoryArtist", "Artista" },
                 { "HistorySong", "Canción" }, { "HistoryDate", "Fecha" },
-                { "HistoryEmpty", "Aún no hay búsquedas." }, { "HistoryRemove", "Quitar" },{ "FontSizeTitle", "TAMAÑO DE FUENTE" },{ "BgOpacityTitle", "OPACIDAD DE FONDO" }
+                { "HistoryEmpty", "Aún no hay búsquedas." },                 { "HistoryRemove", "Quitar" },
+                { "FontSizeTitle", "TAMAÑO DE FUENTE" },
+                { "BgOpacityTitle", "OPACIDAD DE FONDO" },
+                { "Festival", "FESTIVAL" }, { "FestivalMode", "MODO FESTIVAL" },
+                { "FestivalIntro", "En conciertos, Shazam suele fallar. Carga el setlist, precarga las letras y toca la primera línea cuando empiece el cantante." },
+                { "FestivalApiKey", "Clave API de setlist.fm" },
+                { "FestivalApiKeyHint", "Pega la clave para importar el setlist público más reciente del artista." },
+                { "FestivalApiKeySaved", "Clave guardada. Pega otra para reemplazarla." },
+                { "FestivalApiLink", "Obtener una clave gratis" },
+                { "FestivalSaveKey", "GUARDAR CLAVE" }, { "FestivalClose", "CERRAR" },
+                { "FestivalPlaylists", "SETLISTS GUARDADOS" },
+                { "FestivalNewArtist", "Artista o banda" }, { "FestivalCreate", "CREAR" },
+                { "FestivalEmpty", "Aún no hay setlists. Escribe un artista para crear uno." },
+                { "FestivalFetching", "Buscando el setlist más reciente…" },
+                { "FestivalNoSetlist", "No se encontró setlist. Lista vacía — añade canciones abajo." },
+                { "FestivalEditorTitle", "SETLIST" }, { "FestivalBack", "ATRÁS" },
+                { "FestivalSongsEmpty", "Setlist vacío. Añade canciones abajo o busca durante el show." },
+                { "FestivalAdd", "AÑADIR" }, { "FestivalStart", "EMPEZAR" }, { "FestivalDone", "LISTO" },
+                { "FestivalEdit", "EDITAR SETLIST" }, { "FestivalStop", "PARAR FESTIVAL" },
+                { "FestivalPrevLine", "Línea anterior" }, { "FestivalNextLine", "Siguiente línea" },
+                { "FestivalSongOne", "1 canción" }, { "FestivalSongMany", "{0} canciones" },
+                { "FestivalDeleteConfirm", "¿Eliminar este setlist?" }
             }}
         };
 
@@ -225,6 +284,12 @@ namespace FrontLineOverlay
                 SearchInputPanel.Opacity = (previewing && searchOpen) ? 0 : 1;
                 SearchInputPanel.IsHitTestVisible = !(previewing && searchOpen);
             }
+            if (FestivalHubPanel != null)
+            {
+                bool festivalOpen = FestivalHubPanel.Visibility == Visibility.Visible;
+                FestivalHubPanel.Opacity = (previewing && festivalOpen) ? 0 : 1;
+                FestivalHubPanel.IsHitTestVisible = !(previewing && festivalOpen);
+            }
         }
 
         private void OpacityPreviewTimer_Tick(object? sender, EventArgs e)
@@ -254,6 +319,8 @@ namespace FrontLineOverlay
                 MainBorder.LayoutTransform = new ScaleTransform(scale, scale);
             if (SearchContentBorder != null)
                 SearchContentBorder.LayoutTransform = new ScaleTransform(scale, scale);
+            if (FestivalContentBorder != null)
+                FestivalContentBorder.LayoutTransform = new ScaleTransform(scale, scale);
         }
 
         private void BtnResetFont_Click(object sender, RoutedEventArgs e)
@@ -290,6 +357,7 @@ namespace FrontLineOverlay
 
             RestoreFontAndAuto();
             InitSearchHistory();
+            InitFestivalMode();
 
             _mouseTracker.Tick += MouseTracker_Tick;
             _mouseTracker.Start();
@@ -462,6 +530,7 @@ namespace FrontLineOverlay
         protected override void OnClosed(EventArgs e)
         {
             _saveTimer.Stop();
+            PersistFestivalOnExit();
             PersistSettings();
             _mouseTracker.Stop();
             _ghostTimer.Stop();
@@ -501,6 +570,7 @@ namespace FrontLineOverlay
             LblSearchHistoryEmpty.Text = t["HistoryEmpty"];
             LblFontSizeTitle.Text = t["FontSizeTitle"];
             LblBgOpacityTitle.Text = t["BgOpacityTitle"];
+            ApplyFestivalUiLanguage();
             RefreshHistoryHeaders();
             RefreshHistoryDateLabels();
 
@@ -521,7 +591,7 @@ namespace FrontLineOverlay
 
         private void MouseTracker_Tick(object? sender, EventArgs e)
         {
-            if (currentAppStatus == "IDLE" || HelpOverlay.Visibility == Visibility.Visible || BtnMenu.IsChecked == true || SearchInputPanel.Visibility == Visibility.Visible || isResizing)
+            if (currentAppStatus == "IDLE" || HelpOverlay.Visibility == Visibility.Visible || BtnMenu.IsChecked == true || SearchInputPanel.Visibility == Visibility.Visible || FestivalHubPanel.Visibility == Visibility.Visible || isResizing)
             {
                 _ghostTimer.Stop();
                 if (isGhostMode) SetGhostMode(false);
@@ -564,7 +634,7 @@ namespace FrontLineOverlay
             long extendedStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE).ToInt64();
             const long transparentBit = 0x20L;
 
-            if (currentAppStatus == "IDLE" || SearchInputPanel.Visibility == Visibility.Visible)
+            if (currentAppStatus == "IDLE" || SearchInputPanel.Visibility == Visibility.Visible || FestivalHubPanel.Visibility == Visibility.Visible)
             {
                 SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(extendedStyle & ~transparentBit));
                 MainBorder.Background = new SolidColorBrush(Color.FromArgb(255, 10, 10, 10));
@@ -606,7 +676,7 @@ namespace FrontLineOverlay
 
         private void ResizeGrip_DragStarted(object sender, DragStartedEventArgs e)
         {
-            if (currentAppStatus != "IDLE" && SearchInputPanel.Visibility != Visibility.Visible)
+            if (currentAppStatus != "IDLE" && SearchInputPanel.Visibility != Visibility.Visible && FestivalHubPanel.Visibility != Visibility.Visible)
             {
                 isResizing = true;
                 SidePanelCol.Width = new GridLength(0);
@@ -622,7 +692,7 @@ namespace FrontLineOverlay
         private void ResizeGrip_DragCompleted(object sender, DragCompletedEventArgs e)
         {
             isResizing = false;
-            if (currentAppStatus != "IDLE" && SearchInputPanel.Visibility != Visibility.Visible)
+            if (currentAppStatus != "IDLE" && SearchInputPanel.Visibility != Visibility.Visible && FestivalHubPanel.Visibility != Visibility.Visible)
                 UpdateVisualState(isGhostMode);
         }
 
@@ -722,6 +792,7 @@ namespace FrontLineOverlay
                 string previousLyrics = root.TryGetProperty("previous_lyrics", out var prevEl) ? prevEl.GetString() ?? "" : "";
                 string nextLyrics = root.TryGetProperty("next_lyrics", out var nextEl) ? nextEl.GetString() ?? "" : "";
                 string? coverUrl = root.TryGetProperty("cover_art", out var c) ? c.GetString() : null;
+                bool festivalMode = root.TryGetProperty("festival_mode", out var fme) && fme.ValueKind == JsonValueKind.True;
                 string? fullLyricsRaw = null;
                 if (root.TryGetProperty("full_lyrics", out var full) && full.ValueKind is JsonValueKind.Array or JsonValueKind.String)
                     fullLyricsRaw = full.GetRawText();
@@ -758,7 +829,7 @@ namespace FrontLineOverlay
                     // realmente tocando (status SYNCED). Fora disso, não há o que sincronizar.
                     bool manualSyncAvailable = status == "SYNCED";
                     BtnManualSyncToggle.Visibility = manualSyncAvailable ? Visibility.Visible : Visibility.Collapsed;
-                    if (!manualSyncAvailable && isManualSyncMode)
+                    if (!manualSyncAvailable && isManualSyncMode && !_festivalAwaitingFirstTap)
                     {
                         isManualSyncMode = false;
                         FullLyricsList.Visibility = Visibility.Collapsed;
@@ -770,7 +841,7 @@ namespace FrontLineOverlay
                         LblSongTitle.Visibility = Visibility.Collapsed;
                         LblArtistName.Text = uiStrings[currentAppLanguage]["Ready"];
                         currentCoverUrl = ""; LoadCoverArt("");
-                        HomeControls.Visibility = Visibility.Visible;
+                        HomeControls.Visibility = (festivalMode || IsFestivalHubOpen) ? Visibility.Collapsed : Visibility.Visible;
                         isGhostMode = false;
                         LblCurrent.Text = ""; LblPrevious.Text = ""; LblNext.Text = "";
                         LblCurrentOriginal.Text = ""; LblCurrentOriginal.Visibility = Visibility.Collapsed;
@@ -818,6 +889,8 @@ namespace FrontLineOverlay
                         FullLyricsList.ItemsSource = JsonSerializer.Deserialize<List<LyricLine>>(fullLyricsRaw);
                     }
 
+                    ApplyFestivalFromServer(festivalMode, artist, song);
+
                     if (!isResizing) UpdateVisualState(isGhostMode);
                 });
             }
@@ -846,8 +919,12 @@ namespace FrontLineOverlay
         {
             try
             {
-                ApplySkipGlyph(ImgPrevTrack, LoadSkipIcon("double_arrow_left"));
-                ApplySkipGlyph(ImgNextTrack, LoadSkipIcon("double_arrow_right"));
+                var prev = LoadSkipIcon("double_arrow_left");
+                var next = LoadSkipIcon("double_arrow_right");
+                ApplySkipGlyph(ImgPrevTrack, prev);
+                ApplySkipGlyph(ImgNextTrack, next);
+                ApplySkipGlyph(ImgFestivalPrevLine, prev);
+                ApplySkipGlyph(ImgFestivalNextLine, next);
             }
             catch (Exception ex) { CrashReporter.Log(ex, "LoadSkipIcons"); }
         }
@@ -994,7 +1071,7 @@ namespace FrontLineOverlay
             return bitmap;
         }
 
-        private async void SendCommand(string action, string? lang = null, string? artist = null, string? song = null, double? time = null, bool? autoOn = null)
+        private async void SendCommand(string action, string? lang = null, string? artist = null, string? song = null, double? time = null, bool? autoOn = null, Dictionary<string, object?>? extra = null)
         {
             try
             {
@@ -1007,6 +1084,11 @@ namespace FrontLineOverlay
                     if (time != null) p["time"] = time;
                     if (autoOn != null) p["on"] = autoOn.Value;
                     if (action == "RESET") p["hold_auto"] = true;
+                    if (extra != null)
+                    {
+                        foreach (var kv in extra)
+                            p[kv.Key] = kv.Value;
+                    }
                     await _webSocket.SendAsync(
                         new ArraySegment<byte>(Encoding.UTF8.GetBytes(JsonSerializer.Serialize(p))),
                         WebSocketMessageType.Text, true, _shutdown.Token);
@@ -1043,11 +1125,12 @@ namespace FrontLineOverlay
             try
             {
                 BtnMenu.IsChecked = false;
+                FestivalHubPanel.Visibility = Visibility.Collapsed;
                 bool autoOn = _wantAuto || BtnAutoSide.IsChecked == true;
                 bool busy = currentAppStatus != "IDLE";
-                if (autoOn)
+                if (autoOn && !_festivalModeActive)
                     TurnAutoOff();
-                if (busy)
+                if (busy && !_festivalModeActive)
                 {
                     HoldAutoForCurrentTrack();
                     SendCommand("RESET");
@@ -1088,7 +1171,9 @@ namespace FrontLineOverlay
             TxtArtist.Text = artist;
             TxtSong.Text = song;
             RememberSearch(artist, song);
-            ReleaseAutoHold();
+            RememberFestivalSearch(artist, song);
+            if (!_festivalModeActive)
+                ReleaseAutoHold();
             SendCommand("MANUAL_SEARCH", null, artist, song);
             SearchInputPanel.Visibility = Visibility.Collapsed;
         }
@@ -1097,9 +1182,19 @@ namespace FrontLineOverlay
         {
             SearchInputPanel.Visibility = Visibility.Collapsed;
             SearchHistoryList.SelectedItem = null;
+            if (!isResizing) UpdateVisualState(isGhostMode);
         }
         private void BtnManualSync_Toggle(object sender, RoutedEventArgs e) { isManualSyncMode = !isManualSyncMode; FullLyricsList.Visibility = isManualSyncMode ? Visibility.Visible : Visibility.Collapsed; LyricsNormalView.Visibility = isManualSyncMode ? Visibility.Collapsed : Visibility.Visible; BtnMenu.IsChecked = false; }
-        private void FullLyricsList_SelectionChanged(object sender, SelectionChangedEventArgs e) { if (FullLyricsList.SelectedItem is LyricLine s) { SendCommand("SET_SYNC_TIME", null, null, null, s.Timestamp); isManualSyncMode = false; FullLyricsList.Visibility = Visibility.Collapsed; LyricsNormalView.Visibility = Visibility.Visible; FullLyricsList.SelectedItem = null; } }
+        private void FullLyricsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (FullLyricsList.SelectedItem is not LyricLine s) return;
+            SendCommand("SET_SYNC_TIME", null, null, null, s.Timestamp);
+            isManualSyncMode = false;
+            OnFestivalLinePicked();
+            FullLyricsList.Visibility = Visibility.Collapsed;
+            LyricsNormalView.Visibility = Visibility.Visible;
+            FullLyricsList.SelectedItem = null;
+        }
         private void BtnListen_Click(object sender, RoutedEventArgs e)
         {
             ReleaseAutoHold();
