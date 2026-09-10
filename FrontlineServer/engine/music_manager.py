@@ -210,6 +210,20 @@ class MusicManager:
             return True
         return not self._session_trusts_song_clock(src)
 
+    def _lyrics_follow_player(self) -> bool:
+        """True when skip/seek/pause on the music app moves the lyric clock.
+
+        Spotify, Apple Music, YouTube Music, etc. Festival Mode and Shazam/
+        live/video clocks do not follow the player timeline this way.
+        """
+        if self.festival_mode:
+            return False
+        if getattr(self, "_clock_from_shazam", False):
+            return False
+        if self.track_source not in ("media", "shazam"):
+            return False
+        return self._session_trusts_song_clock()
+
     # -- Playback clock --
 
     def _pause_clock(self):
@@ -364,6 +378,7 @@ class MusicManager:
         with self._lock:
             self.festival_mode = False
             self.festival_playlist = None
+            self._festival_offer_advance = False
         self.reset_state()
         logging.info("Festival Mode encerrado")
 
@@ -392,6 +407,16 @@ class MusicManager:
 
         await asyncio.gather(*(load_one(i, e) for i, e in enumerate(songs)))
         logging.info(f"Festival Mode: preload de {len(songs)} música(s) concluído")
+
+    def _festival_next_entry(self):
+        playlist = self.festival_playlist
+        if not playlist:
+            return None
+        songs = playlist.get("songs") or []
+        nxt = playlist.get("current_index", 0) + 1
+        if nxt >= len(songs):
+            return None
+        return songs[nxt]
 
     def _festival_load_song(self, index: int):
         """Makes playlist[index] the current track, parked in manual sync
@@ -423,6 +448,7 @@ class MusicManager:
             self.system_reference_time = time.time()
             self.media_paused = False
             self.not_found_since = None if entry.get("has_lyrics") else time.time()
+            self._festival_offer_advance = False
         logging.info(f"Festival Mode: tocando agora -> {entry['song']} - {entry['artist']}")
 
     def festival_next_song(self):
@@ -518,12 +544,31 @@ class MusicManager:
 
     # -- SMTC snapshot callback (runs on MediaSessionWatcher's own thread) --
 
+    def _sync_media_pause(self, info):
+        """Freeze/unfreeze the lyric clock with the player's play/pause."""
+        if not (self.is_listening and self.search_completed and self.synced_lyrics):
+            return
+        if not getattr(info, "tocando", True) and not self.clock_paused:
+            logging.info("Player pausado: congelando letra")
+            self._pause_clock()
+            self.media_paused = True
+        elif getattr(info, "tocando", False) and self.clock_paused and self.media_paused:
+            logging.info("Player retomado: descongelando letra")
+            self._resume_clock()
+            self.media_paused = False
+
     def _on_media_snapshot(self, info):
         """Callback from MediaSessionWatcher — runs on the watcher's own thread.
 
         Auto-follow / seek / pause logic originates from Warith Adetayo's PR #2.
         """
-        if info is None or self.manual_mode:
+        if info is None:
+            return
+        if self.festival_mode:
+            # Keep the setlist clock, but still freeze lyrics when the player pauses.
+            self._sync_media_pause(info)
+            return
+        if self.manual_mode:
             return
         chave = info.chave
         self.watcher.preferencia_chave = chave
@@ -564,14 +609,7 @@ class MusicManager:
                     self._listen_use_shazam = True
                     self._clock_from_shazam = False
                 return
-            if not info.tocando and not self.clock_paused:
-                logging.info("Player pausado: congelando letra")
-                self._pause_clock()
-                self.media_paused = True
-            elif info.tocando and self.clock_paused and self.media_paused:
-                logging.info("Player retomado: descongelando letra")
-                self._resume_clock()
-                self.media_paused = False
+            self._sync_media_pause(info)
             if (info.tocando and not self.clock_paused
                     and self.track_source in ("media", "shazam")
                     and not self._clock_from_shazam
@@ -809,16 +847,26 @@ class MusicManager:
         elif self.current_song and not self.search_completed:
             status = "SEARCHING"
         elif self.search_completed and not self.synced_lyrics:
-            status = "NOT_FOUND"
-            overlay_msg = "Lyrics not found."
-            # In Auto mode, don't get stuck here: the track was identified but
-            # we found no synced lyrics. After a while, give up and go back
-            # to listening for the next one.
-            if self.auto_mode and self.not_found_since and (time.time() - self.not_found_since) > tuning.NOT_FOUND_GIVEUP_SECONDS:
-                self.reset_state()
-                self.is_listening = True
-                status = "LISTENING"
-                overlay_msg = ""
+            waiting_lyrics = False
+            if self.festival_mode and self.festival_playlist:
+                songs = self.festival_playlist.get("songs") or []
+                idx = self.festival_playlist.get("current_index", 0)
+                if 0 <= idx < len(songs) and songs[idx].get("has_lyrics") is None:
+                    waiting_lyrics = True
+            if waiting_lyrics:
+                status = "SEARCHING"
+            else:
+                status = "NOT_FOUND"
+                overlay_msg = "Lyrics not found."
+                # In Auto mode, don't get stuck here: the track was identified but
+                # we found no synced lyrics. After a while, give up and go back
+                # to listening for the next one.
+                if (self.auto_mode and not self.festival_mode and self.not_found_since
+                        and (time.time() - self.not_found_since) > tuning.NOT_FOUND_GIVEUP_SECONDS):
+                    self.reset_state()
+                    self.is_listening = True
+                    status = "LISTENING"
+                    overlay_msg = ""
         elif self.synced_lyrics:
             status = "SYNCED"
             elapsed_time = self._elapsed_now()
@@ -842,6 +890,10 @@ class MusicManager:
             # instrumental break or another song). Without SMTC, falls back
             # to the original timeout. Source: PR #2, Warith Adetayo.
             lyrics_ended = elapsed_time > self.synced_lyrics[-1]['timestamp'] + tuning.END_OF_LYRICS_GRACE
+            if self.festival_mode and lyrics_ended and self._festival_next_entry() is not None:
+                if not self.clock_paused:
+                    self._pause_clock()
+                self._festival_offer_advance = True
             if (not self.manual_mode and not self.clock_paused and lyrics_ended
                     and not self._same_track_still_playing()):
                 was_auto = self.auto_mode
@@ -873,6 +925,7 @@ class MusicManager:
             "song": self.current_song,
             "artist": self.current_artist,
             "cover_art": getattr(self, "current_cover", ""),
+            "player_clock": self._lyrics_follow_player(),
         }
         # 10Hz * full lyrics recreated the ListBox on the C# side and bloated
         # RAM (OOM 8007000e). Only include the full list when it changed.
@@ -882,6 +935,15 @@ class MusicManager:
             payload["full_lyrics"] = full
 
         payload["festival_mode"] = self.festival_mode
+        if getattr(self, "_festival_offer_advance", False):
+            nxt = self._festival_next_entry()
+            if nxt:
+                payload["festival_advance"] = {
+                    "artist": nxt.get("artist") or "",
+                    "song": nxt.get("song") or "",
+                }
+            else:
+                self._festival_offer_advance = False
         if self.festival_mode and self.festival_playlist:
             fp = self.festival_playlist
             fp_sig = (id(fp), fp["current_index"], tuple((e["song"], e["artist"], e["has_lyrics"]) for e in fp["songs"]))

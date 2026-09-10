@@ -10,7 +10,37 @@ Wire this into engine/ws_server.py, before the existing action switch:
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, Dict, List, Tuple
+
+
+def maybe_advance_festival_track(manager) -> bool:
+    """When a festival song's lyrics end, park the next song the same way as
+    the first (manual sync, waiting for a first-line tap).
+
+    Call from MusicManager.get_current_state() after computing lyrics_ended:
+
+        if getattr(self, "festival_mode", False) and not self.clock_paused and lyrics_ended:
+            from engine.festival_ws import maybe_advance_festival_track
+            if maybe_advance_festival_track(self):
+                return self.get_current_state()
+    """
+    if not getattr(manager, "festival_mode", False):
+        return False
+    if getattr(manager, "clock_paused", False):
+        return False
+    if time.time() < getattr(manager, "_festival_advance_guard", 0):
+        return False
+    playlist = getattr(manager, "festival_playlist", None)
+    if not playlist:
+        return False
+    nxt = playlist.get("current_index", 0) + 1
+    if nxt >= len(playlist.get("songs") or []):
+        return False
+    manager._festival_advance_guard = time.time() + 1.5
+    manager.festival_next_song()
+    logging.info("Festival Mode: fim da música → próxima faixa (%s)", nxt)
+    return True
 
 
 def try_handle_festival(manager, data: Dict[str, Any]) -> bool:
