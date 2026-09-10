@@ -50,8 +50,20 @@ namespace FrontLineOverlay
             return fallback;
         }
 
+        public static string GetString(string key, string fallback)
+        {
+            try
+            {
+                if (TryGetRaw(key, out var raw) && raw != null)
+                    return raw.ToString() ?? fallback;
+            }
+            catch (Exception ex) { CrashReporter.Log(ex, "AppSettings.GetString"); }
+            return fallback;
+        }
+
         public static void SetDouble(string key, double value) => Set(key, value);
         public static void SetBool(string key, bool value) => Set(key, value);
+        public static void SetString(string key, string value) => Set(key, value);
 
         public static void Set(string key, object value)
         {
