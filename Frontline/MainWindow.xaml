@@ -780,7 +780,7 @@
                                         <ControlTemplate TargetType="Button">
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock x:Name="TxtAppName" Text="FRONTLINE LYRICS" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
-                                                <TextBlock x:Name="TxtAppVersion" Text="v1.2.1" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center" Margin="0,1,0,0"/>
+                                                <TextBlock x:Name="TxtAppVersion" Text="v1.3.0" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center" Margin="0,1,0,0"/>
                                             </StackPanel>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
