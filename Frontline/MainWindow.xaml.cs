@@ -14,7 +14,9 @@ using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Interop;
 using System.Windows.Media;
+using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Windows.Shapes;
 using System.Windows.Threading;
 using System.Linq;
 using System.Collections.ObjectModel;
@@ -62,6 +64,10 @@ namespace FrontLineOverlay
         [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
 
         private static Mutex? _appMutex;
+
+        // --- LoadingSpinner: estado da animação imprevisível ---
+        private readonly Random _spinnerRandom = new Random();
+        private bool _spinnerAnimating = false;
 
         private bool isGhostMode = false;
         private bool isResizing = false;
@@ -585,7 +591,7 @@ namespace FrontLineOverlay
 
             try
             {
-                string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "logo.png");
+                string logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "logo.png");
                 if (File.Exists(logoPath))
                 {
                     this.Icon = BitmapFrame.Create(new Uri(logoPath, UriKind.Absolute), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
@@ -595,7 +601,7 @@ namespace FrontLineOverlay
 
             try
             {
-                string donateBtnPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "black-button.png");
+                string donateBtnPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "black-button.png");
                 BitmapImage? donateBmp = null;
 
                 if (File.Exists(donateBtnPath))
@@ -633,12 +639,12 @@ namespace FrontLineOverlay
             try
             {
                 string baseDir = AppDomain.CurrentDomain.BaseDirectory;
-                string serverExePath = Path.Combine(baseDir, "FrontlineServer", "FrontlineServer.exe");
+                string serverExePath = System.IO.Path.Combine(baseDir, "FrontlineServer", "FrontlineServer.exe");
 
                 if (!File.Exists(serverExePath))
                 {
-                    string solutionDir = Path.GetFullPath(Path.Combine(baseDir, @"..\..\..\.."));
-                    serverExePath = Path.Combine(solutionDir, "FrontlineServer", "dist", "FrontlineServer", "FrontlineServer.exe");
+                    string solutionDir = System.IO.Path.GetFullPath(System.IO.Path.Combine(baseDir, @"..\..\..\.."));
+                    serverExePath = System.IO.Path.Combine(solutionDir, "FrontlineServer", "dist", "FrontlineServer", "FrontlineServer.exe");
                 }
 
                 if (!File.Exists(serverExePath))
@@ -1142,6 +1148,7 @@ namespace FrontLineOverlay
                             FullLyricsList.ItemsSource = null;
                         }
                         LoadingSpinner.Visibility = Visibility.Collapsed;
+                        StopLoadingSpinnerAnimation();
                     }
                     else
                     {
@@ -1149,10 +1156,11 @@ namespace FrontLineOverlay
                         HomeControls.Visibility = Visibility.Collapsed;
                         LblSongTitle.Text = song;
                         LblArtistName.Text = string.IsNullOrEmpty(artist) ? "..." : artist;
-                        if (!string.IsNullOrEmpty(coverUrl) && coverUrl != currentCoverUrl)
+                        string incomingCover = coverUrl ?? "";
+                        if (incomingCover != currentCoverUrl)
                         {
-                            currentCoverUrl = coverUrl;
-                            LoadCoverArt(coverUrl);
+                            currentCoverUrl = incomingCover;
+                            LoadCoverArt(incomingCover);
                         }
                     }
 
@@ -1166,12 +1174,14 @@ namespace FrontLineOverlay
                     if (status == "LISTENING" || status == "SEARCHING")
                     {
                         LoadingSpinner.Visibility = Visibility.Visible;
+                        StartLoadingSpinnerAnimation();
                         LblLoadingText.Text = (status == "LISTENING") ? uiStrings[currentAppLanguage]["Listening"] : uiStrings[currentAppLanguage]["Searching"];
                         LyricsNormalView.Visibility = Visibility.Collapsed;
                     }
                     else if (status != "IDLE")
                     {
                         LoadingSpinner.Visibility = Visibility.Collapsed;
+                        StopLoadingSpinnerAnimation();
                         if (!isManualSyncMode) LyricsNormalView.Visibility = Visibility.Visible;
                         LblCurrent.Text = currentLyrics;
                         LblPrevious.Text = previousLyrics;
@@ -1321,7 +1331,7 @@ namespace FrontLineOverlay
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (string dir in AssetSearchDirs())
             {
-                string path = Path.Combine(dir, fileName);
+                string path = System.IO.Path.Combine(dir, fileName);
                 if (seen.Add(path) && File.Exists(path))
                     return path;
             }
@@ -1333,10 +1343,107 @@ namespace FrontLineOverlay
             string? dir = AppDomain.CurrentDomain.BaseDirectory;
             for (int i = 0; i < 7 && !string.IsNullOrEmpty(dir); i++)
             {
-                yield return Path.Combine(dir, "assets");
-                yield return Path.Combine(dir, "Frontline", "assets");
+                yield return System.IO.Path.Combine(dir, "assets");
+                yield return System.IO.Path.Combine(dir, "Frontline", "assets");
                 dir = Directory.GetParent(dir)?.FullName;
             }
+        }
+
+        // ---------------------------------------------------------------
+        // LoadingSpinner: animação com velocidade e "corte" imprevisíveis
+        // ---------------------------------------------------------------
+        // A ideia: em vez de um Storyboard fixo em loop (sempre igual),
+        // cada "volta" da roda e cada abertura/fechamento do arco são
+        // recalculadas em tempo real com valores aleatórios, e a próxima
+        // etapa só é agendada quando a anterior termina (Completed).
+        // Isso faz a roda girar ora mais rápido, ora mais devagar, e o
+        // "corte" do arco abrir/fechar em pontos diferentes do círculo
+        // a cada ciclo.
+
+        private void StartLoadingSpinnerAnimation()
+        {
+            if (_spinnerAnimating) return;
+            _spinnerAnimating = true;
+            AnimateSpinnerRotationStep();
+            AnimateSpinnerArcStep();
+        }
+
+        private void StopLoadingSpinnerAnimation()
+        {
+            _spinnerAnimating = false;
+            ListenArcSpin.BeginAnimation(RotateTransform.AngleProperty, null);
+            ListenArc.BeginAnimation(Ellipse.StrokeDashOffsetProperty, null);
+            ListenArc.BeginAnimation(UIElement.OpacityProperty, null);
+            ListenArcSpin.Angle = 0;
+            ListenArc.StrokeDashOffset = 39;
+            ListenArc.Opacity = 1.0;
+        }
+
+        private void AnimateSpinnerRotationStep()
+        {
+            if (!_spinnerAnimating) return;
+
+            // Cada volta (360°) dura entre 0.5s (rápido) e 2.2s (devagar).
+            double durationSeconds = 0.5 + _spinnerRandom.NextDouble() * 1.7;
+            double fromAngle = ListenArcSpin.Angle;
+            double toAngle = fromAngle + 360.0;
+
+            var rotationAnim = new DoubleAnimation
+            {
+                From = fromAngle,
+                To = toAngle,
+                Duration = TimeSpan.FromSeconds(durationSeconds),
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+            };
+
+            rotationAnim.Completed += (s, e) =>
+            {
+                if (!_spinnerAnimating) return;
+                // Normaliza o ângulo (0-360) sem animação para evitar overflow
+                ListenArcSpin.BeginAnimation(RotateTransform.AngleProperty, null);
+                ListenArcSpin.Angle = toAngle % 360.0;
+                AnimateSpinnerRotationStep();
+            };
+
+            ListenArcSpin.BeginAnimation(RotateTransform.AngleProperty, rotationAnim);
+        }
+
+        private void AnimateSpinnerArcStep()
+        {
+            if (!_spinnerAnimating) return;
+
+            // StrokeDashOffset entre 0 (arco bem aberto) e 39 (quase fechado).
+            // Sorteando o alvo a cada passo, o "corte" do círculo aparece em
+            // um ponto diferente a cada volta, já que a rotação segue em
+            // paralelo com sua própria velocidade aleatória.
+            double targetOffset = _spinnerRandom.NextDouble() * 39.0;
+            double durationSeconds = 0.35 + _spinnerRandom.NextDouble() * 0.9;
+
+            var arcAnim = new DoubleAnimation
+            {
+                To = targetOffset,
+                Duration = TimeSpan.FromSeconds(durationSeconds),
+                EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
+            };
+
+            // Junto, um leve pulso de opacidade com timing também aleatório.
+            double targetOpacity = 0.35 + _spinnerRandom.NextDouble() * 0.65;
+            double opacityDuration = 0.3 + _spinnerRandom.NextDouble() * 0.8;
+            var opacityAnim = new DoubleAnimation
+            {
+                To = targetOpacity,
+                Duration = TimeSpan.FromSeconds(opacityDuration),
+                EasingFunction = new SineEase { EasingMode = EasingMode.EaseInOut }
+            };
+
+            arcAnim.Completed += (s, e) =>
+            {
+                if (!_spinnerAnimating) return;
+                AnimateSpinnerArcStep();
+            };
+
+            ListenArc.BeginAnimation(Ellipse.StrokeDashOffsetProperty, arcAnim);
+            ListenArc.BeginAnimation(UIElement.OpacityProperty, opacityAnim);
         }
 
         private void LoadCoverArt(string? url)
@@ -1345,9 +1452,11 @@ namespace FrontLineOverlay
             {
                 if (string.IsNullOrEmpty(url))
                 {
-                    string logoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "logo.png");
+                    string logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "logo.png");
                     if (File.Exists(logoPath))
                         AlbumCoverImg.Source = DecodeBitmap(new Uri(logoPath, UriKind.Absolute));
+                    else
+                        AlbumCoverImg.Source = null;
                     return;
                 }
 
@@ -1362,6 +1471,7 @@ namespace FrontLineOverlay
             catch (Exception ex)
             {
                 CrashReporter.Log(ex, "LoadCoverArt");
+                currentCoverUrl = "";
             }
         }
 
@@ -1371,7 +1481,7 @@ namespace FrontLineOverlay
             bitmap.BeginInit();
             bitmap.UriSource = uri;
             bitmap.CacheOption = BitmapCacheOption.OnLoad;
-            bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+            bitmap.CreateOptions = BitmapCreateOptions.IgnoreColorProfile | BitmapCreateOptions.IgnoreImageCache;
             if (decodePixelWidth is > 0)
                 bitmap.DecodePixelWidth = decodePixelWidth.Value;
             bitmap.EndInit();
@@ -1548,6 +1658,7 @@ namespace FrontLineOverlay
             try
             {
                 Process.Start(new ProcessStartInfo(HelpWebsiteUrl) { UseShellExecute = true });
+                WindowState = WindowState.Minimized;
             }
             catch (Exception ex)
             {

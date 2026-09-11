@@ -702,21 +702,39 @@
 
                         <Grid x:Name="LoadingSpinner" Grid.Column="0" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
                             <StackPanel>
-                                <Path Data="M 20,2 A 18,18 0 1 1 2,20" Stroke="#EEEEEE" StrokeThickness="4" Width="40" Height="40" RenderTransformOrigin="0.5,0.5" HorizontalAlignment="Center">
-                                    <Path.RenderTransform>
-                                        <RotateTransform x:Name="SpinnerTransform" Angle="0"/>
-                                    </Path.RenderTransform>
-                                    <Path.Triggers>
-                                        <EventTrigger RoutedEvent="Loaded">
+                                <Grid Width="40" Height="40" HorizontalAlignment="Center">
+                                    <Ellipse Width="40" Height="40" Stroke="#22FFFFFF" StrokeThickness="3"/>
+
+                                    <!-- Arco animado com Branco Forte -->
+                                    <Ellipse x:Name="ListenArc" Width="40" Height="40"
+                                            Stroke="White" StrokeThickness="3"
+                                            StrokeDashArray="39 39" StrokeDashOffset="39"
+                                            StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                            RenderTransformOrigin="0.5,0.5">
+                                        <Ellipse.RenderTransform>
+                                            <RotateTransform x:Name="ListenArcSpin" Angle="0"/>
+                                        </Ellipse.RenderTransform>
+                                    </Ellipse>
+
+
+                                </Grid>
+
+                                <TextBlock x:Name="LblLoadingText" Text="Listening..." Foreground="White" FontSize="11" FontWeight="Bold" Margin="0,12,0,0" HorizontalAlignment="Center">
+                                    <TextBlock.Triggers>
+                                        <EventTrigger RoutedEvent="FrameworkElement.Loaded">
                                             <BeginStoryboard>
-                                                <Storyboard>
-                                                    <DoubleAnimation Storyboard.TargetName="SpinnerTransform" Storyboard.TargetProperty="Angle" From="0" To="360" Duration="0:0:1" RepeatBehavior="Forever"/>
+                                                <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" 
+                                             From="0.3" To="1.0" Duration="0:0:1.2">
+                                                        <DoubleAnimation.EasingFunction>
+                                                            <SineEase EasingMode="EaseInOut"/>
+                                                        </DoubleAnimation.EasingFunction>
+                                                    </DoubleAnimation>
                                                 </Storyboard>
                                             </BeginStoryboard>
                                         </EventTrigger>
-                                    </Path.Triggers>
-                                </Path>
-                                <TextBlock x:Name="LblLoadingText" Text="Listening..." Foreground="#AAAAAA" FontSize="11" FontWeight="SemiBold" Margin="0,10,0,0" HorizontalAlignment="Center"/>
+                                    </TextBlock.Triggers>
+                                </TextBlock>
                             </StackPanel>
                         </Grid>
 
@@ -780,7 +798,7 @@
                                         <ControlTemplate TargetType="Button">
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock x:Name="TxtAppName" Text="FRONTLINE LYRICS" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
-                                                <TextBlock x:Name="TxtAppVersion" Text="v1.3.0" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center" Margin="0,1,0,0"/>
+                                                <TextBlock x:Name="TxtAppVersion" Text="v1.2.1" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center" Margin="0,1,0,0"/>
                                             </StackPanel>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
