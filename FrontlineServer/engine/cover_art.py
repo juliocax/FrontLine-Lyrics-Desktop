@@ -24,11 +24,11 @@ from typing import Optional, Tuple
 import requests
 
 _HEADERS = {
-    "User-Agent": "FrontlineLyrics/1.2",
+    "User-Agent": "FrontlineLyrics/1.3",
     "Accept": "application/json",
 }
 _IMG_HEADERS = {
-    "User-Agent": "FrontlineLyrics/1.2",
+    "User-Agent": "FrontlineLyrics/1.3",
     "Accept": "image/jpeg,image/png,image/*;q=0.8,*/*;q=0.5",
 }
 _MAX_COVER_FILES = 80

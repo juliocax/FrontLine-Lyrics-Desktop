@@ -25,7 +25,7 @@ namespace FrontLineOverlay
             var c = new HttpClient { Timeout = TimeSpan.FromSeconds(8) };
             c.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             c.DefaultRequestHeaders.AcceptLanguage.Add(new StringWithQualityHeaderValue("en"));
-            c.DefaultRequestHeaders.UserAgent.ParseAdd("FrontlineLyrics/1.2");
+            c.DefaultRequestHeaders.UserAgent.ParseAdd("FrontlineLyrics/1.3");
             return c;
         }
 

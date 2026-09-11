@@ -105,7 +105,7 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
     name. Timeouts are kept short: a long 429 retry used to let the track end
     while we were still stuck in SEARCHING.
     """
-    headers = {"User-Agent": "FrontLineLyricsApp/1.2.0"}
+    headers = {"User-Agent": "FrontLineLyricsApp/1.3.0"}
     clean_artist, clean_song = clean_lrclib_query(artist, song)
     attempts: List[Tuple[str, str]] = []
     for pair in ((clean_artist, clean_song), (artist or "", song or "")):
