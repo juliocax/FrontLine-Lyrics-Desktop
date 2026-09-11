@@ -36,6 +36,12 @@ from engine.translation import (
 from engine.task_utils import spawn_task
 
 
+def _fetch_lyrics_and_cover(artist: str, song: str):
+    lines = lyrics_mod.fetch_lyrics_lrclib(artist, song)
+    cover = cover_art.fetch_cover_art(artist, song)
+    return lines, cover
+
+
 class AutoHold:
     """After RESET, Auto mode should not immediately re-lock onto the same track.
 
@@ -170,6 +176,7 @@ class MusicManager:
         self._next_live_fingerprint = 0.0
         self._live_fp_busy = False
         self._live_fp_drift_hits = 0
+        self._cover_tried: set = set()
 
     # -- Track identity / cooldown helpers --
 
@@ -275,6 +282,7 @@ class MusicManager:
             self.listen_start_time = time.time()
             self.is_listening = True if was_auto else False
             self._listen_use_shazam = False
+            self._cover_tried = set()
             self._clock_from_shazam = False
             self._next_live_fingerprint = 0.0
             self._live_fp_busy = False
@@ -311,6 +319,8 @@ class MusicManager:
         source: str = "shazam",
         lock_shazam_clock: bool = False,
     ):
+        if not cover:
+            cover = cover_art.fetch_cover_art(artist, title)
         with self._lock:
             self.current_song, self.current_artist = title, artist
             self.track_source = source
@@ -337,8 +347,8 @@ class MusicManager:
             self.not_found_since = None if lyrics else time.time()
             self.listen_start_time = time.time()
             self.is_listening = True
-            if cover:
-                self.current_cover = cover
+            self.current_cover = cover or ""
+            self._cover_tried = {self._track_key(title, artist)}
         logging.info(
             f"Faixa definida: {title} - {artist} (fonte={source}, {len(lyrics or [])} linhas)"
         )
@@ -360,7 +370,7 @@ class MusicManager:
             self.festival_playlist = {
                 "name": name or "Festival",
                 "songs": [
-                    {"artist": a, "song": s, "lyrics": None, "has_lyrics": None} for a, s in songs
+                    {"artist": a, "song": s, "lyrics": None, "has_lyrics": None, "cover": ""} for a, s in songs
                 ],
                 "current_index": 0,
             }
@@ -392,18 +402,31 @@ class MusicManager:
 
         async def load_one(i: int, entry: Dict[str, Any]):
             if entry.get("lyrics") is not None or entry.get("has_lyrics") is False:
-                return  # already resolved (e.g. added manually with a hit/miss already known)
-            lines = await loop.run_in_executor(
-                None, lyrics_mod.fetch_lyrics_lrclib, entry["artist"], entry["song"]
+                cover = entry.get("cover") or ""
+                if not cover:
+                    cover = await loop.run_in_executor(
+                        None, cover_art.fetch_cover_art, entry["artist"], entry["song"]
+                    )
+                    playlist["songs"][i]["cover"] = cover
+                    if playlist["current_index"] == i and cover and not self.current_cover:
+                        self.current_cover = cover
+                return 
+            lines, cover = await loop.run_in_executor(
+                None, _fetch_lyrics_and_cover, entry["artist"], entry["song"]
             )
             if self.festival_playlist is not playlist or i >= len(playlist["songs"]):
                 return  # festival was exited / playlist replaced mid-preload
             playlist["songs"][i]["lyrics"] = lines
             playlist["songs"][i]["has_lyrics"] = bool(lines)
-            # Refresh on-screen lyrics if this is the song currently displayed
+            if cover:
+                playlist["songs"][i]["cover"] = cover
+            # Refresh on-screen lyrics/cover if this is the song currently displayed
             # and it hadn't resolved yet (e.g. it was the very first song).
-            if playlist["current_index"] == i and not self.synced_lyrics and lines:
-                self.original_lyrics = self.synced_lyrics = lines
+            if playlist["current_index"] == i:
+                if not self.synced_lyrics and lines:
+                    self.original_lyrics = self.synced_lyrics = lines
+                if cover and not self.current_cover:
+                    self.current_cover = cover
 
         await asyncio.gather(*(load_one(i, e) for i, e in enumerate(songs)))
         logging.info(f"Festival Mode: preload de {len(songs)} música(s) concluído")
@@ -428,11 +451,12 @@ class MusicManager:
         if not (0 <= index < len(songs)):
             return
         entry = songs[index]
+        cover = entry.get("cover") or ""
         with self._lock:
             playlist["current_index"] = index
             self.session_id = time.time()
             self.current_song, self.current_artist = entry["song"], entry["artist"]
-            self.current_cover = ""
+            self.current_cover = cover or ""
             self.original_lyrics = self.synced_lyrics = entry.get("lyrics") or []
             self.cached_translations = {}
             self.current_language = "original"
@@ -449,6 +473,8 @@ class MusicManager:
             self.media_paused = False
             self.not_found_since = None if entry.get("has_lyrics") else time.time()
             self._festival_offer_advance = False
+        if not cover:
+            self._fill_cover_background(entry["artist"], entry["song"], entry)
         logging.info(f"Festival Mode: tocando agora -> {entry['song']} - {entry['artist']}")
 
     def festival_next_song(self):
@@ -491,7 +517,7 @@ class MusicManager:
         songs = playlist["songs"]
         idx = next((i for i, e in enumerate(songs) if self._track_key(e["song"], e["artist"]) == key), None)
         if idx is None:
-            songs.append({"artist": artist, "song": song, "lyrics": None, "has_lyrics": None})
+            songs.append({"artist": artist, "song": song, "lyrics": None, "has_lyrics": None, "cover": ""})
             idx = len(songs) - 1
         if make_current:
             playlist["current_index"] = idx
@@ -610,6 +636,7 @@ class MusicManager:
                     self._clock_from_shazam = False
                 return
             self._sync_media_pause(info)
+            self._maybe_fill_cover(info)
             if (info.tocando and not self.clock_paused
                     and self.track_source in ("media", "shazam")
                     and not self._clock_from_shazam
@@ -713,9 +740,9 @@ class MusicManager:
                 if info_fresca and info_fresca.chave == info.chave:
                     info = info_fresca
                 pos = sane_media_position(info.posicao, fallback=0.0) or 0.0
-                cover = cover_art.smtc_thumbnail_to_file_uri(info.capa_bytes, info.chave)
-                if not cover:
-                    cover = cover_art.fetch_cover_art(info.artista, info.titulo)
+                cover = cover_art.resolve_cover(
+                    info.artista, info.titulo, info.capa_bytes or b"", info.chave
+                )
                 logging.info(
                     f"Letra via metadados: {info.titulo} - {info.artista} "
                     f"({len(letra)} linhas, pos {pos:.1f}s)"
@@ -741,6 +768,58 @@ class MusicManager:
                     )
         finally:
             self._media_busy = False
+
+    def _maybe_fill_cover(self, info):
+        """SMTC thumbnails often arrive a beat after the track locks in. Pick them
+        up later, and run one Deezer/iTunes lookup if the player never sends art."""
+        if info is None or not self.current_song:
+            return
+        chave = self._track_key(self.current_song, self.current_artist)
+        try:
+            if info.chave != chave:
+                return
+        except Exception:
+            return
+        bytes_ = getattr(info, "capa_bytes", None) or b""
+        if bytes_:
+            uri = cover_art.smtc_thumbnail_to_file_uri(bytes_, info.chave)
+            if uri and uri != self.current_cover:
+                self.current_cover = uri
+                return
+        if self.current_cover or chave in getattr(self, "_cover_tried", set()):
+            return
+        self._cover_tried.add(chave)
+        artist, title = self.current_artist, self.current_song
+        session = self.session_id
+
+        def _job():
+            try:
+                uri = cover_art.fetch_cover_art(artist, title)
+                if uri and self.session_id == session and not self.current_cover:
+                    self.current_cover = uri
+            except Exception as e:
+                logging.warning("Capa em background falhou: %s", e)
+
+        threading.Thread(target=_job, daemon=True, name="cover-fill").start()
+
+    def _fill_cover_background(self, artist: str, song: str, entry: Optional[Dict[str, Any]] = None):
+        chave = self._track_key(song, artist)
+        session = self.session_id
+
+        def _job():
+            try:
+                uri = cover_art.fetch_cover_art(artist, song)
+                if not uri:
+                    return
+                if entry is not None:
+                    entry["cover"] = uri
+                if (self.session_id == session
+                        and self._track_key(self.current_song, self.current_artist) == chave):
+                    self.current_cover = uri
+            except Exception as e:
+                logging.warning("Capa em background falhou: %s", e)
+
+        threading.Thread(target=_job, daemon=True, name="cover-fill").start()
 
     # -- Translation orchestration (uses translation.py's line-racing primitive) --
 
