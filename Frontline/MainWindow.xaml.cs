@@ -1877,6 +1877,11 @@ namespace FrontLineOverlay
                 string lang = AppSettings.GetString("AppLanguage", "en");
                 if (!uiStrings.ContainsKey(lang)) lang = "en";
                 currentAppLanguage = lang;
+                double opacity = AppSettings.GetDouble("BgOpacity", 0.8);
+                if (SldBgOpacity != null)
+                    SldBgOpacity.Value = Math.Clamp(opacity, SldBgOpacity.Minimum, SldBgOpacity.Maximum);
+                else
+                    bgOpacity = Math.Clamp(opacity, 0.0, 1.0);
             }
             catch (Exception ex) { CrashReporter.Log(ex, "RestoreFontAndAuto"); }
             finally { _loadingSettings = false; }
@@ -1984,6 +1989,7 @@ namespace FrontLineOverlay
             {
                 if (SldFontSize != null)
                     AppSettings.SetDouble("FontSize", SldFontSize.Value);
+                AppSettings.SetDouble("BgOpacity", SldBgOpacity != null ? SldBgOpacity.Value : bgOpacity);
                 AppSettings.SetBool("AutoMode", _wantAuto);
                 AppSettings.SetString("AppLanguage", currentAppLanguage);
 
