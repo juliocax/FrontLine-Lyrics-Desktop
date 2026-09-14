@@ -278,3 +278,8 @@ async def run_manual_search(manager, artist: str, song: str, current_session: fl
                 cover=found_cover or manager.current_cover,
                 source="manual",
             )
+
+        if manager.festival_mode:
+            # Item 7: reflect what this manual search actually found (or didn't)
+            # back onto the festival playlist entry.
+            manager.festival_update_song_lyrics(song, artist, found_lyrics)

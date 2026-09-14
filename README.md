@@ -55,9 +55,12 @@ It works two ways, it can automatically follow the track info exposed by Windows
 - **Pause-aware sync**: pausing the track pauses the lyrics scroll too, so everything stays perfectly aligned when playback resumes.
 - **Live translation**: translate the displayed lyrics into English, Spanish, French, Portuguese, or a romanized transliteration, resolved in parallel across multiple translation backends for reliability.
 - **Manual search**: look up lyrics and cover art by artist/song name when you'd rather not rely on auto-detection.
-- **Playback shortcuts**: previous/next track controls built right into the lyrics view, plus manual sync-time adjustment, all without leaving the overlay.
+- **Festival Mode**: built for live shows, where Shazam-based recognition can be slow or fail entirely due to crowd noise, distance from the speakers, etc. Instead of recognizing the song, you build a playlist for the show ahead of time and step through it line by line with dedicated "next/previous line" buttons, once you catch up to where the singer is, the app takes over and keeps the lyrics synced from there using the track's own timing.
+- **Setlist.fm integration**: add your own [setlist.fm](https://www.setlist.fm/settings/apps) API key to search for a setlist by artist/band name (with optional country, venue, and year filters), pick from the top 10 matches, and drop it straight into Festival Mode as an editable playlist.
+- **Playlist management**: Festival Mode playlists are saved locally, create as many as you want, edit them by adding or removing songs, and delete the ones you no longer need.
+- **Manual sync adjustment everywhere**: the same next/previous line arrows used in Festival Mode are now also available for any track recognized via Shazam, letting you nudge the sync if it drifts. Not needed for tracks detected through the Windows Media Session API, since those already report accurate playback position.
 - **Customizable overlay**: adjustable font size and a compact/expanded layout.
-- **Multi-language UI**: interface available in English, Portuguese, and Spanish.
+- **Multi-language UI**: interface available in English, Portuguese, Spanish, and Bahasa Indonesia.
 
 ## How It Works
 
@@ -75,6 +78,7 @@ FrontLine Lyrics is split into two cooperating processes:
 | Audio capture | `pyaudiowpatch` (WASAPI loopback) |
 | Song recognition | `shazamio` |
 | Lyrics source | [LRCLIB](https://lrclib.net/) |
+| Setlist source (Festival Mode) | [setlist.fm](https://www.setlist.fm/) API (user-provided key) |
 | Translation | `deep-translator`, `translators` (parallel multi-backend resolution) |
 | Media metadata (auto-follow) | Windows Runtime — `GlobalSystemMediaTransportControlsSessionManager` via `winrt` |
 | Packaging | PyInstaller (server), MSIX (Microsoft Store) |
@@ -98,18 +102,25 @@ The easiest way to install FrontLine Lyrics is through the Microsoft Store:
 4. Use **SEARCH** to look up lyrics by artist and song name directly.
 5. Use the translation toggles (Orig / Rom / EN / ES / FR / PT) to switch how the lyrics are displayed.
 6. Adjust font size, drag the window anywhere, and use the previous/next track buttons to control playback without leaving the overlay.
+7. At a live show? Click **FESTIVAL** to switch modes. Build a playlist for the concert (manually, or by searching setlist.fm if you've added your API key), pick the song currently being played, and use the next/previous line arrows to catch up to where the singer is, the app takes it from there and keeps the lyrics synced automatically.
+8. The same next/previous line arrows appear for any song recognized via Shazam, so you can manually correct the sync if it ever drifts.
 
 ## Screenshots
 
-<p align="center">
-  <img src="Frontline/assets/help1.png" alt="Home screen" width="260"/>
-  <img src="Frontline/assets/help3.png" alt="Listening to a song" width="260"/>
-  <img src="Frontline/assets/help7.png" alt="Synced lyrics" width="260"/>
-</p>
-
-| Home screen | Listening | Synced lyrics |
-|---|---|---|
-| The initial screen when you open the overlay | Recognizing what's currently playing | Lyrics scrolling in sync with the music |
+<table align="center">
+  <tr>
+    <td align="center"><img src="docs/img/menu.png" alt="Home screen" width="320"/><br/><b>Home screen</b><br/>The initial screen when you open the overlay</td>
+    <td align="center"><img src="docs/img/imagem5.png" alt="Listening to a song" width="320"/><br/><b>Listening</b><br/>Recognizing what's currently playing</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/img/imagem3.png" alt="Synced lyrics" width="320"/><br/><b>Synced lyrics</b><br/>Lyrics scrolling in sync with the music</td>
+    <td align="center"><img src="docs/img/festival_mode.png" alt="Festival mode" width="320"/><br/><b>Festival Mode</b><br/>Stepping through a show's setlist with manual line sync</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/img/quadro4.png" alt="Live translation" width="320"/><br/><b>Live translation</b><br/>Lyrics translated on the fly into another language</td>
+    <td align="center"><img src="docs/img/imagem2.png" alt="Manual sync adjustment" width="320"/><br/><b>Manual sync</b><br/>Nudging the lyrics into sync line by line</td>
+  </tr>
+</table>
 
 ## Building From Source
 

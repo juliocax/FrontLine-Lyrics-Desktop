@@ -10,8 +10,8 @@ using System.Text.Json.Serialization;
 namespace FrontLineOverlay
 {
     /// <summary>
-    /// Histórico da busca manual. Lista cresce; não vai em LocalSettings
-    /// (teto ~8 KB). Arquivo ao lado das outras preferências:
+    /// Manual search history. The list grows and is not stored in LocalSettings
+    /// (limit of ~8 KB). File stored alongside the other preferences:
     /// %LOCALAPPDATA%\FrontLineLyrics\search-history.json
     /// </summary>
     internal static class SearchHistoryStore

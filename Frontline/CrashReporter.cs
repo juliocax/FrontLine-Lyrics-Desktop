@@ -10,11 +10,11 @@ using System.Windows.Threading;
 namespace FrontLineOverlay
 {
     /// <summary>
-    /// Log local + Windows Error Reporting (Watson / Partner Center).
+    /// Logs locally and to Windows Error Reporting (Watson / Partner Center).
     ///
-    /// Exceções não recuperáveis NÃO são engolidas: o processo termina para a
-    /// Store coletar o dump. O crash.log é anexado ao WER via WerRegisterFile.
-    /// Sem PDB/.appxsym a Store continua mostrando unknown_function — veja
+    /// Unrecoverable exceptions are NOT swallowed: the process terminates so the
+    /// Store can collect the dump. The crash.log is attached to WER via WerRegisterFile.
+    /// Without PDB/.appxsym files, the Store continues to show unknown_function — see
     /// docs/partner-center-crashes.md.
     /// </summary>
     public static class CrashReporter

@@ -6,8 +6,7 @@ from pathlib import Path
 def test_fetch_cover_art_returns_first_result_cover(requests_mock):
     requests_mock.get(
         "https://api.deezer.com/search",
-        json={"data": [{"album": {"cover_xl": "https://example.com/cover.jpg"}}]},
-    )
+        json={"data": [{"title": "Some Song", "artist": {"name": "Some Artist"}, "album": {"cover_xl": "https://example.com/cover.jpg"},}]},)
     assert cover_art.fetch_cover_art("Some Artist", "Some Song") == "https://example.com/cover.jpg"
 
 def test_fetch_cover_art_returns_empty_string_when_no_results(requests_mock):
