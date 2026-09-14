@@ -57,15 +57,13 @@ namespace FrontLineOverlay
         private const int SkipIconDecodeWidth = 64;
         private const int MaxPythonRestarts = 5;
 
-        // Site de ajuda (GitHub Pages). Trocar pelo URL definitivo.
-        private const string HelpWebsiteUrl = "https://frontline-lyrics.github.io/";
+        private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation.html";
 
         [StructLayout(LayoutKind.Sequential)] public struct Win32Point { public int X; public int Y; }
         [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
 
         private static Mutex? _appMutex;
 
-        // --- LoadingSpinner: estado da animação imprevisível ---
         private readonly Random _spinnerRandom = new Random();
         private bool _spinnerAnimating = false;
 
@@ -95,8 +93,8 @@ namespace FrontLineOverlay
         private string? _autoHoldKey;
         private DateTime _autoHoldUntilUtc = DateTime.MinValue;
 
-        // Persistência (fonte / Auto / posição): ideia de Warith Adetayo,
-        // gravada em ApplicationData.LocalSettings (MSIX) ou JSON local.
+        // Persistence (source / Auto / position): idea by Warith Adetayo,
+        // stored in ApplicationData.LocalSettings (MSIX) or local JSON.
         private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(600) };
         private bool _loadingSettings;
         private DispatcherFrame? _darkDialogFrame;
@@ -432,13 +430,12 @@ namespace FrontLineOverlay
         private void SldBgOpacity_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             bgOpacity = e.NewValue;
+            if (_loadingSettings) return;
             UpdateOpacityPreview();
         }
 
         private void UpdateOpacityPreview()
         {
-            // Guarda de segurança: o Slider pode disparar ValueChanged durante o InitializeComponent,
-            // antes de todos os elementos nomeados terem sido atribuídos (mesmo motivo do guard em SldFontSize).
             if (OpacityPreviewOverlay == null) return;
 
             byte alpha = (byte)(255 * bgOpacity);
@@ -448,7 +445,7 @@ namespace FrontLineOverlay
 
             if (currentAppStatus == "IDLE")
             {
-                // Sem música tocando ainda: usa uma letra fictícia só pra ilustrar a aparência.
+                // Sem música tocando ainda: usa uma letra fictícia só pra ilustrara aparência.
                 LblPreviewPrevious.Text = t["MockPrevious"];
                 LblPreviewCurrent.Text = t["MockCurrent"];
                 LblPreviewNext.Text = t["MockNext"];
@@ -457,9 +454,6 @@ namespace FrontLineOverlay
             }
             else
             {
-                // Já tem letra real na tela (tocando ou não): usa o conteúdo real em vez de mockup.
-                // Isso vale igual pra "só a letra" quanto pro modo idle -- a lógica de esconder
-                // fundo/menu abaixo não depende do status.
                 LblPreviewPrevious.Text = LblPrevious.Text;
                 LblPreviewCurrent.Text = LblCurrent.Text;
                 LblPreviewNext.Text = LblNext.Text;
@@ -473,13 +467,6 @@ namespace FrontLineOverlay
             _opacityPreviewTimer.Start();
         }
 
-        /// <summary>
-        /// Um Popup do WPF sempre desenha por cima do conteúdo da janela dona, então não dá pra
-        /// "tapar" o menu com um elemento dentro do RootGrid. Em vez disso, durante a prévia a
-        /// gente esconde o MainBorder (fundo real/menu lateral) e recolhe os grupos do menu que
-        /// não são o próprio slider de opacidade, deixando só "OPACIDADE DO FUNDO" + slider
-        /// flutuando -- assim sobra só a prévia na tela pro usuário avaliar a transparência.
-        /// </summary>
         private void SetSettingsPreviewMode(bool previewing)
         {
             MainBorder.Visibility = previewing ? Visibility.Hidden : Visibility.Visible;
@@ -530,7 +517,6 @@ namespace FrontLineOverlay
             if (FestivalContentBorder != null)
                 FestivalContentBorder.LayoutTransform = new ScaleTransform(scale, scale);
 
-            // Donate tip + Buy Me a Coffee stay a fixed pixel size regardless of the font slider.
             if (DonateBlock != null)
             {
                 DonateBlock.LayoutTransform = Math.Abs(scale - 1.0) < 0.001
@@ -542,7 +528,7 @@ namespace FrontLineOverlay
         private void BtnResetFont_Click(object sender, RoutedEventArgs e)
         {
             if (SldFontSize != null)
-                SldFontSize.Value = 26; // Dispara o ValueChanged automaticamente, resetando o scale
+                SldFontSize.Value = 26;
         }
 
         public MainWindow()
@@ -606,7 +592,6 @@ namespace FrontLineOverlay
 
                 if (File.Exists(donateBtnPath))
                 {
-                    // Arquivo solto na pasta assets (Build Action = Content, Copy to Output Directory = Copy if newer).
                     donateBmp = new BitmapImage();
                     donateBmp.BeginInit();
                     donateBmp.UriSource = new Uri(donateBtnPath, UriKind.Absolute);
@@ -616,7 +601,6 @@ namespace FrontLineOverlay
                 }
                 else
                 {
-                    // Fallback: caso o arquivo esteja embutido no .exe como Resource em vez de copiado solto.
                     try { donateBmp = new BitmapImage(new Uri("pack://application:,,,/assets/black-button.png")); }
                     catch { donateBmp = null; }
                 }
@@ -654,9 +638,6 @@ namespace FrontLineOverlay
                     return;
                 }
 
-                // Não redirecionamos stdout/stderr aqui: o Python agora grava log em arquivo
-                // (%LOCALAPPDATA%\FrontLineLyrics\logs\python_session.log). Redirecionar sem
-                // nunca ler o pipe faz o buffer encher e trava a escrita no processo filho.
                 ProcessStartInfo psi = new()
                 {
                     FileName = serverExePath,
@@ -1121,10 +1102,6 @@ namespace FrontLineOverlay
                     LblTranslating.Visibility = isTranslating ? Visibility.Visible : Visibility.Collapsed;
                     ApplyAutoModeFromServer(autoMode);
 
-                    // Mesmo princípio pro idioma de tradução: só um botão fica "marcado" por
-                    // vez, sempre o que bate com current_language do servidor -- inclusive
-                    // depois de uma música nova no modo Auto, quando o idioma preferido é
-                    // reaplicado automaticamente sem o usuário precisar apertar nada de novo.
                     TransOriginal.IsChecked = currentLanguage == "original";
                     TransRomanized.IsChecked = currentLanguage == "romanized";
                     TransEn.IsChecked = currentLanguage == "en";
@@ -1349,17 +1326,6 @@ namespace FrontLineOverlay
             }
         }
 
-        // ---------------------------------------------------------------
-        // LoadingSpinner: animação com velocidade e "corte" imprevisíveis
-        // ---------------------------------------------------------------
-        // A ideia: em vez de um Storyboard fixo em loop (sempre igual),
-        // cada "volta" da roda e cada abertura/fechamento do arco são
-        // recalculadas em tempo real com valores aleatórios, e a próxima
-        // etapa só é agendada quando a anterior termina (Completed).
-        // Isso faz a roda girar ora mais rápido, ora mais devagar, e o
-        // "corte" do arco abrir/fechar em pontos diferentes do círculo
-        // a cada ciclo.
-
         private void StartLoadingSpinnerAnimation()
         {
             if (_spinnerAnimating) return;
@@ -1383,7 +1349,6 @@ namespace FrontLineOverlay
         {
             if (!_spinnerAnimating) return;
 
-            // Cada volta (360°) dura entre 0.5s (rápido) e 2.2s (devagar).
             double durationSeconds = 0.5 + _spinnerRandom.NextDouble() * 1.7;
             double fromAngle = ListenArcSpin.Angle;
             double toAngle = fromAngle + 360.0;
@@ -1412,10 +1377,6 @@ namespace FrontLineOverlay
         {
             if (!_spinnerAnimating) return;
 
-            // StrokeDashOffset entre 0 (arco bem aberto) e 39 (quase fechado).
-            // Sorteando o alvo a cada passo, o "corte" do círculo aparece em
-            // um ponto diferente a cada volta, já que a rotação segue em
-            // paralelo com sua própria velocidade aleatória.
             double targetOffset = _spinnerRandom.NextDouble() * 39.0;
             double durationSeconds = 0.35 + _spinnerRandom.NextDouble() * 0.9;
 
@@ -1426,7 +1387,6 @@ namespace FrontLineOverlay
                 EasingFunction = new CubicEase { EasingMode = EasingMode.EaseInOut }
             };
 
-            // Junto, um leve pulso de opacidade com timing também aleatório.
             double targetOpacity = 0.35 + _spinnerRandom.NextDouble() * 0.65;
             double opacityDuration = 0.3 + _spinnerRandom.NextDouble() * 0.8;
             var opacityAnim = new DoubleAnimation
@@ -1683,7 +1643,7 @@ namespace FrontLineOverlay
         {
             try
             {
-                Process.Start(new ProcessStartInfo("https://buymeacoffee.com/juliocax/frontline-lyrics-1-2-0") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo("https://buymeacoffee.com/juliocax/frontline-lyrics-1-3-0") { UseShellExecute = true });
             }
             catch (Exception ex)
             {
@@ -1889,8 +1849,8 @@ namespace FrontLineOverlay
 
         private void RestoreWindowPlacement()
         {
-            // Só restaura se o retângulo ainda cabe na área virtual (monitor
-            // pode ter sido desconectado). Contribuição de Warith Adetayo.
+            // Restores only if the rectangle still fits inside the virtual area
+            // (the monitor may have been disconnected). Contribution by Warith Adetayo.
             try
             {
                 double w = AppSettings.GetDouble("WindowWidth", double.NaN);
