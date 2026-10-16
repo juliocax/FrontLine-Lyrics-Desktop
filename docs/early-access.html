@@ -21,7 +21,7 @@ nav_active: support
     <p data-i18n="ea.font_desc">You can now change the font used to display your lyrics!</p>
 
     <div class="frame" style="margin: 1.5rem 0; padding: 0.5rem; border-radius: 1.25rem;">
-      <img src="img/1-4-0-fonts.gif" alt="Demonstração da escolha de fonte" style="width: 100%; height: auto; border-radius: 12px; cursor: zoom-in;" onclick="openLightbox(this)" />
+      <img src="img/1-4-0-fonts.gif" alt="Demonstração da escolha de fonte" style="width: 100%; height: auto; border-radius: 12px; cursor: zoom-in;" tabindex="0" role="button" />
     </div>
 
     <h3 style="color: var(--primary); font-size: 18px; margin-top: 3rem;" data-i18n="ea.themes_title">🎃🎄🎆 Seasonal themes</h3>
@@ -33,7 +33,7 @@ nav_active: support
     </ul>
 
     <div class="frame" style="margin: 1.5rem 0; padding: 0.5rem; border-radius: 1.25rem;">
-      <img src="img/1-4-0-themes.png" alt="Demonstração dos temas sazonais" style="width: 100%; height: auto; border-radius: 12px; cursor: zoom-in;" onclick="openLightbox(this)" />
+      <img src="img/1-4-0-themes.png" alt="Demonstração dos temas sazonais" style="width: 100%; height: auto; border-radius: 12px; cursor: zoom-in;" tabindex="0" role="button" />
     </div>
 
     <h2 style="color: #fff; font-size: 24px; margin-top: 3rem; margin-bottom: 1rem;" data-i18n="ea.whatsnext">What's coming next?</h2>
@@ -99,20 +99,32 @@ nav_active: support
     var lightbox = document.getElementById("imgLightbox");
     var lightboxImg = document.getElementById("imgLightboxImg");
 
-    window.openLightbox = function(img) {
+    function openLightbox(img) {
       if (!lightbox) return;
-      lightboxImg.src = img.src;
+      lightboxImg.src = img.currentSrc || img.src;
+      lightboxImg.alt = img.alt || "";
       lightbox.classList.add("is-open");
+      lightbox.setAttribute("aria-hidden", "false");
       document.body.classList.add("no-scroll");
     };
 
     function closeLightbox() {
       if (!lightbox) return;
       lightbox.classList.remove("is-open");
+      lightbox.setAttribute("aria-hidden", "true");
       document.body.classList.remove("no-scroll");
     }
 
     if (lightbox) {
+      document.querySelectorAll(".frame img").forEach(function (img) {
+        img.addEventListener("click", function () { openLightbox(img); });
+        img.addEventListener("keydown", function (event) {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            openLightbox(img);
+          }
+        });
+      });
       lightbox.addEventListener("click", closeLightbox);
       document.querySelector(".img-lightbox-close").addEventListener("click", closeLightbox);
       document.addEventListener("keydown", function (event) {
