@@ -1,7 +1,3 @@
-// i18n bem simples: sem build step, sem lib externa. Cada elemento que precisa
-// de texto traduzido leva um atributo data-i18n="secao.chave"; a gente troca o
-// textContent dele na hora de trocar o idioma. Padrão é inglês.
-
 const FL_LANG_TAG = { en: "en", pt: "pt-BR", es: "es", fr: "fr", id: "id" };
 
 const FL_TRANSLATIONS = {
@@ -59,11 +55,11 @@ const FL_TRANSLATIONS = {
     docs_hub: {
       h1: "Choose the documentation version",
       subtitle: "Select the version of FrontLine Lyrics you are using to see the correct instructions.",
-      card1_label: "Current Version",
-      card1_title: "v1.3.0 (Stable)",
-      card1_desc: "Documentation for the current stable version of the app.",
-      card2_label: "Beta Version",
-      card2_desc: "Specific tutorial for version 1.4.0-beta, featuring the new tabbed settings menu."
+      card1_label: "Previous Version",
+      card1_title: "v1.3.0",
+      card1_desc: "Documentation for the previous version of the app.",
+      card2_label: "Current Version",
+      card2_desc: "Documentation for version 1.4.1, including tabbed settings, lyric customization, and theme selection."
     },
     doc: {
       eyebrow: "Tutorial",
@@ -154,24 +150,24 @@ const FL_TRANSLATIONS = {
       eaTitle: "Supporter Perks: Early Access",
       eaDesc: "Did you know? Supporters get exclusive early access to upcoming features. Make a one-time donation and unlock experimental updates before the general public. Available now: Seasonal themes (Halloween, Christmas, New Year) and new lyric colors (solid, metallic, and gradients).",
       eaCta: "Become a Supporter",
-      step2betat: "The settings menu (v1.4.0-beta)",
-      step2beta_intro: "These are tabs that switch the configuration options below: the first is for lyrics settings, the second for translation settings, and the third for general app settings.",
-      step2beta_sec1: "In the lyrics settings we have:",
-      step2beta_sec1_i1: "Choice of lyrics font",
-      step2beta_sec1_i2: "Lyrics color",
-      step2beta_sec1_i3: "Lyrics font weight",
-      step2beta_sec1_i4: "Lyrics style (whether it's italic or not).",
-      step2beta_sec1_i5: "Font size",
-      step2beta_sec1_i6: "When enabled, shows the original lyrics in a smaller font right below the translation",
-      step2beta_sec1_i7: "Controls the background opacity behind the lyrics, from fully transparent to fully opaque.",
-      step2beta_sec2: "In the translation settings:",
-      step2beta_sec2_i1: "Translates the lyrics into another language, or converts them to a romanized version.",
-      step2beta_sec3: "In the general app settings:",
-      step2beta_sec3_i1: "Dropdown to change the app's language.",
-      step2beta_sec3_i2: "Enables and disables the app's seasonal themes."
+      step2v14t: "The settings menu (v1.4.1)",
+      step2v14_intro: "These are tabs that switch the configuration options below: the first is for lyrics settings, the second for translation settings, and the third for general app settings.",
+      step2v14_sec1: "In the lyrics settings we have:",
+      step2v14_sec1_i1: "Choice of lyrics font",
+      step2v14_sec1_i2: "Lyrics color",
+      step2v14_sec1_i3: "Lyrics font weight",
+      step2v14_sec1_i4: "Lyrics style (whether it's italic or not).",
+      step2v14_sec1_i5: "Font size",
+      step2v14_sec1_i6: "When enabled, shows the original lyrics in a smaller font right below the translation",
+      step2v14_sec1_i7: "Controls the background opacity behind the lyrics, from fully transparent to fully opaque.",
+      step2v14_sec2: "In the translation settings:",
+      step2v14_sec2_i1: "Translates the lyrics into another language, or converts them to a romanized version.",
+      step2v14_sec3: "In the general app settings:",
+      step2v14_sec3_i1: "Dropdown to change the app's language.",
+      step2v14_sec3_i2: "Theme selector: choose the Default theme, the Seasonal theme, or one of three additional themes. Seasonal themes are available only on their scheduled dates and in supported regions."
     },
     banner: {
-      title: "FrontLine Lyrics 1.4.0-Beta is here! 🎉",
+      title: "Join the Early Access Program",
       subtitle: "Join the Early Access Program through Buy Me a Coffee and try new features before everyone else.",
       btn: "Read the announcement"
     },
@@ -268,11 +264,11 @@ const FL_TRANSLATIONS = {
     docs_hub: {
       h1: "Escolha a versão da documentação",
       subtitle: "Selecione a versão do FrontLine Lyrics que você está usando para ver as instruções corretas.",
-      card1_label: "Versão Atual",
-      card1_title: "v1.3.0 (Estável)",
-      card1_desc: "A documentação para a versão estável atual do aplicativo.",
-      card2_label: "Versão Beta",
-      card2_desc: "Tutorial específico para a versão 1.4.0-beta, com o novo menu de configurações em abas."
+      card1_label: "Versão anterior",
+      card1_title: "v1.3.0",
+      card1_desc: "Documentação da versão anterior do aplicativo.",
+      card2_label: "Versão atual",
+      card2_desc: "Documentação da versão 1.4.1, incluindo configurações em abas, personalização das letras e escolha de temas."
     },
     doc: {
       eyebrow: "Tutorial",
@@ -360,24 +356,24 @@ const FL_TRANSLATIONS = {
       step10_i4: "Botão para encerrar o Modo Festival.",
       step10_i5: "Botão para buscar músicas e adicionar à playlist.",
       ctaTitle: "Ainda não instalou?",
-      step2betat: "O menu de configurações (v1.4.0-beta)",
-      step2beta_intro: "São abas, que alternam as opções de configurações abaixo, sendo a primeira as configurações de letras, a segunda configuração de tradução da letra, e a terceira configurações do programa no geral.",
-      step2beta_sec1: "Nas configurações de letras temos:",
-      step2beta_sec1_i1: "Escolha da fonte da letra",
-      step2beta_sec1_i2: "Da cor da letra",
-      step2beta_sec1_i3: "Do peso da letra",
-      step2beta_sec1_i4: "Do estilo da letra se vai ser itálico ou não.",
-      step2beta_sec1_i5: "Tamanho da fonte",
-      step2beta_sec1_i6: "Quando ativado mostra a letra original em uma fonte menor abaixo da tradução",
-      step2beta_sec1_i7: "Controla a opacidade do fundo atrás da letra, de totalmente transparente a totalmente opaco.",
-      step2beta_sec2: "Nas configurações de tradução:",
-      step2beta_sec2_i1: "Traduz a letra para outro idioma ou converte para uma versão romanizada.",
-      step2beta_sec3: "Nas configurações gerais do aplicativo:",
-      step2beta_sec3_i1: "Caixa de seleção para trocar o idioma do aplicativo.",
-      step2beta_sec3_i2: "Ativa e desativa os temas sazonais do aplicativo."
+      step2v14t: "O menu de configurações (v1.4.1)",
+      step2v14_intro: "São abas, que alternam as opções de configurações abaixo, sendo a primeira as configurações de letras, a segunda configuração de tradução da letra, e a terceira configurações do programa no geral.",
+      step2v14_sec1: "Nas configurações de letras temos:",
+      step2v14_sec1_i1: "Escolha da fonte da letra",
+      step2v14_sec1_i2: "Da cor da letra",
+      step2v14_sec1_i3: "Do peso da letra",
+      step2v14_sec1_i4: "Do estilo da letra se vai ser itálico ou não.",
+      step2v14_sec1_i5: "Tamanho da fonte",
+      step2v14_sec1_i6: "Quando ativado mostra a letra original em uma fonte menor abaixo da tradução",
+      step2v14_sec1_i7: "Controla a opacidade do fundo atrás da letra, de totalmente transparente a totalmente opaco.",
+      step2v14_sec2: "Nas configurações de tradução:",
+      step2v14_sec2_i1: "Traduz a letra para outro idioma ou converte para uma versão romanizada.",
+      step2v14_sec3: "Nas configurações gerais do aplicativo:",
+      step2v14_sec3_i1: "Caixa de seleção para trocar o idioma do aplicativo.",
+      step2v14_sec3_i2: "Seletor de temas: escolha o tema Padrão, o tema Sazonal ou um dos três temas adicionais. Os temas sazonais só ficam disponíveis nas datas previstas e nas regiões compatíveis."
     },
     banner: {
-      title: "O FrontLine Lyrics 1.4.0-Beta chegou! 🎉",
+      title: "Participe do Programa de Acesso Antecipado",
       subtitle: "Participe do Programa de Acesso Antecipado pelo Buy Me a Coffee e teste os novos recursos antes de todo mundo.",
       btn: "Ler o anúncio"
     },
@@ -474,11 +470,11 @@ const FL_TRANSLATIONS = {
     docs_hub: {
       h1: "Elige la versión de la documentación",
       subtitle: "Selecciona la versión de FrontLine Lyrics que estás usando para ver las instrucciones correctas.",
-      card1_label: "Versión Actual",
-      card1_title: "v1.3.0 (Estable)",
-      card1_desc: "Documentación para la versión estable actual de la aplicación.",
-      card2_label: "Versión Beta",
-      card2_desc: "Tutorial específico para la versión 1.4.0-beta, con el nuevo menú de configuración en pestañas."
+      card1_label: "Versión anterior",
+      card1_title: "v1.3.0",
+      card1_desc: "Documentación de la versión anterior de la aplicación.",
+      card2_label: "Versión actual",
+      card2_desc: "Documentación de la versión 1.4.1, con ajustes en pestañas, personalización de letras y selección de temas."
     },
     doc: {
       eyebrow: "Tutorial",
@@ -566,24 +562,24 @@ const FL_TRANSLATIONS = {
       step10_i4: "Botón para terminar el Modo Festival.",
       step10_i5: "Botón para buscar canciones y agregarlas a la playlist.",
       ctaTitle: "¿Todavía no lo instalaste?",
-      step2betat: "El menú de configuración (v1.4.0-beta)",
-      step2beta_intro: "Son pestañas que alternan las opciones de configuración abajo, siendo la primera la configuración de letras, la segunda la configuración de traducción de la letra, y la tercera la configuración general del programa.",
-      step2beta_sec1: "En la configuración de letras tenemos:",
-      step2beta_sec1_i1: "Elección de la fuente de la letra",
-      step2beta_sec1_i2: "Color de la letra",
-      step2beta_sec1_i3: "Grosor de la fuente",
-      step2beta_sec1_i4: "Estilo de la letra, si es cursiva o no.",
-      step2beta_sec1_i5: "Tamaño de la fuente",
-      step2beta_sec1_i6: "Cuando está activado muestra la letra original en un tamaño menor debajo de la traducción",
-      step2beta_sec1_i7: "Controla la opacidad del fondo detrás de la letra, de totalmente transparente a totalmente opaco.",
-      step2beta_sec2: "En la configuración de traducción:",
-      step2beta_sec2_i1: "Traduce la letra a otro idioma o la convierte a una versión romanizada.",
-      step2beta_sec3: "En la configuración general de la aplicación:",
-      step2beta_sec3_i1: "Casilla para cambiar el idioma de la aplicación.",
-      step2beta_sec3_i2: "Activa y desactiva los temas de temporada de la aplicación."
+      step2v14t: "El menú de configuración (v1.4.1)",
+      step2v14_intro: "Son pestañas que alternan las opciones de configuración abajo, siendo la primera la configuración de letras, la segunda la configuración de traducción de la letra, y la tercera la configuración general del programa.",
+      step2v14_sec1: "En la configuración de letras tenemos:",
+      step2v14_sec1_i1: "Elección de la fuente de la letra",
+      step2v14_sec1_i2: "Color de la letra",
+      step2v14_sec1_i3: "Grosor de la fuente",
+      step2v14_sec1_i4: "Estilo de la letra, si es cursiva o no.",
+      step2v14_sec1_i5: "Tamaño de la fuente",
+      step2v14_sec1_i6: "Cuando está activado muestra la letra original en un tamaño menor debajo de la traducción",
+      step2v14_sec1_i7: "Controla la opacidad del fondo detrás de la letra, de totalmente transparente a totalmente opaco.",
+      step2v14_sec2: "En la configuración de traducción:",
+      step2v14_sec2_i1: "Traduce la letra a otro idioma o la convierte a una versión romanizada.",
+      step2v14_sec3: "En la configuración general de la aplicación:",
+      step2v14_sec3_i1: "Casilla para cambiar el idioma de la aplicación.",
+      step2v14_sec3_i2: "Selector de temas: elige el tema Predeterminado, el tema de Temporada o uno de los tres temas adicionales. Los temas de temporada solo están disponibles en las fechas previstas y en las regiones compatibles."
     },
     banner: {
-      title: "¡FrontLine Lyrics 1.4.0-Beta está aquí! 🎉",
+      title: "¡Únete al Programa de Acceso Anticipado!",
       subtitle: "Únete al Programa de Acceso Anticipado a través de Buy Me a Coffee y prueba las nuevas funciones antes que nadie.",
       btn: "Leer el anuncio"
     },
@@ -680,11 +676,11 @@ const FL_TRANSLATIONS = {
     docs_hub: {
       h1: "Choisissez la version de la documentation",
       subtitle: "Sélectionnez la version de FrontLine Lyrics que vous utilisez pour voir les bonnes instructions.",
-      card1_label: "Version Actuelle",
-      card1_title: "v1.3.0 (Stable)",
-      card1_desc: "Documentation pour la version stable actuelle de l'application.",
-      card2_label: "Version Bêta",
-      card2_desc: "Tutoriel spécifique pour la version 1.4.0-beta, avec le nouveau menu de paramètres à onglets."
+      card1_label: "Version précédente",
+      card1_title: "v1.3.0",
+      card1_desc: "Documentation de la version précédente de l’application.",
+      card2_label: "Version actuelle",
+      card2_desc: "Documentation de la version 1.4.1, avec paramètres par onglets, personnalisation des paroles et choix des thèmes."
     },
     doc: {
       eyebrow: "Tutoriel",
@@ -772,24 +768,24 @@ const FL_TRANSLATIONS = {
       step10_i4: "Bouton pour quitter le Mode Festival.",
       step10_i5: "Bouton pour rechercher des chansons à ajouter à la playlist.",
       ctaTitle: "Pas encore installé ?",
-      step2betat: "Le menu de réglages (v1.4.0-beta)",
-      step2beta_intro: "Ce sont des onglets qui basculent les options de configuration ci-dessous, le premier étant les paramètres des paroles, le deuxième les paramètres de traduction, et le troisième les paramètres généraux de l'application.",
-      step2beta_sec1: "Dans les paramètres des paroles, nous avons :",
-      step2beta_sec1_i1: "Choix de la police des paroles",
-      step2beta_sec1_i2: "Couleur des paroles",
-      step2beta_sec1_i3: "Épaisseur de la police",
-      step2beta_sec1_i4: "Style des paroles (italique ou non).",
-      step2beta_sec1_i5: "Taille de la police",
-      step2beta_sec1_i6: "Lorsqu'il est activé, affiche les paroles originales en plus petit juste sous la traduction",
-      step2beta_sec1_i7: "Contrôle l'opacité du fond derrière les paroles, de totalement transparent à totalement opaque.",
-      step2beta_sec2: "Dans les paramètres de traduction :",
-      step2beta_sec2_i1: "Traduit les paroles dans une autre langue ou les convertit en version romanisée.",
-      step2beta_sec3: "Dans les paramètres généraux de l'application :",
-      step2beta_sec3_i1: "Menu déroulant pour changer la langue de l'application.",
-      step2beta_sec3_i2: "Active et désactive les thèmes saisonniers de l'application."
+      step2v14t: "Le menu des paramètres (v1.4.1)",
+      step2v14_intro: "Ce sont des onglets qui basculent les options de configuration ci-dessous, le premier étant les paramètres des paroles, le deuxième les paramètres de traduction, et le troisième les paramètres généraux de l'application.",
+      step2v14_sec1: "Dans les paramètres des paroles, nous avons :",
+      step2v14_sec1_i1: "Choix de la police des paroles",
+      step2v14_sec1_i2: "Couleur des paroles",
+      step2v14_sec1_i3: "Épaisseur de la police",
+      step2v14_sec1_i4: "Style des paroles (italique ou non).",
+      step2v14_sec1_i5: "Taille de la police",
+      step2v14_sec1_i6: "Lorsqu'il est activé, affiche les paroles originales en plus petit juste sous la traduction",
+      step2v14_sec1_i7: "Contrôle l'opacité du fond derrière les paroles, de totalement transparent à totalement opaque.",
+      step2v14_sec2: "Dans les paramètres de traduction :",
+      step2v14_sec2_i1: "Traduit les paroles dans une autre langue ou les convertit en version romanisée.",
+      step2v14_sec3: "Dans les paramètres généraux de l'application :",
+      step2v14_sec3_i1: "Menu déroulant pour changer la langue de l'application.",
+      step2v14_sec3_i2: "Sélecteur de thèmes : choisissez le thème Par défaut, le thème Saisonnier ou l’un des trois thèmes supplémentaires. Les thèmes saisonniers ne sont disponibles qu’aux dates prévues et dans les régions compatibles."
     },
     banner: {
-      title: "FrontLine Lyrics 1.4.0-Beta est là ! 🎉",
+      title: "Rejoignez le Programme d'Accès Anticipé!",
       subtitle: "Rejoignez le Programme d'Accès Anticipé via Buy Me a Coffee et essayez les nouvelles fonctionnalités avant tout le monde.",
       btn: "Lire l'annonce"
     },
@@ -886,11 +882,11 @@ const FL_TRANSLATIONS = {
     docs_hub: {
       h1: "Pilih versi dokumentasi",
       subtitle: "Pilih versi FrontLine Lyrics yang Anda gunakan untuk melihat petunjuk yang benar.",
-      card1_label: "Versi Saat Ini",
-      card1_title: "v1.3.0 (Stabil)",
-      card1_desc: "Dokumentasi untuk versi stabil aplikasi saat ini.",
-      card2_label: "Versi Beta",
-      card2_desc: "Tutorial khusus untuk versi 1.4.0-beta, yang menampilkan menu pengaturan tab baru."
+      card1_label: "Versi sebelumnya",
+      card1_title: "v1.3.0",
+      card1_desc: "Dokumentasi untuk versi aplikasi sebelumnya.",
+      card2_label: "Versi saat ini",
+      card2_desc: "Dokumentasi versi 1.4.1, termasuk pengaturan bertab, penyesuaian lirik, dan pilihan tema."
     },
     doc: {
       eyebrow: "Tutorial",
@@ -978,65 +974,65 @@ const FL_TRANSLATIONS = {
       step10_i4: "Tombol untuk mengakhiri Mode Festival.",
       step10_i5: "Tombol untuk mencari lagu yang akan ditambahkan ke playlist.",
       ctaTitle: "Belum menginstalnya?",
-      step2betat: "Menu pengaturan (v1.4.0-beta)",
-      step2beta_intro: "Ini adalah tab yang mengalihkan opsi konfigurasi di bawah ini, yang pertama adalah pengaturan lirik, yang kedua pengaturan terjemahan lirik, dan yang ketiga pengaturan aplikasi secara umum.",
-      step2beta_sec1: "Pada pengaturan lirik kami memiliki:",
-      step2beta_sec1_i1: "Pilihan font lirik",
-      step2beta_sec1_i2: "Warna lirik",
-      step2beta_sec1_i3: "Ketebalan font lirik",
-      step2beta_sec1_i4: "Gaya lirik (apakah miring atau tidak).",
-      step2beta_sec1_i5: "Ukuran font",
-      step2beta_sec1_i6: "Saat diaktifkan, menampilkan lirik asli dengan font lebih kecil tepat di bawah terjemahan",
-      step2beta_sec1_i7: "Mengatur opasitas latar belakang di belakang lirik, dari sepenuhnya transparan hingga sepenuhnya buram.",
-      step2beta_sec2: "Pada pengaturan terjemahan:",
-      step2beta_sec2_i1: "Menerjemahkan lirik ke bahasa lain, atau mengubahnya menjadi versi romanisasi.",
-      step2beta_sec3: "Pada pengaturan umum aplikasi:",
-      step2beta_sec3_i1: "Kotak pilihan untuk mengubah bahasa aplikasi.",
-      step2beta_sec3_i2: "Mengaktifkan dan menonaktifkan tema musiman aplikasi."
-  },
-  banner: {
-    title: "FrontLine Lyrics 1.4.0-Beta telah hadir! 🎉",
-    subtitle: "Bergabunglah dengan Program Akses Awal melalui Buy Me a Coffee dan coba fitur baru sebelum orang lain.",
-    btn: "Baca pengumuman"
-  },
-  ea: {
-    eyebrow: "Pengumuman",
-    title: "Program Akses Awal",
-    subtitle: "Coba pembaruan mendatang sebelum dirilis untuk semua orang melalui Microsoft Store.",
-    intro: "Halo semuanya! Saya sangat senang mengumumkan hal baru untuk FrontLine Lyrics! Mulai dari versi 1.4.0-Beta, saya memperkenalkan program akses awal untuk semua orang yang mendukung proyek ini melalui Buy Me a Coffee.",
-    whatsnew: "Apa yang baru di 1.4.0-Beta?",
-    font_title: "Pilih font lirik Anda",
-    font_desc: "Anda sekarang dapat mengubah font yang digunakan untuk menampilkan lirik Anda!",
-    themes_title: "🎃🎄🎆 Tema musiman",
-    themes_desc: "Untuk merayakan akhir tahun, FrontLine Lyrics mendapatkan tiga tema musiman. Tema ini muncul secara otomatis selama tanggal masing-masing di negara dan wilayah yang didukung (ketersediaan bervariasi menurut wilayah).",
-    themes_hallow_label: "🎃 Halloween:", themes_hallow_date: "15 Oktober – 1 November",
-    themes_xmas_label: "🎄 Natal:", themes_xmas_date: "1 Desember – 26 Desember",
-    themes_ny_label: "🎆 Tahun Baru:", themes_ny_date: "30 Desember – 3 Januari",
-    whatsnext: "Apa yang akan datang selanjutnya?",
-    v15_title: "Versi 1.5.0-Beta (direncanakan)",
-    v15_1: "Pilih dari koleksi tema aplikasi.",
-    v15_2: "Impor font kustom Anda sendiri.",
-    v15_3: "Tambahkan latar belakang kustom ke tampilan lirik Anda.",
-    v15_4: "✨ Dan banyak lagi!",
-    v16_title: "Versi 1.6.0 dan seterusnya",
-    v16_desc: "Pengembangan di masa depan akan berfokus pada kinerja, stabilitas, keandalan, dan memperluas dukungan font untuk menampilkan lirik dari lebih banyak lagu dan bahasa.",
-    v16_note: "* Ini adalah rencana pengembangan dan dapat berubah berdasarkan pengujian dan masukan.",
-    how_title: "Bagaimana cara mendapatkan akses awal?",
-    how_desc: "Jika Anda telah mendukung FrontLine Lyrics melalui Buy Me a Coffee, Anda dapat meminta akses ke program beta! Inilah yang perlu Anda lakukan:",
-    how_1: "Buka Microsoft Store di PC Windows tempat Anda menggunakan FrontLine Lyrics.",
-    how_2: "Klik ikon profil Anda dan periksa akun Microsoft mana yang masuk.",
-    how_3: "Kirimkan alamat email yang terkait dengan akun Microsoft Store tersebut melalui pesan pribadi di Buy Me a Coffee.",
-    how_4: "Setelah kontribusi Anda diverifikasi, saya akan menambahkan akun Microsoft Anda ke daftar akses beta.",
-    important_label: "⚠️ Penting",
-    important_1: "Pastikan Anda memberikan email akun Microsoft Store yang benar. Menggunakan akun yang berbeda dapat mencegah pembaruan beta muncul. Anda tidak perlu membagikan kata sandi, kode verifikasi, atau informasi login lainnya.",
-    important_2: "Akses tidak langsung diberikan. Mungkin perlu beberapa saat setelah kontribusi dan permintaan akses Anda agar akun Anda ditambahkan dan beta tersedia. Setelah akun Anda memenuhi syarat dan beta telah dipublikasikan, Anda dapat menerima beta melalui Microsoft Store menggunakan akun yang terdaftar.",
-    things_title: "Beberapa hal yang perlu diketahui",
-    things_desc: "Versi Beta masih sedang diuji. Anda mungkin menemukan bug, perilaku yang tidak terduga, atau fitur yang berubah sebelum rilis publik. Tidak ada durasi pasti untuk versi beta. Beberapa pembaruan mungkin memerlukan pengujian lebih banyak daripada yang lain, dan rilis publik akan dilakukan jika sudah siap.",
-    ideas_title: "Ide Anda penting!",
-    ideas_desc: "Apakah Anda pendukung atau pengguna biasa, suara Anda penting. Punya ide untuk fitur baru? Menemukan bug? Merasa ada yang bisa bekerja lebih baik? Saya ingin mendengar dari Anda! Saran dan masukan Anda dapat membantu membentuk pembaruan di masa mendatang.",
-    thanks_title: "Terima kasih telah mendukung FrontLine Lyrics!",
-    thanks_desc: "Setiap kontribusi membantu saya mendedikasikan lebih banyak waktu untuk membuat aplikasi ini lebih baik.",
-    support_btn: "Dukung di Buy Me a Coffee"
+      step2v14t: "Menu pengaturan (v1.4.1)",
+      step2v14_intro: "Ini adalah tab yang mengalihkan opsi konfigurasi di bawah ini, yang pertama adalah pengaturan lirik, yang kedua pengaturan terjemahan lirik, dan yang ketiga pengaturan aplikasi secara umum.",
+      step2v14_sec1: "Pada pengaturan lirik kami memiliki:",
+      step2v14_sec1_i1: "Pilihan font lirik",
+      step2v14_sec1_i2: "Warna lirik",
+      step2v14_sec1_i3: "Ketebalan font lirik",
+      step2v14_sec1_i4: "Gaya lirik (apakah miring atau tidak).",
+      step2v14_sec1_i5: "Ukuran font",
+      step2v14_sec1_i6: "Saat diaktifkan, menampilkan lirik asli dengan font lebih kecil tepat di bawah terjemahan",
+      step2v14_sec1_i7: "Mengatur opasitas latar belakang di belakang lirik, dari sepenuhnya transparan hingga sepenuhnya buram.",
+      step2v14_sec2: "Pada pengaturan terjemahan:",
+      step2v14_sec2_i1: "Menerjemahkan lirik ke bahasa lain, atau mengubahnya menjadi versi romanisasi.",
+      step2v14_sec3: "Pada pengaturan umum aplikasi:",
+      step2v14_sec3_i1: "Kotak pilihan untuk mengubah bahasa aplikasi.",
+      step2v14_sec3_i2: "Pemilih tema: pilih tema Default, tema Musiman, atau salah satu dari tiga tema tambahan. Tema musiman hanya tersedia pada tanggal yang ditentukan dan di wilayah yang didukung."
+    },
+    banner: {
+      title: "Gabung Program Akses Awal!",
+      subtitle: "Gabung Program Akses Awal 'Buy Me a Coffee' dan coba fitur-fitur baru sebelum orang lain.",
+      btn: "Baca pengumuman"
+    },
+    ea: {
+      eyebrow: "Pengumuman",
+      title: "Program Akses Awal",
+      subtitle: "Coba pembaruan mendatang sebelum dirilis untuk semua orang melalui Microsoft Store.",
+      intro: "Halo semuanya! Saya sangat senang mengumumkan hal baru untuk FrontLine Lyrics! Mulai dari versi 1.4.0-Beta, saya memperkenalkan program akses awal untuk semua orang yang mendukung proyek ini melalui Buy Me a Coffee.",
+      whatsnew: "Apa yang baru di 1.4.0-Beta?",
+      font_title: "Pilih font lirik Anda",
+      font_desc: "Anda sekarang dapat mengubah font yang digunakan untuk menampilkan lirik Anda!",
+      themes_title: "🎃🎄🎆 Tema musiman",
+      themes_desc: "Untuk merayakan akhir tahun, FrontLine Lyrics mendapatkan tiga tema musiman. Tema ini muncul secara otomatis selama tanggal masing-masing di negara dan wilayah yang didukung (ketersediaan bervariasi menurut wilayah).",
+      themes_hallow_label: "🎃 Halloween:", themes_hallow_date: "15 Oktober – 1 November",
+      themes_xmas_label: "🎄 Natal:", themes_xmas_date: "1 Desember – 26 Desember",
+      themes_ny_label: "🎆 Tahun Baru:", themes_ny_date: "30 Desember – 3 Januari",
+      whatsnext: "Apa yang akan datang selanjutnya?",
+      v15_title: "Versi 1.5.0-Beta (direncanakan)",
+      v15_1: "Pilih dari koleksi tema aplikasi.",
+      v15_2: "Impor font kustom Anda sendiri.",
+      v15_3: "Tambahkan latar belakang kustom ke tampilan lirik Anda.",
+      v15_4: "✨ Dan banyak lagi!",
+      v16_title: "Versi 1.6.0 dan seterusnya",
+      v16_desc: "Pengembangan di masa depan akan berfokus pada kinerja, stabilitas, keandalan, dan memperluas dukungan font untuk menampilkan lirik dari lebih banyak lagu dan bahasa.",
+      v16_note: "* Ini adalah rencana pengembangan dan dapat berubah berdasarkan pengujian dan masukan.",
+      how_title: "Bagaimana cara mendapatkan akses awal?",
+      how_desc: "Jika Anda telah mendukung FrontLine Lyrics melalui Buy Me a Coffee, Anda dapat meminta akses ke program beta! Inilah yang perlu Anda lakukan:",
+      how_1: "Buka Microsoft Store di PC Windows tempat Anda menggunakan FrontLine Lyrics.",
+      how_2: "Klik ikon profil Anda dan periksa akun Microsoft mana yang masuk.",
+      how_3: "Kirimkan alamat email yang terkait dengan akun Microsoft Store tersebut melalui pesan pribadi di Buy Me a Coffee.",
+      how_4: "Setelah kontribusi Anda diverifikasi, saya akan menambahkan akun Microsoft Anda ke daftar akses beta.",
+      important_label: "⚠️ Penting",
+      important_1: "Pastikan Anda memberikan email akun Microsoft Store yang benar. Menggunakan akun yang berbeda dapat mencegah pembaruan beta muncul. Anda tidak perlu membagikan kata sandi, kode verifikasi, atau informasi login lainnya.",
+      important_2: "Akses tidak langsung diberikan. Mungkin perlu beberapa saat setelah kontribusi dan permintaan akses Anda agar akun Anda ditambahkan dan beta tersedia. Setelah akun Anda memenuhi syarat dan beta telah dipublikasikan, Anda dapat menerima beta melalui Microsoft Store menggunakan akun yang terdaftar.",
+      things_title: "Beberapa hal yang perlu diketahui",
+      things_desc: "Versi Beta masih sedang diuji. Anda mungkin menemukan bug, perilaku yang tidak terduga, atau fitur yang berubah sebelum rilis publik. Tidak ada durasi pasti untuk versi beta. Beberapa pembaruan mungkin memerlukan pengujian lebih banyak daripada yang lain, dan rilis publik akan dilakukan jika sudah siap.",
+      ideas_title: "Ide Anda penting!",
+      ideas_desc: "Apakah Anda pendukung atau pengguna biasa, suara Anda penting. Punya ide untuk fitur baru? Menemukan bug? Merasa ada yang bisa bekerja lebih baik? Saya ingin mendengar dari Anda! Saran dan masukan Anda dapat membantu membentuk pembaruan di masa mendatang.",
+      thanks_title: "Terima kasih telah mendukung FrontLine Lyrics!",
+      thanks_desc: "Setiap kontribusi membantu saya mendedikasikan lebih banyak waktu untuk membuat aplikasi ini lebih baik.",
+      support_btn: "Dukung di Buy Me a Coffee"
     }
   }
 };
@@ -1064,12 +1060,12 @@ function flApplyLanguage(lang) {
     select.value = lang;
   });
 
-  try { localStorage.setItem("fl_lang", lang); } catch (e) { /* modo privado, sem problema */ }
+  try { localStorage.setItem("fl_lang", lang); } catch (e) { /* */ }
 }
 
 function flInitLanguage() {
   let saved = "en";
-  try { saved = localStorage.getItem("fl_lang") || "en"; } catch (e) { /* segue com o padrão */ }
+  try { saved = localStorage.getItem("fl_lang") || "en"; } catch (e) { /*  */ }
 
   flApplyLanguage(saved);
 
