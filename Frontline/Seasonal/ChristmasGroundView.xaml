@@ -1,0 +1,10 @@
+﻿<UserControl x:Class="FrontLineOverlay.ChristmasGroundView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <Path Data="M0,34 C50,8 100,46 170,22 C240,0 300,42 380,20 C450,2 510,40 600,16 L600,86 L0,86 Z" Fill="#C9D8EA" Opacity="0.55" Stretch="Fill" Height="46" VerticalAlignment="Bottom"/>
+        <Path Data="M0,40 C60,18 120,52 200,30 C270,12 330,50 410,28 C480,10 540,46 600,26 L600,86 L0,86 Z" Fill="#E7F0F8" Opacity="0.82" Stretch="Fill" Height="38" VerticalAlignment="Bottom"/>
+        <Path Data="M0,52 C80,34 140,64 230,46 C310,30 370,66 460,48 C520,36 560,58 600,44 L600,86 L0,86 Z" Fill="#F7FBFF" Stretch="Fill" Height="30" VerticalAlignment="Bottom"/>
+    </Grid>
+</UserControl>
