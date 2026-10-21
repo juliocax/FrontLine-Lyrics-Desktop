@@ -13,44 +13,6 @@ nav_active: support
 
   <section class="wrap" style="max-width: 48rem; padding-bottom: 6rem; color: rgba(255,255,255,0.8); font-size: 15px; line-height: 1.7;">
     
-    <p data-i18n="ea.intro">Hey everyone! I'm excited to announce something new for FrontLine Lyrics! Starting with version 1.4.0-Beta, I'm introducing an early access program for everyone who supports the project through Buy Me a Coffee.</p>
-
-    <h2 style="color: #fff; font-size: 24px; margin-top: 3rem; margin-bottom: 1rem;" data-i18n="ea.whatsnew">What's new in 1.4.0-Beta?</h2>
-    
-    <h3 style="color: var(--primary); font-size: 18px; margin-top: 1.5rem;" data-i18n="ea.font_title">Choose your lyrics font</h3>
-    <p data-i18n="ea.font_desc">You can now change the font used to display your lyrics!</p>
-
-    <div class="frame" style="margin: 1.5rem 0; padding: 0.5rem; border-radius: 1.25rem;">
-      <img src="img/1-4-0-fonts.gif" alt="Demonstração da escolha de fonte" style="width: 100%; height: auto; border-radius: 12px; cursor: zoom-in;" tabindex="0" role="button" />
-    </div>
-
-    <h3 style="color: var(--primary); font-size: 18px; margin-top: 3rem;" data-i18n="ea.themes_title">🎃🎄🎆 Seasonal themes</h3>
-    <p data-i18n="ea.themes_desc">To celebrate the end of the year, FrontLine Lyrics is getting three seasonal themes. These themes appear automatically during their respective dates in supported countries and regions (availability varies by region).</p>
-    <ul style="padding-left: 1.5rem; margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.25rem;">
-      <li><strong data-i18n="ea.themes_hallow_label">🎃 Halloween:</strong> <span data-i18n="ea.themes_hallow_date">October 15 – November 1</span></li>
-      <li><strong data-i18n="ea.themes_xmas_label">🎄 Christmas:</strong> <span data-i18n="ea.themes_xmas_date">December 1 – 26</span></li>
-      <li><strong data-i18n="ea.themes_ny_label">🎆 New Year:</strong> <span data-i18n="ea.themes_ny_date">December 30 – January 3</span></li>
-    </ul>
-
-    <div class="frame" style="margin: 1.5rem 0; padding: 0.5rem; border-radius: 1.25rem;">
-      <img src="img/1-4-0-themes.png" alt="Demonstração dos temas sazonais" style="width: 100%; height: auto; border-radius: 12px; cursor: zoom-in;" tabindex="0" role="button" />
-    </div>
-
-    <h2 style="color: #fff; font-size: 24px; margin-top: 3rem; margin-bottom: 1rem;" data-i18n="ea.whatsnext">What's coming next?</h2>
-    
-    <div class="glass" style="padding: 1.5rem; border-radius: 1.25rem;">
-      <h3 style="color: #fff; margin: 0 0 0.5rem 0; font-size: 18px;" data-i18n="ea.v15_title">Version 1.5.0-Beta (planned)</h3>
-      <ul style="padding-left: 1.5rem; margin: 0; display: flex; flex-direction: column; gap: 0.25rem;">
-        <li data-i18n="ea.v15_1">Choose from a collection of application themes.</li>
-        <li data-i18n="ea.v15_2">Import your own custom fonts.</li>
-        <li data-i18n="ea.v15_4">✨ And more!</li>
-      </ul>
-
-      <h3 style="color: #fff; margin: 1.5rem 0 0.5rem 0; font-size: 18px;" data-i18n="ea.v16_title">Version 1.6.0 and beyond</h3>
-      <p style="margin: 0;" data-i18n="ea.v16_desc">Future development will focus on performance, stability, reliability, and expanding font support to display lyrics from an even wider variety of songs and languages.</p>
-      <p style="margin: 1rem 0 0 0; font-size: 13px; color: rgba(255,255,255,0.6); font-style: italic;" data-i18n="ea.v16_note">* These are development plans and may change based on testing and feedback.</p>
-    </div>
-
     <h2 style="color: #fff; font-size: 24px; margin-top: 3rem; margin-bottom: 1rem;" data-i18n="ea.how_title">How do I get early access?</h2>
     <p data-i18n="ea.how_desc">If you've supported FrontLine Lyrics through Buy Me a Coffee, you can request access to the beta program! Here's what you need to do:</p>
     
@@ -98,32 +60,20 @@ nav_active: support
     var lightbox = document.getElementById("imgLightbox");
     var lightboxImg = document.getElementById("imgLightboxImg");
 
-    function openLightbox(img) {
+    window.openLightbox = function(img) {
       if (!lightbox) return;
-      lightboxImg.src = img.currentSrc || img.src;
-      lightboxImg.alt = img.alt || "";
+      lightboxImg.src = img.src;
       lightbox.classList.add("is-open");
-      lightbox.setAttribute("aria-hidden", "false");
       document.body.classList.add("no-scroll");
     };
 
     function closeLightbox() {
       if (!lightbox) return;
       lightbox.classList.remove("is-open");
-      lightbox.setAttribute("aria-hidden", "true");
       document.body.classList.remove("no-scroll");
     }
 
     if (lightbox) {
-      document.querySelectorAll(".frame img").forEach(function (img) {
-        img.addEventListener("click", function () { openLightbox(img); });
-        img.addEventListener("keydown", function (event) {
-          if (event.key === "Enter" || event.key === " ") {
-            event.preventDefault();
-            openLightbox(img);
-          }
-        });
-      });
       lightbox.addEventListener("click", closeLightbox);
       document.querySelector(".img-lightbox-close").addEventListener("click", closeLightbox);
       document.addEventListener("keydown", function (event) {

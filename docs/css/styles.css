@@ -54,7 +54,6 @@ h1, h2, h3, h4, .logo-name {
   font-family: "JetBrains Mono", monospace;
 }
 
-/* ----- vidro / moldura ----- */
 .glass {
   background: rgba(255, 255, 255, 0.035);
   backdrop-filter: blur(28px);
@@ -234,7 +233,6 @@ header {
   background: rgba(255, 255, 255, 0.1);
 }
 
-/* ----- botões ----- */
 .action-btn {
   display: inline-flex;
   align-items: center;
@@ -375,7 +373,6 @@ header {
 }
 body.menu-open { overflow: hidden; }
 
-/* ----- página ----- */
 main {
   position: relative;
   padding-top: 80px;
@@ -514,7 +511,6 @@ main {
 .opacity-0 { opacity: 0; }
 .opacity-100 { opacity: 1; }
 
-/* ----- cards de recurso ----- */
 .features {
   display: grid;
   grid-template-columns: 1fr;
@@ -561,7 +557,6 @@ main {
   line-height: 1.625;
 }
 
-/* ----- como funciona ----- */
 .how {
   background: rgba(5, 4, 7, 0.7);
   border-top: 1px solid rgba(255, 255, 255, 0.05);
@@ -623,7 +618,6 @@ main {
 }
 .stack-link:hover { color: #fff; background: rgba(255, 255, 255, 0.1); }
 
-/* ----- apoiar ----- */
 .support {
   max-width: 64rem;
   margin: 0 auto;
@@ -775,7 +769,6 @@ footer {
   margin: 1rem 0 0;
 }
 
-/* ----- boas-vindas (antigo "step 1") ----- */
 .doc-intro { padding-bottom: 3.5rem; }
 .doc-intro-inner {
   max-width: 72rem;
@@ -806,7 +799,6 @@ footer {
 .doc-intro-shot { width: 100%; max-width: 34rem; padding: 0.5rem; border-radius: 1.25rem; }
 .doc-intro-shot img { cursor: zoom-in; }
 
-/* ----- sumário / tabela de conteúdo ----- */
 .doc-toc {
   max-width: 72rem;
   margin: 0 auto;
@@ -936,7 +928,6 @@ footer {
   text-align: center;
 }
 
-/* ----- step em largura total (chave de API do setlist.fm) ----- */
 .step-full {
   grid-template-columns: 1fr !important;
   max-width: 52rem;
@@ -978,7 +969,6 @@ footer {
   font-style: italic;
 }
 
-/* ----- lightbox de imagens em tela cheia (sem ser um popup real) ----- */
 .img-lightbox {
   position: fixed;
   inset: 0;
@@ -1048,26 +1038,20 @@ body.no-scroll { overflow: hidden; }
 }
 .home-btn:hover { background: rgba(255, 255, 255, 0.1); }
 
-/* =========================================================================
-   NOVO LAYOUT DOS CARDS (Features e How it Works)
-   ========================================================================= */
-
 .feature, .how-card {
   display: grid !important;
-  grid-template-columns: auto 1fr; /* Coluna 1 ajustada ao ícone, Coluna 2 ocupa o resto */
-  align-items: center; /* Centraliza o ícone verticalmente em relação ao texto */
+  grid-template-columns: auto 1fr; 
+  align-items: center; 
   column-gap: 1.25rem;
   row-gap: 1rem;
 }
 
-/* 1. Imagem no topo (apenas para a seção features) */
 .feature img.quadro {
   grid-column: 1 / -1;
   order: 1;
   margin-bottom: 0 !important;
 }
 
-/* 2. Título logo abaixo da imagem (ou no topo do card, no caso do How it Works) */
 .feature h3, .how-card h4 {
   grid-column: 1 / -1;
   order: 2;
@@ -1075,21 +1059,18 @@ body.no-scroll { overflow: hidden; }
   margin-bottom: 0 !important;
 }
 
-/* 3. Ícone na esquerda, com tamanho ampliado */
 .feature .icon-box, .how-card .icon-box {
   grid-column: 1;
   order: 3;
   margin: 0 !important;
-  width: 64px !important;  /* Aumentando a caixa do ícone */
+  width: 64px !important;  
   height: 64px !important;
 }
-/* Aumentando o símbolo dentro da caixa */
 .feature .icon-box .material-symbols-outlined, 
 .how-card .icon-box .material-symbols-outlined {
   font-size: 32px !important; 
 }
 
-/* 4. Texto à direita do ícone */
 .feature p, .how-card p {
   grid-column: 2;
   order: 4;
@@ -1127,8 +1108,8 @@ body.no-scroll { overflow: hidden; }
     flex-direction: row;
   }
   .hero-media {
-    max-width: 60rem; /* Aumente este valor (ex: 56rem, 64rem) para remover o limite estreito */
-    flex: 1.3; /* Valores maiores (ex: 1.5) dão mais espaço à imagem e menos ao texto */
+    max-width: 60rem; 
+    flex: 1.3; 
   }
   .hero-copy {
     align-items: flex-start;
@@ -1143,7 +1124,6 @@ body.no-scroll { overflow: hidden; }
   .step.reverse .step-text { order: 1; }
   .step.reverse .step-shot { order: 2; }
 
-  /* imagens maiores e texto mais confortável em telas de computador */
   .step-shot { padding: 0.75rem; }
   .step p { font-size: 15px; }
   .marks li { font-size: 14px; }

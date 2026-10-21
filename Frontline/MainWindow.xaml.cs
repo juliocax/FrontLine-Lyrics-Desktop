@@ -57,7 +57,8 @@ namespace FrontLineOverlay
         private const int SkipIconDecodeWidth = 64;
         private const int MaxPythonRestarts = 5;
 
-        private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation.html";
+        private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v1.4.1.html";
+        private const string FeedbackFormUrl = "https://forms.gle/bwV1xeKncmGPATDaA";
 
         [StructLayout(LayoutKind.Sequential)] public struct Win32Point { public int X; public int Y; }
         [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
@@ -95,6 +96,7 @@ namespace FrontLineOverlay
 
         // Persistence (source / Auto / position): idea by Warith Adetayo,
         // stored in ApplicationData.LocalSettings (MSIX) or local JSON.
+
         private readonly DispatcherTimer _saveTimer = new() { Interval = TimeSpan.FromMilliseconds(600) };
         private bool _loadingSettings;
         private DispatcherFrame? _darkDialogFrame;
@@ -107,12 +109,14 @@ namespace FrontLineOverlay
         private ListSortDirection _historyDir = ListSortDirection.Descending;
 
         private string currentAppLanguage = "en";
+        private string _settingsTab = "lyrics";
+        private bool _settingsPreview;
         private readonly Dictionary<string, Dictionary<string, string>> uiStrings = new()
         {
             { "en", new() {
                 { "Listen", "LISTEN" }, { "Search", "SEARCH" }, { "ManualSearch", "MANUAL SEARCH" },
                 { "Artist", "Artist:" }, { "Song", "Song:" }, { "Find", "FIND" }, { "Cancel", "CANCEL" },
-                { "Settings", "SETTINGS" }, { "ManualSync", "MANUAL SYNC" }, { "Translate", "TRANSLATE LYRICS" },
+                { "Settings", "SETTINGS" }, { "SettingsTabLyrics", "Lyrics" }, { "SettingsTabTranslate", "Translate" }, { "SettingsTabApp", "General" }, { "ManualSync", "MANUAL SYNC" }, { "Translate", "TRANSLATE LYRICS" },
                 { "UILang", "APP LANGUAGE" }, { "Ready", "Ready." },
                 { "Listening", "Listening..." }, { "Searching", "Searching lyrics..." },
                 { "SideListen", "LISTEN" }, { "SideClear", "CLEAR" }, { "Auto", "AUTO" },
@@ -120,6 +124,7 @@ namespace FrontLineOverlay
                 { "MockPrevious", "♪ this is a preview line ♪" }, { "MockCurrent", "This is how your lyrics will look" },
                 { "MockNext", "♪ next line preview ♪" }, { "MockCurrentOriginal", "(original) this is a preview line" },
                 { "DonateTip", "Leave an optional tip" }, { "ReleaseNotesTooltip", "See what's new in this version" },
+                { "FeedbackLink", "Share your feedback (3-4 min)" },
                 { "PrevTrack", "Previous track" }, { "NextTrack", "Next track" },
                 { "SearchHistory", "SEARCH HISTORY" }, { "HistoryArtist", "Artist" },
                 { "HistorySong", "Song" }, { "HistoryDate", "Date" },
@@ -191,7 +196,7 @@ namespace FrontLineOverlay
             { "pt", new() {
                 { "Listen", "OUVIR" }, { "Search", "BUSCAR" }, { "ManualSearch", "BUSCA MANUAL" },
                 { "Artist", "Artista:" }, { "Song", "Música:" }, { "Find", "BUSCAR" }, { "Cancel", "CANCELAR" },
-                { "Settings", "CONFIGURAÇÕES" }, { "ManualSync", "SINC. MANUAL" }, { "Translate", "TRADUZIR LETRAS" },
+                { "Settings", "CONFIGURAÇÕES" }, { "SettingsTabLyrics", "Letra" }, { "SettingsTabTranslate", "Traduzir" }, { "SettingsTabApp", "Geral" }, { "ManualSync", "SINC. MANUAL" }, { "Translate", "TRADUZIR LETRAS" },
                 { "UILang", "IDIOMA DO APP" }, { "Ready", "Pronto." },
                 { "Listening", "Ouvindo..." }, { "Searching", "Buscando letra..." },
                 { "SideListen", "OUVIR" }, { "SideClear", "LIMPAR" }, { "Auto", "AUTO" },
@@ -199,6 +204,7 @@ namespace FrontLineOverlay
                 { "MockPrevious", "♪ esta é uma linha de exemplo ♪" }, { "MockCurrent", "É assim que sua letra vai aparecer" },
                 { "MockNext", "♪ próxima linha de exemplo ♪" }, { "MockCurrentOriginal", "(original) esta é uma linha de exemplo" },
                 { "DonateTip", "Deixe uma gorjeta opcional" }, { "ReleaseNotesTooltip", "Veja as novidades desta versão" },
+                { "FeedbackLink", "Dê sua opinião (3-4 min)" },
                 { "PrevTrack", "Faixa anterior" }, { "NextTrack", "Próxima faixa" },
                 { "SearchHistory", "HISTÓRICO DE BUSCA" }, { "HistoryArtist", "Artista" },
                 { "HistorySong", "Música" }, { "HistoryDate", "Data" },
@@ -270,7 +276,7 @@ namespace FrontLineOverlay
             { "es", new() {
                 { "Listen", "ESCUCHAR" }, { "Search", "BUSCAR" }, { "ManualSearch", "BÚSQUEDA MANUAL" },
                 { "Artist", "Artista:" }, { "Song", "Canción:" }, { "Find", "BUSCAR" }, { "Cancel", "CANCELAR" },
-                { "Settings", "AJUSTES" }, { "ManualSync", "SINC. MANUAL" }, { "Translate", "TRADUCIR LETRAS" },
+                { "Settings", "AJUSTES" }, { "SettingsTabLyrics", "Letra" }, { "SettingsTabTranslate", "Traducir" }, { "SettingsTabApp", "General" }, { "ManualSync", "SINC. MANUAL" }, { "Translate", "TRADUCIR LETRAS" },
                 { "UILang", "IDIOMA DE LA APP" }, { "Ready", "Listo." },
                 { "Listening", "Escuchando..." }, { "Searching", "Buscando letra..." },
                 { "SideListen", "ESCUCHAR" }, { "SideClear", "LIMPIAR" }, { "Auto", "AUTO" },
@@ -278,6 +284,7 @@ namespace FrontLineOverlay
                 { "MockPrevious", "♪ esta es una línea de ejemplo ♪" }, { "MockCurrent", "Así se verá tu letra" },
                 { "MockNext", "♪ próxima línea de ejemplo ♪" }, { "MockCurrentOriginal", "(original) esta es una línea de ejemplo" },
                 { "DonateTip", "Deja una propina opcional" }, { "ReleaseNotesTooltip", "Ver las novedades de esta versión" },
+                { "FeedbackLink", "Danos tu opinión (3-4 min)" },
                 { "PrevTrack", "Pista anterior" }, { "NextTrack", "Pista siguiente" },
                 { "SearchHistory", "HISTORIAL DE BÚSQUEDA" }, { "HistoryArtist", "Artista" },
                 { "HistorySong", "Canción" }, { "HistoryDate", "Fecha" },
@@ -349,7 +356,7 @@ namespace FrontLineOverlay
             { "id", new() {
                 { "Listen", "DENGAR" }, { "Search", "CARI" }, { "ManualSearch", "PENCARIAN MANUAL" },
                 { "Artist", "Artis:" }, { "Song", "Lagu:" }, { "Find", "CARI" }, { "Cancel", "BATAL" },
-                { "Settings", "PENGATURAN" }, { "ManualSync", "SINKRON MANUAL" }, { "Translate", "TERJEMAHKAN LIRIK" },
+                { "Settings", "PENGATURAN" }, { "SettingsTabLyrics", "Lirik" }, { "SettingsTabTranslate", "Terjemah" }, { "SettingsTabApp", "Umum" }, { "ManualSync", "SINKRON MANUAL" }, { "Translate", "TERJEMAHKAN LIRIK" },
                 { "UILang", "BAHASA APLIKASI" }, { "Ready", "Siap." },
                 { "Listening", "Mendengarkan..." }, { "Searching", "Mencari lirik..." },
                 { "SideListen", "DENGAR" }, { "SideClear", "HAPUS" }, { "Auto", "AUTO" },
@@ -357,6 +364,7 @@ namespace FrontLineOverlay
                 { "MockPrevious", "♪ ini baris contoh ♪" }, { "MockCurrent", "Lirik Anda akan tampil seperti ini" },
                 { "MockNext", "♪ baris berikutnya ♪" }, { "MockCurrentOriginal", "(asli) ini baris contoh" },
                 { "DonateTip", "Tinggalkan tip opsional" }, { "ReleaseNotesTooltip", "Lihat yang baru di versi ini" },
+                { "FeedbackLink", "Beri masukan (3-4 menit)" },
                 { "PrevTrack", "Lagu sebelumnya" }, { "NextTrack", "Lagu berikutnya" },
                 { "SearchHistory", "RIWAYAT PENCARIAN" }, { "HistoryArtist", "Artis" },
                 { "HistorySong", "Lagu" }, { "HistoryDate", "Tanggal" },
@@ -445,7 +453,6 @@ namespace FrontLineOverlay
 
             if (currentAppStatus == "IDLE")
             {
-                // Sem música tocando ainda: usa uma letra fictícia só pra ilustrara aparência.
                 LblPreviewPrevious.Text = t["MockPrevious"];
                 LblPreviewCurrent.Text = t["MockCurrent"];
                 LblPreviewNext.Text = t["MockNext"];
@@ -467,12 +474,45 @@ namespace FrontLineOverlay
             _opacityPreviewTimer.Start();
         }
 
+        private void SettingsTab_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton tab)
+                ShowSettingsTab(tab.Tag as string ?? "lyrics");
+        }
+
+        private void ShowSettingsTab(string id)
+        {
+            if (id != "translate" && id != "app") id = "lyrics";
+            _settingsTab = id;
+            if (TabSettingsLyrics != null) TabSettingsLyrics.IsChecked = id == "lyrics";
+            if (TabSettingsTranslate != null) TabSettingsTranslate.IsChecked = id == "translate";
+            if (TabSettingsApp != null) TabSettingsApp.IsChecked = id == "app";
+            if (SettingsPanelLyrics != null) SettingsPanelLyrics.Visibility = id == "lyrics" ? Visibility.Visible : Visibility.Collapsed;
+            if (SettingsPanelTranslate != null) SettingsPanelTranslate.Visibility = id == "translate" ? Visibility.Visible : Visibility.Collapsed;
+            if (SettingsPanelApp != null) SettingsPanelApp.Visibility = id == "app" ? Visibility.Visible : Visibility.Collapsed;
+            // Opacidade pertence a aba Letra
+            if (SettingsOpacityBlock != null) SettingsOpacityBlock.Visibility = id == "lyrics" ? Visibility.Visible : Visibility.Collapsed;
+        }
+
         private void SetSettingsPreviewMode(bool previewing)
         {
+            _settingsPreview = previewing;
             MainBorder.Visibility = previewing ? Visibility.Hidden : Visibility.Visible;
-            SettingsExtras.Visibility = previewing ? Visibility.Collapsed : Visibility.Visible;
-            SettingsExtras2.Visibility = previewing ? Visibility.Collapsed : Visibility.Visible;
-            LblSettingsTitle.Visibility = previewing ? Visibility.Collapsed : Visibility.Visible;
+            if (LblSettingsTitle != null) LblSettingsTitle.Visibility = previewing ? Visibility.Collapsed : Visibility.Visible;
+            if (SettingsTabs != null) SettingsTabs.Visibility = previewing ? Visibility.Collapsed : Visibility.Visible;
+            if (previewing)
+            {
+                if (SettingsPanelLyrics != null) SettingsPanelLyrics.Visibility = Visibility.Collapsed;
+                if (SettingsPanelTranslate != null) SettingsPanelTranslate.Visibility = Visibility.Collapsed;
+                if (SettingsPanelApp != null) SettingsPanelApp.Visibility = Visibility.Collapsed;
+                if (SettingsOpacityBlock != null) SettingsOpacityBlock.Visibility = Visibility.Visible;
+                if (BtnManualSyncToggle != null) BtnManualSyncToggle.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                ShowSettingsTab(_settingsTab);
+                SyncTimingTools();
+            }
             if (SearchInputPanel != null)
             {
                 bool searchOpen = SearchInputPanel.Visibility == Visibility.Visible;
@@ -558,6 +598,7 @@ namespace FrontLineOverlay
             _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); PersistSettings(); };
 
             RestoreFontAndAuto();
+            InitAppearance();
             InitSearchHistory();
             InitFestivalMode();
 
@@ -575,15 +616,7 @@ namespace FrontLineOverlay
 
             RestoreWindowPlacement();
 
-            try
-            {
-                string logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "logo.png");
-                if (File.Exists(logoPath))
-                {
-                    this.Icon = BitmapFrame.Create(new Uri(logoPath, UriKind.Absolute), BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
-                }
-            }
-            catch (Exception ex) { CrashReporter.Log(ex, "LoadIcon"); }
+            LoadAppIcon();
 
             try
             {
@@ -743,16 +776,21 @@ namespace FrontLineOverlay
             LblSongSearch.Text = t["Song"];
             BtnFindSearch.Content = t["Find"];
             LblSettingsTitle.Text = t["Settings"];
+            if (TabSettingsLyrics != null) TabSettingsLyrics.Content = t["SettingsTabLyrics"];
+            if (TabSettingsTranslate != null) TabSettingsTranslate.Content = t["SettingsTabTranslate"];
+            if (TabSettingsApp != null) TabSettingsApp.Content = t["SettingsTabApp"];
             BtnManualSyncToggle.Content = t["ManualSync"];
             LblTranslateTitle.Text = t["Translate"];
             if (LblAppLangTitle != null) LblAppLangTitle.Text = t["UILang"];
             LblKeepOriginal.Text = t["KeepOriginal"];
             LblPreviewTag.Text = t["PreviewLabel"];
             TxtDonateLabel.Text = t["DonateTip"];
+            BtnFeedback.Content = t["FeedbackLink"];
             LblSearchHistoryTitle.Text = t["SearchHistory"];
             LblSearchHistoryEmpty.Text = t["HistoryEmpty"];
             LblFontSizeTitle.Text = t["FontSizeTitle"];
             LblBgOpacityTitle.Text = t["BgOpacityTitle"];
+            ApplyAppearanceLanguage();
             SyncLanguagePicker(lang);
             ApplyButtonTooltips(t);
             ApplyFestivalUiLanguage();
@@ -922,6 +960,7 @@ namespace FrontLineOverlay
             }
 
             SyncTimingTools();
+            RefreshSeasonalChrome();
         }
 
         private bool TimingToolsAllowed()
@@ -937,6 +976,7 @@ namespace FrontLineOverlay
 
         private void SyncTimingTools()
         {
+            if (_settingsPreview) return;
             bool show = TimingToolsAllowed();
             if (FestivalLineSkip != null)
                 FestivalLineSkip.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
@@ -965,6 +1005,7 @@ namespace FrontLineOverlay
                 if (FestivalLineSkip != null) FestivalLineSkip.Visibility = Visibility.Collapsed;
                 MainBorder.Background = new SolidColorBrush(Color.FromArgb((byte)(255 * bgOpacity), 5, 5, 5));
                 MainBorder.BorderBrush = Brushes.Transparent;
+                RefreshSeasonalChrome();
             }
         }
 
@@ -1232,8 +1273,6 @@ namespace FrontLineOverlay
                 target.Fill = Brushes.Transparent;
                 return;
             }
-            // OpacityMask usa o alfa do arquivo: PNG preto ou branco no fundo
-            // transparente vira a seta na cor do botão (#E0E0E0).
             var mask = new ImageBrush(source) { Stretch = Stretch.Uniform };
             if (mask.CanFreeze) mask.Freeze();
             target.OpacityMask = mask;
@@ -1364,7 +1403,6 @@ namespace FrontLineOverlay
             rotationAnim.Completed += (s, e) =>
             {
                 if (!_spinnerAnimating) return;
-                // Normaliza o ângulo (0-360) sem animação para evitar overflow
                 ListenArcSpin.BeginAnimation(RotateTransform.AngleProperty, null);
                 ListenArcSpin.Angle = toAngle % 360.0;
                 AnimateSpinnerRotationStep();
@@ -1412,11 +1450,7 @@ namespace FrontLineOverlay
             {
                 if (string.IsNullOrEmpty(url))
                 {
-                    string logoPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "logo.png");
-                    if (File.Exists(logoPath))
-                        AlbumCoverImg.Source = DecodeBitmap(new Uri(logoPath, UriKind.Absolute));
-                    else
-                        AlbumCoverImg.Source = null;
+                    ApplyMenuLogo(force: true);
                     return;
                 }
 
@@ -1586,7 +1620,6 @@ namespace FrontLineOverlay
         private void BtnNextTrack_Click(object sender, RoutedEventArgs e) { SendMediaKey(VK_MEDIA_NEXT_TRACK); }
         private void BtnAuto_Click(object sender, RoutedEventArgs e)
         {
-            // Religar/desligar Auto cancela o hold do Limpar: o usuário pediu o Auto de novo.
             ReleaseAutoHold();
             _wantAuto = BtnAutoSide.IsChecked == true;
             AppSettings.SetBool("AutoMode", _wantAuto);
@@ -1639,11 +1672,24 @@ namespace FrontLineOverlay
             }
         }
 
+        private void BtnFeedback_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(FeedbackFormUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                CrashReporter.Log(ex, "Feedback");
+                AlertDark("Não foi possível abrir o link: " + ex.Message);
+            }
+        }
+
         private void BtnReleaseNotes_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                Process.Start(new ProcessStartInfo("https://buymeacoffee.com/juliocax/frontline-lyrics-1-3-0") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo("https://buymeacoffee.com/juliocax/frontline-lyrics-1-4-1") { UseShellExecute = true });
             }
             catch (Exception ex)
             {
@@ -1661,11 +1707,24 @@ namespace FrontLineOverlay
                     _searchHistory.Add(row);
                 SearchHistoryList.ItemsSource = _searchHistory;
                 _historyView = CollectionViewSource.GetDefaultView(_searchHistory);
+                StyleSearchHistoryRows();
                 ApplyHistorySort();
                 RefreshHistoryDateLabels();
                 RefreshHistoryEmptyState();
             }
             catch (Exception ex) { CrashReporter.Log(ex, "InitSearchHistory"); }
+        }
+
+        private void StyleSearchHistoryRows()
+        {
+            if (SearchHistoryList == null) return;
+            var text = new SolidColorBrush(Color.FromRgb(0xE4, 0xE4, 0xE4));
+            text.Freeze();
+            SearchHistoryList.Resources[SystemColors.HighlightBrushKey] = Brushes.Transparent;
+            SearchHistoryList.Resources[SystemColors.InactiveSelectionHighlightBrushKey] = Brushes.Transparent;
+            SearchHistoryList.Resources[SystemColors.ControlBrushKey] = Brushes.Transparent;
+            SearchHistoryList.Resources[SystemColors.HighlightTextBrushKey] = text;
+            SearchHistoryList.Resources[SystemColors.InactiveSelectionHighlightTextBrushKey] = text;
         }
 
         private void RememberSearch(string artist, string song)
@@ -1952,6 +2011,7 @@ namespace FrontLineOverlay
                 AppSettings.SetDouble("BgOpacity", SldBgOpacity != null ? SldBgOpacity.Value : bgOpacity);
                 AppSettings.SetBool("AutoMode", _wantAuto);
                 AppSettings.SetString("AppLanguage", currentAppLanguage);
+                PersistAppearance();
 
                 if (WindowState != WindowState.Normal) return;
 
@@ -1963,8 +2023,6 @@ namespace FrontLineOverlay
             catch (Exception ex) { CrashReporter.Log(ex, "PersistSettings"); }
         }
     }
-
-
 
     public class LyricLine
     {

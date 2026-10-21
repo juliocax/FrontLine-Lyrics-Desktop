@@ -1,0 +1,49 @@
+﻿<UserControl x:Class="FrontLineOverlay.GoldVinylLayerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:po="http://schemas.microsoft.com/winfx/2006/xaml/presentation/options"
+             mc:Ignorable="po"
+             IsHitTestVisible="False">
+    <UserControl.Resources>
+        <RadialGradientBrush x:Key="SparkBrush" po:Freeze="True">
+            <GradientStop Color="#FFFFF4C0" Offset="0"/>
+            <GradientStop Color="#88FFC83C" Offset="0.4"/>
+            <GradientStop Color="#00FFC83C" Offset="1"/>
+        </RadialGradientBrush>
+
+        <Style x:Key="TwinkleA" TargetType="Ellipse">
+            <Style.Triggers>
+                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                    <BeginStoryboard>
+                        <Storyboard Timeline.DesiredFrameRate="30">
+                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.05" To="0.8" Duration="0:0:3.2" AutoReverse="True" RepeatBehavior="Forever" AccelerationRatio="0.5" DecelerationRatio="0.5"/>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="TwinkleB" TargetType="Ellipse">
+            <Style.Triggers>
+                <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                    <BeginStoryboard>
+                        <Storyboard Timeline.DesiredFrameRate="30" BeginTime="-0:0:1.5">
+                            <DoubleAnimation Storyboard.TargetProperty="Opacity" From="0.05" To="0.8" Duration="0:0:4.4" AutoReverse="True" RepeatBehavior="Forever" AccelerationRatio="0.5" DecelerationRatio="0.5"/>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid IsHitTestVisible="False" ClipToBounds="True">
+        <Viewbox Stretch="Fill" IsHitTestVisible="False" CacheMode="BitmapCache">
+            <Canvas Width="1000" Height="500">
+                <Ellipse Canvas.Left="22"  Canvas.Top="200" Width="10" Height="10" Fill="{StaticResource SparkBrush}" Style="{StaticResource TwinkleA}"/>
+                <Ellipse Canvas.Left="968" Canvas.Top="140" Width="10" Height="10" Fill="{StaticResource SparkBrush}" Style="{StaticResource TwinkleB}"/>
+                <Ellipse Canvas.Left="300" Canvas.Top="12"  Width="9"  Height="9"  Fill="{StaticResource SparkBrush}" Style="{StaticResource TwinkleB}"/>
+                <Ellipse Canvas.Left="720" Canvas.Top="480" Width="9"  Height="9"  Fill="{StaticResource SparkBrush}" Style="{StaticResource TwinkleA}"/>
+            </Canvas>
+        </Viewbox>
+    </Grid>
+</UserControl>
