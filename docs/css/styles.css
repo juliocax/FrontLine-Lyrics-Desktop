@@ -1162,3 +1162,65 @@ body.no-scroll { overflow: hidden; }
   .toc-grid { grid-template-columns: 1fr; }
   .doc-intro-inner { padding: 1.5rem; }
 }
+
+/* ----- documentation version selector ----- */
+.docs-version-section {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding-bottom: 6rem;
+}
+.docs-version-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.15rem;
+}
+.docs-version-card {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  border-radius: 1.35rem;
+  color: var(--text);
+  text-align: center;
+  padding: 1rem;
+}
+.docs-version-card--current {
+  border-color: rgba(216, 180, 254, 0.5);
+  background: linear-gradient(145deg, rgba(168, 85, 247, 0.13), rgba(255, 255, 255, 0.035));
+  box-shadow: inset 0 1px 0 rgba(216, 180, 254, 0.13);
+}
+.docs-version-card:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+}
+.docs-version-icon {
+  font-size: 30px;
+  color: var(--muted);
+}
+.docs-version-card--current .docs-version-icon { color: var(--primary); }
+.docs-version-number {
+  font-family: "Plus Jakarta Sans", sans-serif;
+  font-weight: 700;
+  font-size: clamp(18px, 2.6vw, 28px);
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+.docs-version-current {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.065em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+@media (max-width: 560px) {
+  .docs-version-grid { gap: 0.55rem; }
+  .docs-version-card { border-radius: 0.9rem; gap: 0.4rem; padding: 0.4rem; }
+  .docs-version-icon { font-size: 23px; }
+  .docs-version-number { font-size: clamp(14px, 4vw, 20px); }
+  .docs-version-current { font-size: 8px; letter-spacing: 0; }
+}

@@ -59,7 +59,7 @@ const FL_TRANSLATIONS = {
       card1_title: "v1.3.0",
       card1_desc: "Documentation for the previous version of the app.",
       card2_label: "Current Version",
-      card2_desc: "Documentation for version 1.4.1, including tabbed settings, lyric customization, and theme selection."
+      card2_desc: "Documentation for version 1.4.2, including tabbed settings, lyric customization, theme selection, and the new click-through overlay lock."
     },
     doc: {
       eyebrow: "Tutorial",
@@ -70,6 +70,7 @@ const FL_TRANSLATIONS = {
         subtitle: "Jump straight to any part of the tutorial.",
         intro: "Welcome",
         s1: "Home screen",
+        lock: "Lock overlay (v1.4.2)",
         s2: "Settings menu",
         s3: "Clicking LISTEN",
         s4: "Song identified",
@@ -150,7 +151,14 @@ const FL_TRANSLATIONS = {
       eaTitle: "Supporter Perks: Early Access",
       eaDesc: "Did you know? Supporters get exclusive early access to upcoming features. Make a one-time donation and unlock experimental updates before the general public. Available now: Seasonal themes (Halloween, Christmas, New Year) and new lyric colors (solid, metallic, and gradients).",
       eaCta: "Become a Supporter",
-      step2v14t: "The settings menu (v1.4.1)",
+      lockKicker: "NEW IN v1.4.2",
+      lockTitle: "Lock the app window",
+      lockIntro: "Lock mode keeps the lyrics visible and lets mouse clicks pass through the app.",
+      lock1: "While lyrics are playing, move the cursor over the app to reveal the lock icon in the top-left corner. Click it to lock.",
+      lock2: "When locked, the overlay stays in its compact view and ignores clicks and dragging, except on the small lock icon used to unlock it.",
+      lock3: "To move or adjust the overlay again, hover over the lock icon and click to unlock. Reposition it and lock it again if you like.",
+      lock4: "Optional: in Settings → General, set your own keyboard shortcut to lock and unlock. There is no predefined shortcut.",
+      step2v14t: "The settings menu (v1.4.2)",
       step2v14_intro: "These are tabs that switch the configuration options below: the first is for lyrics settings, the second for translation settings, and the third for general app settings.",
       step2v14_sec1: "In the lyrics settings we have:",
       step2v14_sec1_i1: "Choice of lyrics font",
@@ -164,7 +172,8 @@ const FL_TRANSLATIONS = {
       step2v14_sec2_i1: "Translates the lyrics into another language, or converts them to a romanized version.",
       step2v14_sec3: "In the general app settings:",
       step2v14_sec3_i1: "Dropdown to change the app's language.",
-      step2v14_sec3_i2: "Theme selector: choose the Default theme, the Seasonal theme, or one of three additional themes. Seasonal themes are available only on their scheduled dates and in supported regions."
+      step2v14_sec3_i2: "Theme selector: choose the Default theme, the Seasonal theme, or one of three additional themes. Seasonal themes are available only on their scheduled dates and in supported regions.",
+      step2v14_sec3_i3: "Configure an optional global keyboard shortcut to lock or unlock the overlay. No shortcut is assigned by default."
     },
     banner: {
       title: "Join the Early Access Program",
@@ -268,7 +277,7 @@ const FL_TRANSLATIONS = {
       card1_title: "v1.3.0",
       card1_desc: "Documentação da versão anterior do aplicativo.",
       card2_label: "Versão atual",
-      card2_desc: "Documentação da versão 1.4.1, incluindo configurações em abas, personalização das letras e escolha de temas."
+      card2_desc: "Documentação da versão 1.4.2, com configurações em abas, personalização das letras, escolha de temas e novo bloqueio do overlay com cliques transparentes."
     },
     doc: {
       eyebrow: "Tutorial",
@@ -279,6 +288,7 @@ const FL_TRANSLATIONS = {
         subtitle: "Vá direto para a parte do tutorial que você precisa.",
         intro: "Boas-vindas",
         s1: "Tela inicial",
+        lock: "Travar overlay (v1.4.2)",
         s2: "Menu de configurações",
         s3: "Ao clicar em OUVIR",
         s4: "Música identificada",
@@ -356,7 +366,14 @@ const FL_TRANSLATIONS = {
       step10_i4: "Botão para encerrar o Modo Festival.",
       step10_i5: "Botão para buscar músicas e adicionar à playlist.",
       ctaTitle: "Ainda não instalou?",
-      step2v14t: "O menu de configurações (v1.4.1)",
+      lockKicker: "NOVIDADE NA v1.4.2",
+      lockTitle: "Trave a janela do programa",
+      lockIntro: "O modo de bloqueio mantém a letra visível e permite que os cliques do mouse atravessem o programa.",
+      lock1: "Com a letra em reprodução, passe o cursor sobre o programa para revelar o cadeado no canto superior esquerdo. Clique nele para travar.",
+      lock2: "Quando travado, o overlay permanece no visual compacto e não responde a cliques ou arrastos, exceto no pequeno cadeado para destravar.",
+      lock3: "Para mover ou ajustar o overlay novamente, passe o mouse sobre o cadeado e clique para destravar. Reposicione e trave outra vez, se quiser.",
+      lock4: "Opcional: em Configurações → Geral, defina seu próprio atalho de teclado para travar e destravar. Não há atalho predefinido.",
+      step2v14t: "O menu de configurações (v1.4.2)",
       step2v14_intro: "São abas, que alternam as opções de configurações abaixo, sendo a primeira as configurações de letras, a segunda configuração de tradução da letra, e a terceira configurações do programa no geral.",
       step2v14_sec1: "Nas configurações de letras temos:",
       step2v14_sec1_i1: "Escolha da fonte da letra",
@@ -370,7 +387,8 @@ const FL_TRANSLATIONS = {
       step2v14_sec2_i1: "Traduz a letra para outro idioma ou converte para uma versão romanizada.",
       step2v14_sec3: "Nas configurações gerais do aplicativo:",
       step2v14_sec3_i1: "Caixa de seleção para trocar o idioma do aplicativo.",
-      step2v14_sec3_i2: "Seletor de temas: escolha o tema Padrão, o tema Sazonal ou um dos três temas adicionais. Os temas sazonais só ficam disponíveis nas datas previstas e nas regiões compatíveis."
+      step2v14_sec3_i2: "Seletor de temas: escolha o tema Padrão, o tema Sazonal ou um dos três temas adicionais. Os temas sazonais só ficam disponíveis nas datas previstas e nas regiões compatíveis.",
+      step2v14_sec3_i3: "Configure um atalho global opcional para travar ou destravar o overlay. Nenhum atalho vem definido por padrão."
     },
     banner: {
       title: "Participe do Programa de Acesso Antecipado",
@@ -474,7 +492,7 @@ const FL_TRANSLATIONS = {
       card1_title: "v1.3.0",
       card1_desc: "Documentación de la versión anterior de la aplicación.",
       card2_label: "Versión actual",
-      card2_desc: "Documentación de la versión 1.4.1, con ajustes en pestañas, personalización de letras y selección de temas."
+      card2_desc: "Documentación de la versión 1.4.2, con ajustes por pestañas, personalización de letras, temas y nuevo bloqueo del overlay que deja pasar los clics."
     },
     doc: {
       eyebrow: "Tutorial",
@@ -485,6 +503,7 @@ const FL_TRANSLATIONS = {
         subtitle: "Ve directo a la parte del tutorial que necesitas.",
         intro: "Bienvenida",
         s1: "Pantalla principal",
+        lock: "Bloquear overlay (v1.4.2)",
         s2: "Menú de configuración",
         s3: "Al hacer clic en ESCUCHAR",
         s4: "Canción identificada",
@@ -562,7 +581,14 @@ const FL_TRANSLATIONS = {
       step10_i4: "Botón para terminar el Modo Festival.",
       step10_i5: "Botón para buscar canciones y agregarlas a la playlist.",
       ctaTitle: "¿Todavía no lo instalaste?",
-      step2v14t: "El menú de configuración (v1.4.1)",
+      lockKicker: "NOVEDAD EN v1.4.2",
+      lockTitle: "Bloquea la ventana del programa",
+      lockIntro: "El modo de bloqueo mantiene las letras visibles y permite que los clics del ratón atraviesen el programa.",
+      lock1: "Mientras se reproducen las letras, pasa el cursor sobre el programa para mostrar el candado en la esquina superior izquierda. Haz clic en él para bloquear.",
+      lock2: "Cuando está bloqueado, el overlay permanece en su vista compacta y no responde a clics ni arrastres, excepto en el pequeño candado para desbloquear.",
+      lock3: "Para mover o ajustar el overlay de nuevo, pasa el cursor sobre el candado y haz clic para desbloquear. Colócalo donde quieras y vuelve a bloquearlo si lo deseas.",
+      lock4: "Opcional: en Configuración → General, define tu propio atajo de teclado para bloquear y desbloquear. No hay ningún atajo predefinido.",
+      step2v14t: "El menú de configuración (v1.4.2)",
       step2v14_intro: "Son pestañas que alternan las opciones de configuración abajo, siendo la primera la configuración de letras, la segunda la configuración de traducción de la letra, y la tercera la configuración general del programa.",
       step2v14_sec1: "En la configuración de letras tenemos:",
       step2v14_sec1_i1: "Elección de la fuente de la letra",
@@ -576,7 +602,8 @@ const FL_TRANSLATIONS = {
       step2v14_sec2_i1: "Traduce la letra a otro idioma o la convierte a una versión romanizada.",
       step2v14_sec3: "En la configuración general de la aplicación:",
       step2v14_sec3_i1: "Casilla para cambiar el idioma de la aplicación.",
-      step2v14_sec3_i2: "Selector de temas: elige el tema Predeterminado, el tema de Temporada o uno de los tres temas adicionales. Los temas de temporada solo están disponibles en las fechas previstas y en las regiones compatibles."
+      step2v14_sec3_i2: "Selector de temas: elige el tema Predeterminado, el tema de Temporada o uno de los tres temas adicionales. Los temas de temporada solo están disponibles en las fechas previstas y en las regiones compatibles.",
+      step2v14_sec3_i3: "Configura un atajo global opcional para bloquear o desbloquear el overlay. No hay un atajo predeterminado."
     },
     banner: {
       title: "¡Únete al Programa de Acceso Anticipado!",
@@ -680,7 +707,7 @@ const FL_TRANSLATIONS = {
       card1_title: "v1.3.0",
       card1_desc: "Documentation de la version précédente de l’application.",
       card2_label: "Version actuelle",
-      card2_desc: "Documentation de la version 1.4.1, avec paramètres par onglets, personnalisation des paroles et choix des thèmes."
+      card2_desc: "Documentation de la version 1.4.2 : paramètres par onglets, personnalisation des paroles, thèmes et nouveau verrouillage de l’overlay laissant passer les clics."
     },
     doc: {
       eyebrow: "Tutoriel",
@@ -691,6 +718,7 @@ const FL_TRANSLATIONS = {
         subtitle: "Accédez directement à la partie du tutoriel qui vous intéresse.",
         intro: "Bienvenue",
         s1: "Écran d'accueil",
+        lock: "Verrouiller l’overlay (v1.4.2)",
         s2: "Menu de réglages",
         s3: "En cliquant sur ÉCOUTER",
         s4: "Chanson identifiée",
@@ -768,7 +796,14 @@ const FL_TRANSLATIONS = {
       step10_i4: "Bouton pour quitter le Mode Festival.",
       step10_i5: "Bouton pour rechercher des chansons à ajouter à la playlist.",
       ctaTitle: "Pas encore installé ?",
-      step2v14t: "Le menu des paramètres (v1.4.1)",
+      lockKicker: "NOUVEAUTÉ v1.4.2",
+      lockTitle: "Verrouiller la fenêtre de l’application",
+      lockIntro: "Le mode verrouillé garde les paroles visibles et permet aux clics de souris de traverser l’application.",
+      lock1: "Pendant la lecture des paroles, survolez l’application pour faire apparaître le cadenas dans le coin supérieur gauche. Cliquez dessus pour verrouiller.",
+      lock2: "Une fois verrouillé, l’overlay reste en affichage compact et ne réagit ni aux clics ni aux glissements, sauf sur le petit cadenas servant à déverrouiller.",
+      lock3: "Pour déplacer ou ajuster de nouveau l’overlay, survolez le cadenas et cliquez pour déverrouiller. Repositionnez-le, puis reverrouillez-le si vous le souhaitez.",
+      lock4: "Facultatif : dans Paramètres → Général, définissez votre propre raccourci clavier pour verrouiller et déverrouiller. Aucun raccourci n’est prédéfini.",
+      step2v14t: "Le menu des paramètres (v1.4.2)",
       step2v14_intro: "Ce sont des onglets qui basculent les options de configuration ci-dessous, le premier étant les paramètres des paroles, le deuxième les paramètres de traduction, et le troisième les paramètres généraux de l'application.",
       step2v14_sec1: "Dans les paramètres des paroles, nous avons :",
       step2v14_sec1_i1: "Choix de la police des paroles",
@@ -782,7 +817,8 @@ const FL_TRANSLATIONS = {
       step2v14_sec2_i1: "Traduit les paroles dans une autre langue ou les convertit en version romanisée.",
       step2v14_sec3: "Dans les paramètres généraux de l'application :",
       step2v14_sec3_i1: "Menu déroulant pour changer la langue de l'application.",
-      step2v14_sec3_i2: "Sélecteur de thèmes : choisissez le thème Par défaut, le thème Saisonnier ou l’un des trois thèmes supplémentaires. Les thèmes saisonniers ne sont disponibles qu’aux dates prévues et dans les régions compatibles."
+      step2v14_sec3_i2: "Sélecteur de thèmes : choisissez le thème Par défaut, le thème Saisonnier ou l’un des trois thèmes supplémentaires. Les thèmes saisonniers ne sont disponibles qu’aux dates prévues et dans les régions compatibles.",
+      step2v14_sec3_i3: "Configurez un raccourci clavier global facultatif pour verrouiller ou déverrouiller l’overlay. Aucun raccourci n’est défini par défaut."
     },
     banner: {
       title: "Rejoignez le Programme d'Accès Anticipé!",
@@ -886,7 +922,7 @@ const FL_TRANSLATIONS = {
       card1_title: "v1.3.0",
       card1_desc: "Dokumentasi untuk versi aplikasi sebelumnya.",
       card2_label: "Versi saat ini",
-      card2_desc: "Dokumentasi versi 1.4.1, termasuk pengaturan bertab, penyesuaian lirik, dan pilihan tema."
+      card2_desc: "Dokumentasi versi 1.4.2, mencakup pengaturan bertab, penyesuaian lirik, tema, dan fitur kunci overlay baru yang meneruskan klik."
     },
     doc: {
       eyebrow: "Tutorial",
@@ -897,6 +933,7 @@ const FL_TRANSLATIONS = {
         subtitle: "Langsung menuju bagian tutorial yang Anda butuhkan.",
         intro: "Selamat datang",
         s1: "Layar utama",
+        lock: "Kunci overlay (v1.4.2)",
         s2: "Menu pengaturan",
         s3: "Saat mengklik DENGARKAN",
         s4: "Lagu dikenali",
@@ -974,7 +1011,14 @@ const FL_TRANSLATIONS = {
       step10_i4: "Tombol untuk mengakhiri Mode Festival.",
       step10_i5: "Tombol untuk mencari lagu yang akan ditambahkan ke playlist.",
       ctaTitle: "Belum menginstalnya?",
-      step2v14t: "Menu pengaturan (v1.4.1)",
+      lockKicker: "BARU DI v1.4.2",
+      lockTitle: "Kunci jendela aplikasi",
+      lockIntro: "Mode kunci membuat lirik tetap terlihat dan memungkinkan klik mouse melewati aplikasi.",
+      lock1: "Saat lirik diputar, arahkan kursor ke aplikasi untuk menampilkan ikon gembok di sudut kiri atas. Klik ikon tersebut untuk mengunci.",
+      lock2: "Saat terkunci, overlay tetap dalam tampilan ringkas dan tidak merespons klik atau seret, kecuali pada ikon gembok kecil untuk membuka kunci.",
+      lock3: "Untuk memindahkan atau menyesuaikan overlay kembali, arahkan kursor ke ikon gembok dan klik untuk membuka kunci. Pindahkan, lalu kunci lagi jika diinginkan.",
+      lock4: "Opsional: di Pengaturan → Umum, tentukan pintasan keyboard Anda sendiri untuk mengunci dan membuka kunci. Tidak ada pintasan bawaan.",
+      step2v14t: "Menu pengaturan (v1.4.2)",
       step2v14_intro: "Ini adalah tab yang mengalihkan opsi konfigurasi di bawah ini, yang pertama adalah pengaturan lirik, yang kedua pengaturan terjemahan lirik, dan yang ketiga pengaturan aplikasi secara umum.",
       step2v14_sec1: "Pada pengaturan lirik kami memiliki:",
       step2v14_sec1_i1: "Pilihan font lirik",
@@ -988,7 +1032,8 @@ const FL_TRANSLATIONS = {
       step2v14_sec2_i1: "Menerjemahkan lirik ke bahasa lain, atau mengubahnya menjadi versi romanisasi.",
       step2v14_sec3: "Pada pengaturan umum aplikasi:",
       step2v14_sec3_i1: "Kotak pilihan untuk mengubah bahasa aplikasi.",
-      step2v14_sec3_i2: "Pemilih tema: pilih tema Default, tema Musiman, atau salah satu dari tiga tema tambahan. Tema musiman hanya tersedia pada tanggal yang ditentukan dan di wilayah yang didukung."
+      step2v14_sec3_i2: "Pemilih tema: pilih tema Default, tema Musiman, atau salah satu dari tiga tema tambahan. Tema musiman hanya tersedia pada tanggal yang ditentukan dan di wilayah yang didukung.",
+      step2v14_sec3_i3: "Atur pintasan keyboard global opsional untuk mengunci atau membuka kunci overlay. Tidak ada pintasan bawaan."
     },
     banner: {
       title: "Gabung Program Akses Awal!",

@@ -254,6 +254,12 @@
     <None Update="assets\icon_search.svg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="assets\lock.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="assets\lock_open.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="assets\logo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
