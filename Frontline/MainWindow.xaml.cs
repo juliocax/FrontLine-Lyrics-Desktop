@@ -40,6 +40,19 @@ namespace FrontLineOverlay
         [DllImport("user32.dll")][return: MarshalAs(UnmanagedType.Bool)] private static extern bool GetWindowRect(IntPtr hwnd, out RECT lpRect);
         [DllImport("user32.dll")] private static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
 
+        [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
+        [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+        private ImageSource? _icoLock;
+        private ImageSource? _icoLockOpen;
+
+        private bool isLocked = false;
+        private const int LOCK_HOTKEY_ID = 9000;
+        private uint lockHotkeyModifiers = 0;
+        private uint lockHotKeyVk = 0;
+        private bool isCapturingHotkey = false;
+        private HwndSource? _hwndSource;
+        private readonly DispatcherTimer _toastTimer = new() { Interval = TimeSpan.FromSeconds(3) };
         private static IntPtr GetWindowLongPtr(IntPtr hwnd, int index) =>
             IntPtr.Size == 8 ? GetWindowLongPtr64(hwnd, index) : new IntPtr(GetWindowLong32(hwnd, index));
 
@@ -57,7 +70,7 @@ namespace FrontLineOverlay
         private const int SkipIconDecodeWidth = 64;
         private const int MaxPythonRestarts = 5;
 
-        private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v1.4.1.html";
+        private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v1.4.2.html";
         private const string FeedbackFormUrl = "https://forms.gle/bwV1xeKncmGPATDaA";
 
         [StructLayout(LayoutKind.Sequential)] public struct Win32Point { public int X; public int Y; }
@@ -81,6 +94,29 @@ namespace FrontLineOverlay
         private bool keepOriginalWithTranslation = false;
         private string lastCurrentLyricsOriginal = "";
         private bool lastIsTranslatedActive = false;
+
+        private LockButtonWindow? _lockWin;
+
+        private void ShowLockWin(bool show)
+        {
+            if (!show || WindowState == WindowState.Minimized)
+            {
+                if (_lockWin != null && _lockWin.IsVisible) _lockWin.Hide();
+                return;
+            }
+
+            if (_lockWin == null)
+            {
+                _lockWin = new LockButtonWindow { Owner = this };
+                _lockWin.Clicked += () => ToggleLock(false);
+                _lockWin.SetTip(uiStrings[currentAppLanguage]["TipUnlock"]);
+                ApplySkipGlyph(_lockWin.Icon, _icoLock);
+            }
+
+            _lockWin.Left = Left + 6;
+            _lockWin.Top = Top + 6;
+            if (!_lockWin.IsVisible) _lockWin.Show();
+        }
 
         private readonly DispatcherTimer _mouseTracker = new() { Interval = TimeSpan.FromMilliseconds(50) };
         private readonly DispatcherTimer _ghostTimer = new() { Interval = TimeSpan.FromMilliseconds(300) };
@@ -191,7 +227,16 @@ namespace FrontLineOverlay
                 { "TipFestivalAdd", "Add this song to the setlist" },
                 { "TipFestivalEdit", "Edit the current festival setlist" },
                 { "TipFestivalStop", "Stop Festival Mode and save the setlist" },
-                { "TipManualSync", "Tap a lyric line to set the timing" }
+                { "TipManualSync", "Tap a lyric line to set the timing" },
+                { "LockShortcutTitle", "LOCK SHORTCUT" },
+                { "LockShortcutHint", "(appears in the left corner on mouse hover)" },
+                { "LockFirstTime", "The overlay is locked." },
+                { "LockToastMsg", "Locked. Click the padlock to unlock." },
+                { "HotkeyFailed", "This combination is already in use by Windows or another app. Try another one." },
+                { "LockNone", "None (click to set)" },
+                { "LockCapturing", "Press... (Esc cancels, Del clears)" },
+                { "TipLock", "Lock overlay: clicks pass through to the app behind it" },
+                { "TipUnlock", "Unlock overlay: move and click it again" },
             }},
             { "pt", new() {
                 { "Listen", "OUVIR" }, { "Search", "BUSCAR" }, { "ManualSearch", "BUSCA MANUAL" },
@@ -271,7 +316,16 @@ namespace FrontLineOverlay
                 { "TipFestivalAdd", "Adicionar esta música ao setlist" },
                 { "TipFestivalEdit", "Editar o setlist do festival" },
                 { "TipFestivalStop", "Parar o Modo Festival e salvar o setlist" },
-                { "TipManualSync", "Toque numa linha da letra para ajustar o tempo" }
+                { "TipManualSync", "Toque numa linha da letra para ajustar o tempo" },
+                { "LockShortcutTitle", "ATALHO PARA TRAVAR (LOCK)" },
+                { "LockShortcutHint", "(aparece no canto esquerdo ao passar o mouse)" },
+                { "LockFirstTime", "A sobreposição está travada." },
+                { "LockToastMsg", "Travado. Clique no cadeado para destravar." },
+                { "HotkeyFailed", "Essa combinação já está em uso pelo Windows ou outro app. Tente outra." },
+                { "LockNone", "Nenhum (clique p/ definir)" },
+                { "LockCapturing", "Pressione... (Esc cancela, Del limpa)" },
+                { "TipLock", "Travar sobreposição: os cliques passam para o app de trás" },
+                { "TipUnlock", "Destravar sobreposição: voltar a mover e clicar nela" },
             }},
             { "es", new() {
                 { "Listen", "ESCUCHAR" }, { "Search", "BUSCAR" }, { "ManualSearch", "BÚSQUEDA MANUAL" },
@@ -351,7 +405,16 @@ namespace FrontLineOverlay
                 { "TipFestivalAdd", "Añadir esta canción al setlist" },
                 { "TipFestivalEdit", "Editar el setlist del festival" },
                 { "TipFestivalStop", "Parar el Modo Festival y guardar el setlist" },
-                { "TipManualSync", "Toca una línea de la letra para ajustar el tiempo" }
+                { "TipManualSync", "Toca una línea de la letra para ajustar el tiempo" },
+                { "LockShortcutTitle", "ATAJO DE BLOQUEO (LOCK)" },
+                { "LockShortcutHint", "(aparece en la esquina izquierda al pasar el ratón)" },
+                { "LockFirstTime", "La superposición está bloqueada." },
+                { "LockToastMsg", "Bloqueado. Haz clic en el candado para desbloquear." },
+                { "HotkeyFailed", "Esta combinación ya está en uso por Windows u otra aplicación. Intenta con otra." },
+                { "LockNone", "Ninguno (clic para establecer)" },
+                { "LockCapturing", "Presiona... (Esc cancela, Del borra)" },
+                { "TipLock", "Bloquear superposición: los clics pasan a la app de atrás" },
+                { "TipUnlock", "Desbloquear superposición: volver a moverla y hacer clic" },
             }},
             { "id", new() {
                 { "Listen", "DENGAR" }, { "Search", "CARI" }, { "ManualSearch", "PENCARIAN MANUAL" },
@@ -431,7 +494,16 @@ namespace FrontLineOverlay
                 { "TipFestivalAdd", "Tambahkan lagu ini ke setlist" },
                 { "TipFestivalEdit", "Edit setlist festival" },
                 { "TipFestivalStop", "Hentikan Mode Festival dan simpan setlist" },
-                { "TipManualSync", "Ketuk baris lirik untuk mengatur waktu" }
+                { "TipManualSync", "Ketuk baris lirik untuk mengatur waktu" },
+                { "LockShortcutTitle", "PINTASAN KUNCI (LOCK)" },
+                { "LockShortcutHint", "(muncul di sudut kiri saat kursor diarahkan)" },
+                { "LockFirstTime", "Overlay telah dikunci." },
+                { "LockToastMsg", "Terkunci. Klik gembok untuk membuka kunci." },
+                { "HotkeyFailed", "Kombinasi ini sudah digunakan oleh Windows atau aplikasi lain. Coba yang lain." },
+                { "LockNone", "Tidak ada (klik untuk mengatur)" },
+                { "LockCapturing", "Tekan... (Esc batal, Del hapus)" },
+                { "TipLock", "Kunci overlay: klik diteruskan ke aplikasi di belakangnya" },
+                { "TipUnlock", "Buka kunci overlay: bisa digerakkan dan diklik lagi" },
             }}
         };
 
@@ -570,9 +642,141 @@ namespace FrontLineOverlay
             if (SldFontSize != null)
                 SldFontSize.Value = 26;
         }
+        protected override void OnSourceInitialized(EventArgs e)
+        {
+            base.OnSourceInitialized(e);
+            _hwndSource = PresentationSource.FromVisual(this) as HwndSource;
+            _hwndSource?.AddHook(HwndHook);
+            RegisterCurrentHotkey();
+        }
+
+        private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
+        {
+            const int WM_HOTKEY = 0x0312;
+            if (msg == WM_HOTKEY && wParam.ToInt32() == LOCK_HOTKEY_ID)
+            {
+                if (currentAppStatus != "IDLE") ToggleLock(!isLocked);
+                handled = true;
+            }
+            return IntPtr.Zero;
+        }
+
+        private bool RegisterCurrentHotkey()
+        {
+            if (_hwndSource == null || lockHotKeyVk == 0) return false;
+            return RegisterHotKey(_hwndSource.Handle, LOCK_HOTKEY_ID, lockHotkeyModifiers, lockHotKeyVk);
+        }
+
+        private void UnregisterCurrentHotkey()
+        {
+            if (_hwndSource != null) UnregisterHotKey(_hwndSource.Handle, LOCK_HOTKEY_ID);
+        }
+
+        private void BtnLockOverlay_Click(object sender, RoutedEventArgs e) => ToggleLock(BtnLockOverlay.IsChecked == true);
+
+        private void ToggleLock(bool lockState)
+        {
+            if (currentAppStatus == "IDLE") return;
+            isLocked = lockState;
+            BtnLockOverlay.IsChecked = lockState;
+
+            ApplySkipGlyph(ImgLockIcon, lockState ? _icoLock : _icoLockOpen);
+
+            if (isLocked)
+            {
+                if (_lockWin != null) ApplySkipGlyph(_lockWin.Icon, _icoLock);
+                UpdateVisualState(true);
+            }
+            else
+            {
+                _ghostTimer.Stop();
+                UpdateVisualState(false);
+            }
+            ScheduleSave();
+        }
+
+        private void BtnSetLockShortcut_Click(object sender, RoutedEventArgs e)
+        {
+            isCapturingHotkey = true;
+            BtnSetLockShortcut.Content = uiStrings[currentAppLanguage]["LockCapturing"];
+        }
+
+
+
+        private void BtnSetLockShortcut_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (!isCapturingHotkey) return;
+            e.Handled = true;
+
+            if (e.Key == Key.Escape)
+            {
+                isCapturingHotkey = false;
+                UpdateShortcutButtonText();
+                return;
+            }
+
+            if (e.Key == Key.Delete || e.Key == Key.Back)
+            {
+                isCapturingHotkey = false;
+                UnregisterCurrentHotkey();
+                lockHotKeyVk = 0;
+                lockHotkeyModifiers = 0;
+                UpdateShortcutButtonText();
+                ScheduleSave();
+                return;
+            }
+
+            Key key = (e.Key == Key.System ? e.SystemKey : e.Key);
+
+            if (key == Key.LeftCtrl || key == Key.RightCtrl || key == Key.LeftAlt || key == Key.RightAlt || key == Key.LeftShift || key == Key.RightShift || key == Key.LWin || key == Key.RWin)
+                return;
+
+            uint mods = 0;
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) mods |= 0x0002;
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)) mods |= 0x0001;
+            if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)) mods |= 0x0004;
+
+            if (mods == 0) return; 
+
+            isCapturingHotkey = false;
+            uint vk = (uint)KeyInterop.VirtualKeyFromKey(key);
+
+            UnregisterCurrentHotkey();
+            lockHotKeyVk = vk;
+            lockHotkeyModifiers = mods;
+
+            if (!RegisterCurrentHotkey())
+            {
+                AlertDark(uiStrings[currentAppLanguage]["HotkeyFailed"]);
+                lockHotKeyVk = 0; lockHotkeyModifiers = 0;
+            }
+
+            UpdateShortcutButtonText();
+            ScheduleSave();
+        }
+
+        private void UpdateShortcutButtonText()
+        {
+            if (lockHotKeyVk == 0)
+            {
+                BtnSetLockShortcut.Content = uiStrings[currentAppLanguage]["LockNone"];
+                return;
+            }
+
+            var parts = new List<string>();
+            if ((lockHotkeyModifiers & 0x0002) != 0) parts.Add("Ctrl");
+            if ((lockHotkeyModifiers & 0x0001) != 0) parts.Add("Alt");
+            if ((lockHotkeyModifiers & 0x0004) != 0) parts.Add("Shift");
+
+            Key key = KeyInterop.KeyFromVirtualKey((int)lockHotKeyVk);
+            parts.Add(key.ToString());
+
+            BtnSetLockShortcut.Content = string.Join(" + ", parts);
+        }
 
         public MainWindow()
         {
+
             const string appName = "FrontLineLyrics_UniqueMutex";
             _appMutex = new Mutex(true, appName, out bool createdNew);
             if (!createdNew)
@@ -603,6 +807,8 @@ namespace FrontLineOverlay
             InitFestivalMode();
 
             _mouseTracker.Tick += MouseTracker_Tick;
+            BtnLockOverlay.Visibility = Visibility.Collapsed;
+            ShowLockWin(false);         
             _mouseTracker.Start();
             _ghostTimer.Tick += GhostTimer_Tick;
             _opacityPreviewTimer.Tick += OpacityPreviewTimer_Tick;
@@ -790,6 +996,9 @@ namespace FrontLineOverlay
             LblSearchHistoryEmpty.Text = t["HistoryEmpty"];
             LblFontSizeTitle.Text = t["FontSizeTitle"];
             LblBgOpacityTitle.Text = t["BgOpacityTitle"];
+            LblLockShortcutTitle.Text = t["LockShortcutTitle"];
+            LblLockShortcutHint.Text = t["LockShortcutHint"];
+            UpdateShortcutButtonText();
             ApplyAppearanceLanguage();
             SyncLanguagePicker(lang);
             ApplyButtonTooltips(t);
@@ -873,24 +1082,60 @@ namespace FrontLineOverlay
             BtnFestivalAddSong.ToolTip = t["TipFestivalAdd"];
             BtnManualSyncToggle.ToolTip = t["TipManualSync"];
             BtnDonate.ToolTip = t["DonateTip"];
+            BtnLockOverlay.ToolTip = t["TipLock"];
+            _lockWin?.SetTip(t["TipUnlock"]);
+        }
+
+  
+        private void GhostTimer_Tick(object? sender, EventArgs e) { _ghostTimer.Stop(); if (currentAppStatus != "IDLE") SetGhostMode(true); }
+
+        private void SetGhostMode(bool enable)
+        {
+            if (isGhostMode == enable || isResizing) return;
+            UpdateVisualState(enable);
+        }
+
+        private void SetWindowStyle(IntPtr hwnd, bool makeTransparent, bool noActivate)
+        {
+            int GWL_EXSTYLE = -20;
+            long currentStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE).ToInt64();
+            long newStyle = currentStyle;
+            if (makeTransparent) newStyle |= 0x20L; else newStyle &= ~0x20L;
+            if (noActivate) newStyle |= 0x08000000L; else newStyle &= ~0x08000000L;
+            if (newStyle != currentStyle) SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(newStyle));
         }
 
         private void MouseTracker_Tick(object? sender, EventArgs e)
         {
             if (currentAppStatus == "IDLE" || BtnMenu.IsChecked == true || SearchInputPanel.Visibility == Visibility.Visible || FestivalHubPanel.Visibility == Visibility.Visible || isResizing)
             {
+                BtnLockOverlay.Visibility = Visibility.Collapsed;
                 _ghostTimer.Stop();
-                if (isGhostMode) SetGhostMode(false);
+                if (isGhostMode && !isLocked) SetGhostMode(false);
                 return;
             }
 
             GetCursorPos(out Win32Point p);
             IntPtr hwnd = new WindowInteropHelper(this).Handle;
             if (hwnd == IntPtr.Zero) return;
+
             if (GetWindowRect(hwnd, out RECT rect))
             {
-                bool isMouseOver = (p.X >= rect.Left && p.X <= rect.Right && p.Y >= rect.Top && p.Y <= rect.Bottom);
-                if (isMouseOver)
+                bool isMouseOverApp = (p.X >= rect.Left && p.X <= rect.Right && p.Y >= rect.Top && p.Y <= rect.Bottom);
+
+                if (isLocked)
+                {
+                    BtnLockOverlay.Visibility = Visibility.Collapsed;
+                    SetWindowStyle(hwnd, true, true);  
+                    ShowLockWin(isMouseOverApp);
+                    return;
+                }
+
+                ShowLockWin(false);   
+
+                BtnLockOverlay.Visibility = isMouseOverApp ? Visibility.Visible : Visibility.Collapsed;
+
+                if (isMouseOverApp)
                 {
                     _ghostTimer.Stop();
                     if (isGhostMode) SetGhostMode(false);
@@ -902,27 +1147,16 @@ namespace FrontLineOverlay
             }
         }
 
-        private void GhostTimer_Tick(object? sender, EventArgs e) { _ghostTimer.Stop(); if (currentAppStatus != "IDLE") SetGhostMode(true); }
-
-        private void SetGhostMode(bool enable)
-        {
-            if (isGhostMode == enable || isResizing) return;
-            UpdateVisualState(enable);
-        }
-
         private void UpdateVisualState(bool enableGhost)
         {
             if (isResizing) return;
             isGhostMode = enableGhost;
             IntPtr hwnd = new WindowInteropHelper(this).Handle;
             if (hwnd == IntPtr.Zero) return;
-            int GWL_EXSTYLE = -20;
-            long extendedStyle = GetWindowLongPtr(hwnd, GWL_EXSTYLE).ToInt64();
-            const long transparentBit = 0x20L;
 
             if (currentAppStatus == "IDLE" || SearchInputPanel.Visibility == Visibility.Visible || FestivalHubPanel.Visibility == Visibility.Visible)
             {
-                SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(extendedStyle & ~transparentBit));
+                SetWindowStyle(hwnd, false, false);
                 MainBorder.Background = new SolidColorBrush(Color.FromArgb(255, 10, 10, 10));
                 MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(34, 255, 255, 255));
                 SidePanelCol.Width = new GridLength(35, GridUnitType.Star);
@@ -932,9 +1166,9 @@ namespace FrontLineOverlay
                 TopRightControls.Visibility = Visibility.Visible;
                 PlayingControls.Visibility = Visibility.Collapsed;
             }
-            else if (isGhostMode)
+            else if (isGhostMode || isLocked)
             {
-                SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(extendedStyle | transparentBit));
+                SetWindowStyle(hwnd, true, isLocked);
 
                 byte alpha = (byte)(255 * bgOpacity);
                 MainBorder.Background = new SolidColorBrush(Color.FromArgb(alpha, 5, 5, 5));
@@ -948,7 +1182,7 @@ namespace FrontLineOverlay
             }
             else
             {
-                SetWindowLongPtr(hwnd, GWL_EXSTYLE, new IntPtr(extendedStyle & ~transparentBit));
+                SetWindowStyle(hwnd, false, false);
                 MainBorder.Background = new SolidColorBrush(Color.FromArgb(255, 10, 10, 10));
                 MainBorder.BorderBrush = new SolidColorBrush(Color.FromArgb(34, 255, 255, 255));
                 SidePanelCol.Width = new GridLength(35, GridUnitType.Star);
@@ -1261,6 +1495,10 @@ namespace FrontLineOverlay
                 ApplySkipGlyph(IcoListenSide, LoadSkipIcon("icon_listen"));
                 ApplySkipGlyph(IcoSearchSide, LoadSkipIcon("icon_search"));
                 ApplySkipGlyph(IcoFestivalSearch, LoadSkipIcon("icon_search"));
+
+                _icoLock = LoadSkipIcon("lock");
+                _icoLockOpen = LoadSkipIcon("lock_open");
+                ApplySkipGlyph(ImgLockIcon, isLocked ? _icoLock : _icoLockOpen);
             }
             catch (Exception ex) { CrashReporter.Log(ex, "LoadSkipIcons"); }
         }
@@ -1901,6 +2139,13 @@ namespace FrontLineOverlay
                     SldBgOpacity.Value = Math.Clamp(opacity, SldBgOpacity.Minimum, SldBgOpacity.Maximum);
                 else
                     bgOpacity = Math.Clamp(opacity, 0.0, 1.0);
+
+                isLocked = AppSettings.GetBool("OverlayLocked", false);
+                BtnLockOverlay.IsChecked = isLocked;
+                lockHotKeyVk = (uint)AppSettings.GetDouble("LockHotkeyVk", 0);
+                lockHotkeyModifiers = (uint)AppSettings.GetDouble("LockHotkeyMods", 0);
+                UpdateShortcutButtonText();
+
             }
             catch (Exception ex) { CrashReporter.Log(ex, "RestoreFontAndAuto"); }
             finally { _loadingSettings = false; }
@@ -2019,6 +2264,9 @@ namespace FrontLineOverlay
                 AppSettings.SetDouble("WindowTop", Top);
                 AppSettings.SetDouble("WindowWidth", Width);
                 AppSettings.SetDouble("WindowHeight", Height);
+                AppSettings.SetBool("OverlayLocked", isLocked);
+                AppSettings.SetDouble("LockHotkeyVk", lockHotKeyVk);
+                AppSettings.SetDouble("LockHotkeyMods", lockHotkeyModifiers);
             }
             catch (Exception ex) { CrashReporter.Log(ex, "PersistSettings"); }
         }
