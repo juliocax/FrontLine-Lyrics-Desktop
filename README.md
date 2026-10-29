@@ -61,6 +61,7 @@ It works two ways, it can automatically follow the track info exposed by Windows
 - **Manual sync adjustment everywhere**: the same next/previous line arrows used in Festival Mode are now also available for any track recognized via Shazam, letting you nudge the sync if it drifts. Not needed for tracks detected through the Windows Media Session API, since those already report accurate playback position.
 - **Customizable overlay**: adjustable font size and a compact/expanded layout.
 - **Multi-language UI**: interface available in English, Portuguese, Spanish, and Bahasa Indonesia.
+- **Optional anonymous usage statistics**: a welcome screen at first launch explains what is sent (theme, lyric font, lyric color, app language and lock shortcut, never songs or lyrics), and it can be turned off at any time in Settings. See [PRIVACY.md](./PRIVACY.md).
 
 ## How It Works
 
@@ -80,6 +81,7 @@ FrontLine Lyrics is split into two cooperating processes:
 | Lyrics source | [LRCLIB](https://lrclib.net/) |
 | Setlist source (Festival Mode) | [setlist.fm](https://www.setlist.fm/) API (user-provided key) |
 | Translation | `deep-translator`, `translators` (parallel multi-backend resolution) |
+| Usage statistics (optional) | [Aptabase](https://aptabase.com) HTTP API, anonymous, opt-out in Settings |
 | Media metadata (auto-follow) | Windows Runtime — `GlobalSystemMediaTransportControlsSessionManager` via `winrt` |
 | Packaging | PyInstaller (server), MSIX (Microsoft Store) |
 | Testing | `pytest`, `pytest-asyncio`, `pytest-mock`, `requests-mock` |
@@ -188,3 +190,10 @@ If FrontLine Lyrics is useful to you, consider [buying me a coffee](https://www.
 ## License
 
 See [LICENSE](LICENSE.txt) for more information.
+
+
+## Release notes / Novidades
+
+The app displays a welcome screen on the first run. On the first launch after an app version change, it displays a similarly styled release-notes window, and you can reopen it in **Settings → General → View release notes** or by clicking the version label. Each version is identified by the assembly version (`Assembly.GetName().Version`). Add the notes in `ReleaseNotesWindow.xaml.cs` under `Notes` for each new version; example entries for 1.4.3 are provided and should be reviewed before release. If no entry exists for the installed version, a neutral fallback message is displayed.
+
+Optional Aptabase `settings_snapshot` reports now include `lyric_color`, in addition to the other settings. The telemetry toggle, 24-hour limit, and anonymous reporting behavior remain unchanged. Update `WelcomeWindow.xaml.cs` and PRIVACY.md as part of release review.
