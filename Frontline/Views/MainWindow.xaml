@@ -1,0 +1,947 @@
+<Window x:Class="FrontLineOverlay.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:FrontLineOverlay"
+        Title="FrontLine Lyrics" Height="300" Width="700" MinWidth="450" MinHeight="200"
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        Topmost="True" ShowInTaskbar="True" MouseLeftButtonDown="Window_MouseLeftButtonDown">
+
+    <Window.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Styles/Common.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Styles/Toggles.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Styles/Buttons.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Styles/ScrollBars.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Styles/ComboBox.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Styles/Sliders.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Styles/ListHeaders.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Window.Resources>
+
+    <Grid x:Name="RootGrid">
+        <Border x:Name="MainBorder" Background="#FF0A0A0A" CornerRadius="12" Padding="20" BorderBrush="#22FFFFFF" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="35*" x:Name="SidePanelCol"/>
+                    <ColumnDefinition Width="65*" x:Name="ContentPanelCol"/>
+                </Grid.ColumnDefinitions>
+                <local:ChristmasGroundView x:Name="ChristmasSnowLayer" Grid.ColumnSpan="2" Margin="-20,-20,-20,-52" Panel.ZIndex="0" IsHitTestVisible="False" Visibility="Collapsed"/>
+
+                <local:HalloweenGroundView x:Name="HalloweenGround" Grid.ColumnSpan="2" Margin="-20,-20,-20,-52" Panel.ZIndex="0" IsHitTestVisible="False" Visibility="Collapsed"/>
+
+                <local:NewYearGroundView x:Name="NewYearGround" Grid.ColumnSpan="2" Margin="-20,-20,-20,-52" Panel.ZIndex="0" IsHitTestVisible="False" Visibility="Collapsed"/>
+
+                <ContentControl x:Name="UserThemeGround" Grid.ColumnSpan="2" Margin="-20,-20,-20,-52" Panel.ZIndex="0" IsHitTestVisible="False" Visibility="Collapsed"/>
+
+                <Border x:Name="ScreenBackdrop" Grid.ColumnSpan="2" Margin="-20,-20,-20,-52" Panel.ZIndex="0" Background="#FF0A0A0A" CornerRadius="12" IsHitTestVisible="False" Visibility="Collapsed"/>
+
+                <Grid x:Name="SidePanel" Grid.Column="0" Margin="0,0,20,0" VerticalAlignment="Stretch">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Image x:Name="AlbumCoverImg" Grid.Row="0" Stretch="Uniform" Margin="0,0,0,12"
+                           HorizontalAlignment="Center" VerticalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <StackPanel Grid.Row="1" VerticalAlignment="Bottom">
+                        <TextBlock x:Name="LblSongTitle" Foreground="#E0E0E0" FontSize="13" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,2" Visibility="Collapsed"/>
+                        <TextBlock x:Name="LblArtistName" Text="Ready." Foreground="#888888" FontSize="12" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                        <TextBlock x:Name="LblTranslating" Text="Translating..." Foreground="#A955FF" FontSize="9" FontWeight="SemiBold" Margin="0,0,0,0" HorizontalAlignment="Center" Visibility="Collapsed"/>
+
+                        <StackPanel x:Name="DonateBlock"
+                                    HorizontalAlignment="Center"
+                                    Margin="0,4,0,0"
+                                    Visibility="{Binding Visibility, ElementName=HomeControls}">
+                            <Button x:Name="BtnDonate"
+                                    Style="{StaticResource ImageOverlayButtonStyle}"
+                                    HorizontalAlignment="Center"
+                                    Click="BtnDonate_Click">
+                                <StackPanel HorizontalAlignment="Center" Width="150">
+                                    <TextBlock x:Name="TxtDonateLabel" Foreground="#CCCCCC" FontSize="11" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,6"/>
+                                    <Image x:Name="ImgDonateButton" Width="150" Height="40" Stretch="Uniform" HorizontalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <Button x:Name="BtnFeedback"
+                                    Margin="0,10,0,0"
+                                    HorizontalAlignment="Center"
+                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
+                                    Click="BtnFeedback_Click">          
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <TextBlock x:Name="TxtFeedback"
+                                           Text="{TemplateBinding Content}"
+                                           Foreground="#66FFFFFF"
+                                           FontSize="10" FontWeight="SemiBold"
+                                           TextAlignment="Center" TextWrapping="Wrap"/>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="TxtFeedback" Property="Foreground" Value="#CCFFFFFF"/>
+                                                <Setter TargetName="TxtFeedback" Property="TextDecorations" Value="Underline"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+
+                <Grid x:Name="ContentPanel" Grid.Column="1" VerticalAlignment="Stretch">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <Grid Grid.Row="0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Grid x:Name="LyricsNormalView" Grid.Column="0" IsHitTestVisible="False">
+                            <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Name="LblPrevious" Style="{StaticResource LyricHalo}" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                                <TextBlock x:Name="LblCurrent" Style="{StaticResource LyricHalo}" Foreground="#FFCC33" FontSize="26" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                                <TextBlock x:Name="LblCurrentOriginal" Style="{StaticResource LyricHalo}" Foreground="#99FFFFFF" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/>
+                                <TextBlock x:Name="LblNext" Style="{StaticResource LyricHalo}" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel x:Name="FestivalAdvanceView" Grid.Column="0" Visibility="Collapsed" VerticalAlignment="Center" Margin="8,0" Panel.ZIndex="10">
+                            <StackPanel.Effect>
+                                <DropShadowEffect Color="Black" BlurRadius="12" ShadowDepth="0" Opacity="0.75"/>
+                            </StackPanel.Effect>
+                            <TextBlock x:Name="LblFestivalAdvanceHint" Foreground="#88FFFFFF" FontSize="11" FontWeight="Bold" TextAlignment="Center" Margin="0,0,0,12"/>
+                            <Border x:Name="BandFestivalAdvance" CornerRadius="10" Padding="18,16" Background="#CC050508">
+                                <StackPanel>
+                                    <TextBlock x:Name="LblFestivalAdvanceSong" Foreground="#FFCC33" FontSize="22" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap"/>
+                                    <TextBlock x:Name="LblFestivalAdvanceArtist" Foreground="#CCFFFFFF" FontSize="13" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <Button x:Name="BtnFestivalAdvance" Style="{StaticResource FestivalGlassButton}" HorizontalAlignment="Center"
+                                    Margin="0,16,0,0" Padding="22,10" MinWidth="160" Click="BtnFestivalAdvance_Click"/>
+                        </StackPanel>
+
+                        <ListBox x:Name="FullLyricsList" Grid.Column="0" Visibility="Collapsed" Background="Transparent" BorderThickness="0" ScrollViewer.VerticalScrollBarVisibility="Hidden" HorizontalContentAlignment="Stretch" SelectionChanged="FullLyricsList_SelectionChanged">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding Text}" Style="{StaticResource LyricHalo}" Foreground="#AAAAAA" FontSize="16" TextAlignment="Center" TextWrapping="Wrap" Padding="0,8" Cursor="Hand"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                            <ListBox.ItemContainerStyle>
+                                <Style TargetType="ListBoxItem">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListBoxItem">
+                                                <Border Background="Transparent">
+                                                    <ContentPresenter />
+                                                </Border>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListBox.ItemContainerStyle>
+                        </ListBox>
+
+                        <Grid x:Name="LoadingSpinner" Grid.Column="0" Visibility="Collapsed" HorizontalAlignment="Center" VerticalAlignment="Center" IsHitTestVisible="False">
+                            <StackPanel>
+                                <Grid Width="40" Height="40" HorizontalAlignment="Center">
+                                    <Ellipse Width="40" Height="40" Stroke="#22FFFFFF" StrokeThickness="3"/>
+
+                                    <Ellipse x:Name="ListenArc" Width="40" Height="40"
+                                            Stroke="White" StrokeThickness="3"
+                                            StrokeDashArray="39 39" StrokeDashOffset="39"
+                                            StrokeStartLineCap="Round" StrokeEndLineCap="Round"
+                                            RenderTransformOrigin="0.5,0.5">
+                                        <Ellipse.RenderTransform>
+                                            <RotateTransform x:Name="ListenArcSpin" Angle="0"/>
+                                        </Ellipse.RenderTransform>
+                                    </Ellipse>
+
+
+                                </Grid>
+
+                                <TextBlock x:Name="LblLoadingText" Text="Listening..." Foreground="White" FontSize="11" FontWeight="Bold" Margin="0,12,0,0" HorizontalAlignment="Center">
+                                    <TextBlock.Triggers>
+                                        <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                            <BeginStoryboard>
+                                                <Storyboard RepeatBehavior="Forever" AutoReverse="True">
+                                                    <DoubleAnimation Storyboard.TargetProperty="Opacity" 
+                                             From="0.3" To="1.0" Duration="0:0:1.2">
+                                                        <DoubleAnimation.EasingFunction>
+                                                            <SineEase EasingMode="EaseInOut"/>
+                                                        </DoubleAnimation.EasingFunction>
+                                                    </DoubleAnimation>
+                                                </Storyboard>
+                                            </BeginStoryboard>
+                                        </EventTrigger>
+                                    </TextBlock.Triggers>
+                                </TextBlock>
+                            </StackPanel>
+                        </Grid>
+
+                        <StackPanel x:Name="FestivalLineSkip" Grid.Column="1" VerticalAlignment="Center" Margin="8,0,0,0" Visibility="Collapsed">
+                            <Button x:Name="BtnFestivalPrevLine" Style="{StaticResource FestivalSquareButton}" Padding="8,8" MinWidth="32" Click="BtnFestivalPrevLine_Click">
+                                <Rectangle x:Name="ImgFestivalLineUp" Style="{StaticResource SkipGlyph}"/>
+                            </Button>
+                            <Button x:Name="BtnFestivalNextLine" Style="{StaticResource FestivalSquareButton}" Padding="8,8" MinWidth="32" Margin="0,6,0,0" Click="BtnFestivalNextLine_Click">
+                                <Rectangle x:Name="ImgFestivalLineDown" Style="{StaticResource SkipGlyph}"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <Grid x:Name="PlayingControls" Grid.Row="1" Margin="0,20,0,0" Visibility="Collapsed" Panel.ZIndex="10">
+                        <Grid.Effect>
+                            <DropShadowEffect Color="Black" BlurRadius="12" ShadowDepth="0" Opacity="0.75"/>
+                        </Grid.Effect>
+                        <StackPanel x:Name="PlayingControlsNormal" Orientation="Horizontal" HorizontalAlignment="Center">
+                            <Button x:Name="BtnPrevTrack" Style="{StaticResource SquareGlassButton}" Padding="10,8" MinWidth="36" Margin="0,0,6,0" Click="BtnPrevTrack_Click">
+                                <Rectangle x:Name="ImgPrevTrack" Style="{StaticResource SkipGlyph}"/>
+                            </Button>
+                            <Button x:Name="BtnListenSide" Style="{StaticResource SquareGlassButton}" Padding="12,6" FontSize="10" Margin="0,0,6,0" Click="BtnListen_Click">
+                                <StackPanel Orientation="Horizontal">
+                                    <Rectangle x:Name="IcoListenSide" Style="{StaticResource MenuGlyph}" Margin="0,0,6,0"/>
+                                    <TextBlock x:Name="TxtListenSide" Text="LISTEN" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Button>
+                            <ToggleButton x:Name="BtnAutoSide" Content="AUTO" Style="{StaticResource ToggleSwitchStyle}" Click="BtnAuto_Click" Margin="0,0,10,0"/>
+                            <Button x:Name="BtnResetSide" Style="{StaticResource SquareGlassButton}" Padding="12,6" FontSize="10" Click="BtnReset_Click">
+                                <TextBlock x:Name="TxtResetSide" Text="CLEAR" VerticalAlignment="Center"/>
+                            </Button>
+                            <Button x:Name="BtnSearchSide" Style="{StaticResource SquareGlassButton}" Padding="10,6" FontSize="12" Margin="6,0,6,0" Click="BtnSearchShow_Click">
+                                <Rectangle x:Name="IcoSearchSide" Style="{StaticResource MenuGlyph}" Margin="0"/>
+                            </Button>
+                            <Button x:Name="BtnNextTrack" Style="{StaticResource SquareGlassButton}" Padding="10,8" MinWidth="36" Click="BtnNextTrack_Click">
+                                <Rectangle x:Name="ImgNextTrack" Style="{StaticResource SkipGlyph}"/>
+                            </Button>
+                        </StackPanel>
+                        <StackPanel x:Name="PlayingControlsFestival" Orientation="Horizontal" HorizontalAlignment="Center" Visibility="Collapsed">
+                            <Button x:Name="BtnFestivalPrevTrack" Style="{StaticResource SquareGlassButton}" Padding="10,8" MinWidth="36" Margin="0,0,6,0" Click="BtnFestivalPrevTrack_Click">
+                                <Rectangle x:Name="ImgFestivalPrevTrack" Style="{StaticResource SkipGlyph}"/>
+                            </Button>
+                            <Button x:Name="BtnFestivalEdit" Style="{StaticResource FestivalSquareButton}" Padding="12,6" FontSize="10" Margin="0,0,6,0" Click="BtnFestivalEdit_Click">
+                                <TextBlock x:Name="TxtFestivalEdit" Text="EDIT SETLIST" VerticalAlignment="Center"/>
+                            </Button>
+                            <Button x:Name="BtnFestivalStop" Style="{StaticResource SquareGlassButton}" Padding="12,6" FontSize="10" Margin="0,0,6,0" Click="BtnFestivalStop_Click">
+                                <TextBlock x:Name="TxtFestivalStop" Text="STOP FESTIVAL" VerticalAlignment="Center"/>
+                            </Button>
+                            <Button x:Name="BtnFestivalSearch" Style="{StaticResource SquareGlassButton}" Padding="10,6" FontSize="12" Margin="0,0,6,0" Click="BtnSearchShow_Click">
+                                <Rectangle x:Name="IcoFestivalSearch" Style="{StaticResource MenuGlyph}" Margin="0"/>
+                            </Button>
+                            <Button x:Name="BtnFestivalNextTrack" Style="{StaticResource SquareGlassButton}" Padding="10,8" MinWidth="36" Click="BtnFestivalNextTrack_Click">
+                                <Rectangle x:Name="ImgFestivalNextTrack" Style="{StaticResource SkipGlyph}"/>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+
+                    <Viewbox x:Name="HomeControls" Grid.RowSpan="2" Visibility="Visible" StretchDirection="DownOnly" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,10,0">
+                        <Border Background="#FA0A0A0A" BorderBrush="#50FFFFFF" BorderThickness="1" CornerRadius="25" Padding="15,8">
+                            <StackPanel Orientation="Horizontal">
+                                <Button x:Name="BtnReleaseNotes" Margin="5,0,16,0" Click="BtnReleaseNotes_Click" ToolTip="See what's new in this version"
+                                        Background="Transparent" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <StackPanel VerticalAlignment="Center">
+                                                <TextBlock x:Name="TxtAppName" Text="FRONTLINE LYRICS" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
+                                                <TextBlock x:Name="TxtAppVersion" Text="v1.5.0" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center" Margin="0,1,0,0"/>
+                                            </StackPanel>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter TargetName="TxtAppName" Property="Foreground" Value="#DDDDDD"/>
+                                                    <Setter TargetName="TxtAppVersion" Property="Foreground" Value="#DDDDDD"/>
+                                                    <Setter TargetName="TxtAppName" Property="TextDecorations" Value="Underline"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                                <Button x:Name="BtnListenBig" Style="{StaticResource GlassButton}" Margin="0,0,8,0" Click="BtnListen_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Rectangle x:Name="IcoListenBig" Style="{StaticResource MenuGlyph}"/>
+                                        <TextBlock x:Name="TxtListenBig" Text="LISTEN" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="BtnSearchBig" Style="{StaticResource GlassButton}" Margin="0,0,8,0" Click="BtnSearchShow_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Rectangle x:Name="IcoSearchBig" Style="{StaticResource MenuGlyph}"/>
+                                        <TextBlock x:Name="TxtSearchBig" Text="SEARCH" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="BtnFestivalBig" Style="{StaticResource FestivalGlassButton}" Margin="0,0,12,0" Click="BtnFestival_Click">
+                                    <StackPanel Orientation="Horizontal">
+                                        <Rectangle x:Name="IcoFestivalBig" Style="{StaticResource MenuGlyph}"/>
+                                        <TextBlock x:Name="TxtFestivalBig" Text="FESTIVAL" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Rectangle Width="1" Fill="#33FFFFFF" Margin="0,5,12,5"/>
+                                <Button x:Name="BtnHelpHome" Style="{StaticResource GlassButton}" Width="36" Height="36" Padding="0" Click="BtnStartHelp_Click">
+                                    <Rectangle x:Name="IcoHelpHome" Style="{StaticResource MenuGlyph}" Margin="0"/>
+                                </Button>
+                            </StackPanel>
+                        </Border>
+                    </Viewbox>
+                </Grid>
+            </Grid>
+        </Border>
+
+        <Grid x:Name="SeasonalLayer" Panel.ZIndex="35" IsHitTestVisible="False" Margin="0">
+
+            <local:HalloweenLayerView x:Name="HalloweenLayer" Visibility="Collapsed"/>
+
+            <local:ChristmasLayerView x:Name="ChristmasLayer" Visibility="Collapsed"/>
+            <local:NewYearLayerView x:Name="NewYearLayer" Visibility="Collapsed"/>
+            <ContentControl x:Name="UserThemeLayer" IsHitTestVisible="False" Visibility="Collapsed"/>
+        </Grid>
+
+        <Grid x:Name="SearchInputPanel" Panel.ZIndex="6" Visibility="Collapsed" Background="#99050810" ClipToBounds="True">
+            <Border x:Name="SearchContentBorder" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Margin="16,42,16,16" Background="#FF0A0A0A" Padding="18">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="0.38*" MinWidth="180"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="0.62*" MinWidth="180"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" VerticalAlignment="Top">
+                        <TextBlock x:Name="LblManualSearchTitle" Text="MANUAL SEARCH" Foreground="#888" FontSize="10" Margin="0,0,0,16" FontWeight="Bold"/>
+
+                        <TextBlock x:Name="LblArtistSearch" Text="Artist:" Foreground="#888" FontSize="10" Margin="0,0,0,2"/>
+                        <TextBox x:Name="TxtArtist" Background="#111" Foreground="White" BorderBrush="#333" Margin="0,0,0,10" Padding="6" KeyDown="TxtSearch_KeyDown"/>
+
+                        <TextBlock x:Name="LblSongSearch" Text="Song:" Foreground="#888" FontSize="10" Margin="0,0,0,2"/>
+                        <TextBox x:Name="TxtSong" Background="#111" Foreground="White" BorderBrush="#333" Margin="0,0,0,16" Padding="6" KeyDown="TxtSearch_KeyDown"/>
+
+                        <Button x:Name="BtnFindSearch" Content="FIND" Style="{StaticResource GlassButton}" Click="BtnManualSearch_Execute"/>
+                        <Button x:Name="BtnCancelSearch" Visibility="Collapsed" Click="BtnSearchCancel_Click"/>
+                    </StackPanel>
+
+                    <Rectangle Grid.Column="1" Width="1" Fill="#22FFFFFF" HorizontalAlignment="Center"/>
+
+                    <Grid Grid.Column="2">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+                        <TextBlock x:Name="LblSearchHistoryTitle" Text="SEARCH HISTORY" Foreground="#888" FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
+                        <ListView x:Name="SearchHistoryList" Grid.Row="1"
+                                  Background="Transparent" BorderThickness="0" Foreground="#E0E0E0"
+                                  FontSize="12" SelectionMode="Single"
+                                  ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                                  GridViewColumnHeader.Click="HistoryHeader_Click"
+                                  PreviewMouseLeftButtonUp="HistoryList_PreviewMouseLeftButtonUp">
+                            <ListView.Resources>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="Transparent"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="Transparent"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.ControlBrushKey}" Color="Transparent"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#E4E4E4"/>
+                                <SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#E4E4E4"/>
+                                <Style TargetType="GridViewColumnHeader" BasedOn="{StaticResource HistoryHeader}"/>
+                            </ListView.Resources>
+                            <ListView.ItemContainerStyle>
+                                <Style TargetType="ListViewItem">
+                                    <Setter Property="OverridesDefaultStyle" Value="True"/>
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Foreground" Value="#E4E4E4"/>
+                                    <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                    <Setter Property="Padding" Value="8,7"/>
+                                    <Setter Property="Cursor" Value="Hand"/>
+                                    <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                                    <Setter Property="BorderThickness" Value="0"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="ListViewItem">
+                                                <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="1"
+                                                        CornerRadius="8" Padding="{TemplateBinding Padding}" Margin="0,2" SnapsToDevicePixels="True">
+                                                    <Grid>
+                                                        <GridViewRowPresenter Content="{TemplateBinding Content}"
+                                                                              Columns="{Binding View.Columns, RelativeSource={RelativeSource AncestorType=ListView}}"
+                                                                              VerticalAlignment="Center"/>
+                                                        <Border x:Name="Accent" Width="3" HorizontalAlignment="Left" CornerRadius="1.5"
+                                                                Background="Transparent" Margin="-5,1,0,1" IsHitTestVisible="False"/>
+                                                    </Grid>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Bd" Property="Background" Value="#227A53E4"/>
+                                                        <Setter TargetName="Bd" Property="BorderBrush" Value="#557A53E4"/>
+                                                        <Setter TargetName="Accent" Property="Background" Value="#A97BFF"/>
+                                                        <Setter Property="Foreground" Value="#FFFFFF"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsSelected" Value="True">
+                                                        <Setter TargetName="Bd" Property="Background" Value="#347A53E4"/>
+                                                        <Setter TargetName="Bd" Property="BorderBrush" Value="#887A53E4"/>
+                                                        <Setter TargetName="Accent" Property="Background" Value="#C9A6FF"/>
+                                                        <Setter Property="Foreground" Value="#FFFFFF"/>
+                                                    </Trigger>
+                                                    <MultiTrigger>
+                                                        <MultiTrigger.Conditions>
+                                                            <Condition Property="IsSelected" Value="True"/>
+                                                            <Condition Property="IsMouseOver" Value="True"/>
+                                                        </MultiTrigger.Conditions>
+                                                        <Setter TargetName="Bd" Property="Background" Value="#467A53E4"/>
+                                                        <Setter TargetName="Bd" Property="BorderBrush" Value="#AA9B72F0"/>
+                                                    </MultiTrigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </ListView.ItemContainerStyle>
+                            <ListView.View>
+                                <GridView AllowsColumnReorder="False">
+                                    <GridViewColumn x:Name="ColHistoryArtist" Header="Artist" Width="140" DisplayMemberBinding="{Binding Artist}"/>
+                                    <GridViewColumn x:Name="ColHistorySong" Header="Song" Width="160" DisplayMemberBinding="{Binding Song}"/>
+                                    <GridViewColumn x:Name="ColHistoryDate" Header="Date" Width="130" DisplayMemberBinding="{Binding DateLabel}"/>
+                                    <GridViewColumn x:Name="ColHistoryDelete" Header="" Width="40">
+                                        <GridViewColumn.CellTemplate>
+                                            <DataTemplate>
+                                                <Button Content="✕" Width="28" Height="24" Padding="0" FontSize="10"
+                                                        Click="BtnHistoryDelete_Click"
+                                                        ToolTip="Remove">
+                                                    <Button.Style>
+                                                        <Style TargetType="Button" BasedOn="{StaticResource SquareGlassButton}">
+                                                            <Setter Property="Opacity" Value="0.3"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource AncestorType=ListViewItem}}" Value="True">
+                                                                    <Setter Property="Opacity" Value="1"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </Button.Style>
+                                                </Button>
+                                            </DataTemplate>
+                                        </GridViewColumn.CellTemplate>
+                                    </GridViewColumn>
+                                </GridView>
+                            </ListView.View>
+                        </ListView>
+                        <TextBlock x:Name="LblSearchHistoryEmpty" Grid.Row="1" Text="No searches yet."
+                                   Foreground="#66FFFFFF" FontSize="12" TextWrapping="Wrap"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   IsHitTestVisible="False"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid x:Name="FestivalHubPanel" Panel.ZIndex="6" Visibility="Collapsed" Background="#99050810" ClipToBounds="True">
+            <Border x:Name="FestivalContentBorder" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Margin="16,42,16,16" Background="#FF0A0A0A" Padding="18">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="0.38*" MinWidth="170"/>
+                        <ColumnDefinition Width="16"/>
+                        <ColumnDefinition Width="0.62*" MinWidth="180"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" VerticalAlignment="Top">
+                        <TextBlock x:Name="LblFestivalTitle" Text="FESTIVAL MODE" Foreground="#888" FontSize="10" Margin="0,0,0,10" FontWeight="Bold"/>
+                        <TextBlock x:Name="LblFestivalIntro" Text="At live shows, Shazam often fails. Load a setlist, preload lyrics, then tap the first line when the singer starts."
+                                   Foreground="#CCFFFFFF" FontSize="12" TextWrapping="Wrap" Margin="0,0,0,16" LineHeight="18"/>
+
+                        <TextBlock x:Name="LblFestivalApiKey" Text="setlist.fm API key" Foreground="#888" FontSize="10" Margin="0,0,0,4"/>
+                        <PasswordBox x:Name="TxtFestivalApiKey" Background="#111" Foreground="White" BorderBrush="#333" Padding="6" Margin="0,0,0,6"
+                                     PasswordChanged="TxtFestivalApiKey_PasswordChanged"/>
+                        <TextBlock x:Name="LblFestivalApiKeyState" Text="" Foreground="#66FFFFFF" FontSize="10" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                        <Button x:Name="BtnFestivalSaveKey" Content="SAVE KEY" Style="{StaticResource SquareGlassButton}" Padding="10,6" FontSize="10" HorizontalAlignment="Left" Margin="0,0,0,10" Click="BtnFestivalSaveKey_Click"/>
+                        <TextBlock>
+                            <Hyperlink x:Name="LnkFestivalApi" NavigateUri="https://www.setlist.fm/settings/api" RequestNavigate="FestivalApiLink_Click" Foreground="#A955FF">
+                                <Run x:Name="TxtFestivalApiLink" Text="Get a free API key"/>
+                            </Hyperlink>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <Rectangle Grid.Column="1" Width="1" Fill="#22FFFFFF" HorizontalAlignment="Center"/>
+
+                    <Grid Grid.Column="2" x:Name="FestivalListView">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock x:Name="LblFestivalPlaylists" Text="SAVED SETLISTS" Foreground="#888" FontSize="10" FontWeight="Bold" Margin="0,0,0,10"/>
+
+                        <StackPanel Grid.Row="1" Margin="0,0,0,10">
+                            <TextBlock x:Name="LblFestivalNewArtist" Text="Artist or band" Foreground="#888" FontSize="10" Margin="0,0,0,4"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TxtFestivalArtist" Background="#111" Foreground="White" BorderBrush="#333" Padding="6"
+                                         KeyDown="TxtFestivalArtist_KeyDown"/>
+                                <Button x:Name="BtnFestivalCreate" Grid.Column="1" Content="CREATE" Style="{StaticResource FestivalSquareButton}"
+                                        Padding="12,6" FontSize="10" Margin="8,0,0,0" Click="BtnFestivalCreate_Click"/>
+                            </Grid>
+                            <Grid x:Name="FestivalSearchFilters" Margin="0,8,0,0" Visibility="Collapsed">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="70"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel Grid.Column="0" Margin="0,0,6,0">
+                                    <TextBlock x:Name="LblFestivalSearchCountry" Text="Country (optional)" Foreground="#66FFFFFF" FontSize="9" Margin="0,0,0,3"/>
+                                    <TextBox x:Name="TxtFestivalCountry" Background="#111" Foreground="White" BorderBrush="#333" Padding="5"
+                                             KeyDown="TxtFestivalArtist_KeyDown"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Margin="0,0,6,0">
+                                    <TextBlock x:Name="LblFestivalSearchVenue" Text="Venue (optional)" Foreground="#66FFFFFF" FontSize="9" Margin="0,0,0,3"/>
+                                    <TextBox x:Name="TxtFestivalVenue" Background="#111" Foreground="White" BorderBrush="#333" Padding="5"
+                                             KeyDown="TxtFestivalArtist_KeyDown"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock x:Name="LblFestivalSearchYear" Text="Year (optional)" Foreground="#66FFFFFF" FontSize="9" Margin="0,0,0,3"/>
+                                    <TextBox x:Name="TxtFestivalYear" Background="#111" Foreground="White" BorderBrush="#333" Padding="5"
+                                             MaxLength="4" KeyDown="TxtFestivalArtist_KeyDown"/>
+                                </StackPanel>
+                            </Grid>
+                            <TextBlock x:Name="LblFestivalFetchStatus" Text="" Foreground="#A955FF" FontSize="11" Margin="0,6,0,0" TextWrapping="Wrap"/>
+                        </StackPanel>
+
+                        <Grid Grid.Row="2" x:Name="FestivalSearchResultsPanel" Visibility="Collapsed" Margin="0,0,0,10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock x:Name="LblFestivalSearchResults" Text="RECENT SETLISTS" Foreground="#888" FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <TextBlock x:Name="LblFestivalNoResults" Grid.Row="1" Text="" Foreground="#99FFFFFF" FontSize="12"
+                                       TextWrapping="Wrap" Visibility="Collapsed" Margin="0,0,0,6"/>
+                            <ListBox x:Name="FestivalSetlistSearchList" Grid.Row="1" Background="Transparent" BorderThickness="0"
+                                     MaxHeight="140" HorizontalContentAlignment="Stretch"
+                                     SelectionChanged="FestivalSetlistSearchList_SelectionChanged"
+                                     MouseDoubleClick="BtnFestivalCreateFromResult_Click">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Margin="0,2">
+                                            <TextBlock Text="{Binding Title}" Foreground="#E0E0E0" FontSize="12" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                            <TextBlock Text="{Binding Meta}" Foreground="#88FFFFFF" FontSize="10" Margin="0,1,0,0" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Padding" Value="6,5"/>
+                                        <Setter Property="Cursor" Value="Hand"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border x:Name="Bd" Background="Transparent" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                                        <ContentPresenter/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Bd" Property="Background" Value="#337A53E4"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter TargetName="Bd" Property="Background" Value="#557A53E4"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                            <Button x:Name="BtnFestivalCreateFromResult" Grid.Row="2" Content="CREATE PLAYLIST" Style="{StaticResource FestivalGlassButton}"
+                                    Margin="0,8,0,0" Visibility="Collapsed" Click="BtnFestivalCreateFromResult_Click"/>
+                        </Grid>
+
+                        <Grid Grid.Row="3">
+                            <ListBox x:Name="FestivalPlaylistList" Background="Transparent" BorderThickness="0"
+                                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                     HorizontalContentAlignment="Stretch"
+                                     MouseDoubleClick="FestivalPlaylistList_MouseDoubleClick"
+                                     PreviewMouseLeftButtonUp="FestivalPlaylistList_PreviewMouseLeftButtonUp">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,2">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <StackPanel>
+                                                <TextBlock Text="{Binding Title}" Foreground="#E0E0E0" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Meta}" Foreground="#88FFFFFF" FontSize="10" Margin="0,2,0,0"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="1" Content="✕" Width="28" Height="24" Padding="0" FontSize="10"
+                                                    Style="{StaticResource SquareGlassButton}"
+                                                    Click="BtnFestivalDeletePlaylist_Click"
+                                                    ToolTip="Delete"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="BorderThickness" Value="0"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Padding" Value="8,6"/>
+                                        <Setter Property="Cursor" Value="Hand"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border x:Name="Bd" Background="Transparent" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                                        <ContentPresenter/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Bd" Property="Background" Value="#337A53E4"/>
+                                                        </Trigger>
+                                                        <Trigger Property="IsSelected" Value="True">
+                                                            <Setter TargetName="Bd" Property="Background" Value="#557A53E4"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                            <TextBlock x:Name="LblFestivalEmpty" Text="No setlists yet. Enter an artist to create one."
+                                       Foreground="#66FFFFFF" FontSize="12" TextWrapping="Wrap"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                       IsHitTestVisible="False"/>
+                        </Grid>
+                    </Grid>
+
+                    <Grid Grid.Column="2" x:Name="FestivalEditorView" Visibility="Collapsed">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <StackPanel Margin="0,0,0,10">
+                            <TextBlock x:Name="LblFestivalEditorTitle" Text="SETLIST" Foreground="#888" FontSize="10" FontWeight="Bold" Margin="0,0,0,6"/>
+                            <TextBox x:Name="TxtFestivalPlaylistName" Background="#111" Foreground="White" BorderBrush="#333" Padding="6"
+                                     LostFocus="TxtFestivalPlaylistName_LostFocus"/>
+                        </StackPanel>
+
+                        <Grid x:Name="FestivalSongListHost" Grid.Row="1">
+                            <ListBox x:Name="FestivalSongList" Background="Transparent" BorderThickness="0"
+                                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                                 HorizontalContentAlignment="Stretch"
+                                 AllowDrop="True"
+                                 PreviewMouseLeftButtonDown="FestivalSongList_PreviewMouseLeftButtonDown"
+                                 PreviewMouseMove="FestivalSongList_PreviewMouseMove"
+                                 GiveFeedback="FestivalSongList_GiveFeedback"
+                                 DragOver="FestivalSongList_DragOver"
+                                 PreviewDrop="FestivalSongList_Drop">
+                                <ListBox.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,2" Background="Transparent" Cursor="SizeAll">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Text="⋮⋮" Foreground="#55FFFFFF" FontSize="13" FontWeight="Bold"
+                                                   VerticalAlignment="Center" Margin="0,0,8,0" IsHitTestVisible="False"/>
+                                            <StackPanel Grid.Column="1">
+                                                <TextBlock Text="{Binding Song}" Foreground="#E0E0E0" FontSize="13" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Artist}" Foreground="#88FFFFFF" FontSize="10" Margin="0,1,0,0" TextTrimming="CharacterEllipsis"/>
+                                            </StackPanel>
+                                            <Button Grid.Column="2" Content="✕" Width="28" Height="24" Padding="0" FontSize="10" Cursor="Hand"
+                                                Style="{StaticResource SquareGlassButton}" Click="BtnFestivalSongDelete_Click" ToolTip="Remove"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ListBox.ItemTemplate>
+                                <ListBox.ItemContainerStyle>
+                                    <Style TargetType="ListBoxItem">
+                                        <Setter Property="Background" Value="Transparent"/>
+                                        <Setter Property="AllowDrop" Value="True"/>
+                                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                                        <Setter Property="Padding" Value="6,4"/>
+                                        <Setter Property="Cursor" Value="SizeAll"/>
+                                        <Setter Property="Template">
+                                            <Setter.Value>
+                                                <ControlTemplate TargetType="ListBoxItem">
+                                                    <Border x:Name="Bd" Background="Transparent" BorderBrush="Transparent" BorderThickness="1" CornerRadius="8" Padding="{TemplateBinding Padding}">
+                                                        <ContentPresenter/>
+                                                    </Border>
+                                                    <ControlTemplate.Triggers>
+                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                            <Setter TargetName="Bd" Property="Background" Value="#337A53E4"/>
+                                                        </Trigger>
+                                                    </ControlTemplate.Triggers>
+                                                </ControlTemplate>
+                                            </Setter.Value>
+                                        </Setter>
+                                    </Style>
+                                </ListBox.ItemContainerStyle>
+                            </ListBox>
+                            <Canvas IsHitTestVisible="False">
+                                <Border x:Name="FestivalDropCue" Height="3" Width="1" CornerRadius="2"
+                                    Background="#E07A53E4" Visibility="Collapsed"
+                                    HorizontalAlignment="Left" VerticalAlignment="Top"/>
+                            </Canvas>
+                            <TextBlock x:Name="LblFestivalSongsEmpty" Text="Empty setlist. Add songs below or search during the show."
+                                   Foreground="#66FFFFFF" FontSize="12" TextWrapping="Wrap"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   IsHitTestVisible="False"/>
+                        </Grid>
+
+                        <Grid Grid.Row="2" Margin="0,10,0,0">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblFestivalAddArtist" Grid.Column="0" Text="Artist" Foreground="#888" FontSize="10" Margin="0,0,6,4"/>
+                                <TextBlock x:Name="LblFestivalAddSong" Grid.Column="1" Text="Song" Foreground="#888" FontSize="10" Margin="0,0,6,4"/>
+                            </Grid>
+                            <Grid Grid.Row="1">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox x:Name="TxtFestivalAddArtist" Grid.Column="0" Background="#111" Foreground="White" BorderBrush="#333" Padding="6" Margin="0,0,6,0" KeyDown="TxtFestivalAdd_KeyDown"/>
+                                <TextBox x:Name="TxtFestivalAddSong" Grid.Column="1" Background="#111" Foreground="White" BorderBrush="#333" Padding="6" Margin="0,0,6,0" KeyDown="TxtFestivalAdd_KeyDown"/>
+                                <Button x:Name="BtnFestivalAddSong" Grid.Column="2" Content="ADD" Style="{StaticResource FestivalSquareButton}" Padding="12,6" FontSize="10" Click="BtnFestivalAddSong_Click"/>
+                            </Grid>
+                        </Grid>
+
+                        <Button x:Name="BtnFestivalStart" Grid.Row="3" Content="START" Style="{StaticResource FestivalGlassButton}"
+                                HorizontalAlignment="Stretch" Margin="0,12,0,0" Click="BtnFestivalStart_Click"/>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Thumb x:Name="ResizeGrip" Panel.ZIndex="40" Width="16" Height="16" HorizontalAlignment="Right" VerticalAlignment="Bottom" Cursor="SizeNWSE" DragStarted="ResizeGrip_DragStarted" DragDelta="ResizeGrip_DragDelta" DragCompleted="ResizeGrip_DragCompleted">
+            <Thumb.Template>
+                <ControlTemplate TargetType="Thumb">
+                    <Grid Background="Transparent">
+                        <Path Data="M 16,4 L 4,16 M 16,9 L 9,16 M 16,14 L 14,16" Stroke="#555555" StrokeThickness="2"/>
+                    </Grid>
+                </ControlTemplate>
+            </Thumb.Template>
+        </Thumb>
+
+        <Border x:Name="LockToast" Panel.ZIndex="100" Background="#CC000000" CornerRadius="8" Padding="12,8" HorizontalAlignment="Center" VerticalAlignment="Top" Margin="0,20,0,0" Visibility="Collapsed" IsHitTestVisible="False">
+            <TextBlock x:Name="TxtLockToast" Text="Travado. Passe o mouse no canto para destravar." Foreground="White" FontSize="11" FontWeight="SemiBold"/>
+        </Border>
+
+        <ToggleButton x:Name="BtnLockOverlay" Panel.ZIndex="50" HorizontalAlignment="Left" VerticalAlignment="Top"
+                      Margin="12,12,0,0" Width="28" Height="28"
+                      Cursor="Hand" Visibility="Collapsed"
+                      Click="BtnLockOverlay_Click">
+            <ToggleButton.Template>
+                <ControlTemplate TargetType="ToggleButton">
+                    <Border Background="#44000000" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="6">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                </ControlTemplate>
+            </ToggleButton.Template>
+            <Rectangle x:Name="ImgLockIcon" Width="14" Height="14"/>
+        </ToggleButton>
+
+        <Button x:Name="BtnOverlayBack" Panel.ZIndex="41" HorizontalAlignment="Left" VerticalAlignment="Top"
+                Margin="8,8,0,0" Width="32" Height="32" Style="{StaticResource TopWindowBtn}"
+                Visibility="Collapsed" Click="BtnOverlayBack_Click">
+            <Rectangle x:Name="ImgOverlayBack" Style="{StaticResource SkipGlyph}"/>
+        </Button>
+
+        <StackPanel x:Name="TopRightControls" Panel.ZIndex="40" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top" Margin="0,8,8,0">
+            <ToggleButton x:Name="BtnMenu" Content="⋮" Width="30" Height="30" Style="{StaticResource SoberToggle}" Cursor="Hand" FontSize="18" FontWeight="Bold"/>
+            <Button x:Name="BtnMinimize" Content="—" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="12" FontWeight="Bold" Click="BtnMinimize_Click"/>
+            <Button x:Name="BtnRestore" Content="❐" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="14" Visibility="Collapsed" Click="BtnRestore_Click"/>
+            <Button x:Name="BtnCloseTop" Content="✕" Width="30" Height="30" Style="{StaticResource TopWindowBtn}" FontSize="12" FontWeight="Bold" Click="BtnExit_Click"/>
+        </StackPanel>
+
+        <Popup x:Name="SettingsPopup" IsOpen="{Binding IsChecked, ElementName=BtnMenu}" StaysOpen="False" PlacementTarget="{Binding ElementName=BtnMenu}" Placement="Bottom" HorizontalOffset="-214" VerticalOffset="10" AllowsTransparency="True" Closed="SettingsPopup_Closed">
+            <Border x:Name="MenuScaleBorder" Background="#FF0A0A0A" BorderBrush="#33FFFFFF" BorderThickness="1" CornerRadius="12" Padding="15" Width="272" MaxHeight="420">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                    <StackPanel>
+                        <TextBlock x:Name="LblSettingsTitle" Text="SETTINGS" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Stretch" Margin="0,0,0,8"/>
+
+                        <Button x:Name="BtnManualSyncToggle" Content="MANUAL SYNC" Style="{StaticResource SquareGlassButton}" Padding="0,6" Margin="0,0,0,10" Click="BtnManualSync_Toggle" Visibility="Collapsed"/>
+
+                        <UniformGrid x:Name="SettingsTabs" Columns="3" Margin="0,0,0,12">
+                            <ToggleButton x:Name="TabSettingsLyrics" Content="Lyrics" Tag="lyrics" Style="{StaticResource SquareGlassToggle}" FontSize="9" Padding="4,6" Margin="0,0,3,0" IsChecked="True" Click="SettingsTab_Click"/>
+                            <ToggleButton x:Name="TabSettingsTranslate" Content="Translate" Tag="translate" Style="{StaticResource SquareGlassToggle}" FontSize="9" Padding="4,6" Margin="0,0,3,0" Click="SettingsTab_Click"/>
+                            <ToggleButton x:Name="TabSettingsApp" Content="General" Tag="app" Style="{StaticResource SquareGlassToggle}" FontSize="9" Padding="4,6" Margin="0" Click="SettingsTab_Click"/>
+                        </UniformGrid>
+
+                        <StackPanel x:Name="SettingsPanelLyrics">
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblLyricFontTitle" Text="LYRIC FONT" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Content="↺" Style="{StaticResource SquareGlassButton}" Width="24" Height="24" Padding="0" FontSize="12" Click="BtnResetLyricFont_Click"/>
+                            </Grid>
+                            <ComboBox x:Name="CmbLyricFont" Style="{StaticResource DarkComboBox}" Margin="0,0,0,12" MaxDropDownHeight="260" SelectionChanged="CmbLyricFont_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed"/>
+
+                            <Grid Margin="0,0,0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblLyricColorTitle" Text="LYRIC COLOR" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Content="↺" Style="{StaticResource SquareGlassButton}" Width="24" Height="24" Padding="0" FontSize="12" Click="BtnResetLyricColor_Click"/>
+                            </Grid>
+                            <ComboBox x:Name="CmbLyricColor" Style="{StaticResource DarkComboBox}" Margin="0,0,0,12" SelectionChanged="CmbLyricColor_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed"/>
+
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="LblLyricWeightTitle" Text="LYRIC WEIGHT" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,4,0"/>
+                                        <Button Grid.Column="1" Content="↺" Style="{StaticResource SquareGlassButton}" Width="24" Height="24" Padding="0" FontSize="12" Click="BtnResetLyricWeight_Click"/>
+                                    </Grid>
+                                    <ComboBox x:Name="CmbLyricWeight" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbLyricWeight_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <Grid Margin="0,0,0,4">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock x:Name="LblLyricStyleTitle" Text="LYRIC STYLE" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,4,0"/>
+                                        <Button Grid.Column="1" Content="↺" Style="{StaticResource SquareGlassButton}" Width="24" Height="24" Padding="0" FontSize="12" Click="BtnResetLyricStyle_Click"/>
+                                    </Grid>
+                                    <ComboBox x:Name="CmbLyricStyle" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbLyricStyle_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <TextBlock x:Name="LblFontSizeTitle" Text="FONT SIZE" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <Slider x:Name="SldFontSize" Style="{StaticResource GlassSlider}" Minimum="14" Maximum="80" Value="26" VerticalAlignment="Center" Margin="0,0,10,0" ValueChanged="SldFontSize_ValueChanged"/>
+                                <Button Grid.Column="1" Content="↺" Style="{StaticResource SquareGlassButton}" Width="24" Height="24" Padding="0" FontSize="12" Click="BtnResetFont_Click"/>
+                            </Grid>
+
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblKeepOriginal" Text="Also show original lyrics" Foreground="#99FFFFFF" FontSize="9" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <ToggleButton x:Name="ChkKeepOriginal" Grid.Column="1" Style="{StaticResource ToggleSwitchNoLabelStyle}" Click="ChkKeepOriginal_Click" VerticalAlignment="Center"/>
+                            </Grid>
+                        </StackPanel>
+
+                        <StackPanel x:Name="SettingsOpacityBlock">
+                            <Border Height="1" Background="#22FFFFFF" Margin="0,14,0,12"/>
+                            <TextBlock x:Name="LblBgOpacityTitle" Text="BACKGROUND OPACITY" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <Slider x:Name="SldBgOpacity" Style="{StaticResource GlassSlider}" Minimum="0" Maximum="1" Value="0.8" ValueChanged="SldBgOpacity_ValueChanged"/>
+                        </StackPanel>
+
+                        <StackPanel x:Name="SettingsPanelTranslate" Visibility="Collapsed">
+                            <TextBlock x:Name="LblTranslateTitle" Text="TRANSLATE LYRICS" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <UniformGrid Columns="3">
+                                <ToggleButton x:Name="TransOriginal" Content="Orig" Style="{StaticResource SquareGlassToggle}" FontSize="10" Click="BtnTrans_Click" Tag="original" Margin="2" IsChecked="True"/>
+                                <ToggleButton x:Name="TransRomanized" Content="Rom" Style="{StaticResource SquareGlassToggle}" FontSize="10" Click="BtnTrans_Click" Tag="romanized" Margin="2"/>
+                                <ToggleButton x:Name="TransEn" Content="EN" Style="{StaticResource SquareGlassToggle}" FontSize="10" Click="BtnTrans_Click" Tag="en" Margin="2"/>
+                                <ToggleButton x:Name="TransEs" Content="ES" Style="{StaticResource SquareGlassToggle}" FontSize="10" Click="BtnTrans_Click" Tag="es" Margin="2"/>
+                                <ToggleButton x:Name="TransFr" Content="FR" Style="{StaticResource SquareGlassToggle}" FontSize="10" Click="BtnTrans_Click" Tag="fr" Margin="2"/>
+                                <ToggleButton x:Name="TransPt" Content="PT" Style="{StaticResource SquareGlassToggle}" FontSize="10" Click="BtnTrans_Click" Tag="pt" Margin="2"/>
+                            </UniformGrid>
+                        </StackPanel>
+
+                        <StackPanel x:Name="SettingsPanelApp" Visibility="Collapsed">
+                            <TextBlock x:Name="LblAppLangTitle" Text="APP LANGUAGE" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <ComboBox x:Name="CmbAppLang" Style="{StaticResource DarkComboBox}"
+                                  SelectionChanged="CmbAppLang_SelectionChanged"
+                                  DropDownOpened="CmbAppLang_DropDownOpened"
+                                  DropDownClosed="CmbAppLang_DropDownClosed">
+                                <ComboBoxItem Tag="en" Content="English"/>
+                                <ComboBoxItem Tag="pt" Content="Português"/>
+                                <ComboBoxItem Tag="es" Content="Español"/>
+                                <ComboBoxItem Tag="id" Content="Bahasa Indonesia"/>
+                            </ComboBox>
+
+                            <TextBlock x:Name="LblLockShortcutTitle" Text="OVERLAY LOCK SHORTCUT" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,14,0,8"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <Button x:Name="BtnSetLockShortcut" Content="None (click to set)" Style="{StaticResource SquareGlassButton}" Padding="10,6" FontSize="10" Click="BtnSetLockShortcut_Click" KeyDown="BtnSetLockShortcut_KeyDown"/>
+                                <TextBlock x:Name="LblLockShortcutHint" Text="(also available on top-left)" Foreground="#66FFFFFF" FontSize="9" VerticalAlignment="Center" Margin="10,0,0,0" TextWrapping="Wrap" Width="100"/>
+                            </StackPanel>
+
+                            <TextBlock x:Name="LblUserThemeTitle" Text="THEME" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,14,0,8"/>
+                            <ComboBox x:Name="CmbUserTheme" Style="{StaticResource DarkComboBox}"
+                                  SelectionChanged="CmbUserTheme_SelectionChanged"
+                                  DropDownOpened="LyricCombo_DropDownOpened"
+                                  DropDownClosed="LyricCombo_DropDownClosed"/>
+                            <Border Height="1" Background="#22FFFFFF" Margin="0,14,0,12"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="LblTelemetryTitle" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold"
+               TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                                <ToggleButton x:Name="ChkTelemetry" Grid.Column="1" Style="{StaticResource ToggleSwitchNoLabelStyle}"
+                  Click="ChkTelemetry_Click" VerticalAlignment="Center"/>
+                            </Grid>
+                            <TextBlock x:Name="LblTelemetryHint" Foreground="#66FFFFFF" FontSize="9" TextWrapping="Wrap" Margin="0,6,0,0"/>
+                            <Border Height="1" Background="#22FFFFFF" Margin="0,14,0,12"/>
+                            <TextBlock x:Name="LblReleaseNotesTitle" Text="WHAT'S NEW" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,8"/>
+                            <Button x:Name="BtnSettingsReleaseNotes" Content="VIEW RELEASE NOTES" Style="{StaticResource SquareGlassButton}"
+                                    HorizontalAlignment="Left" Padding="12,7" FontSize="10" Click="BtnReleaseNotes_Click"/>
+                    </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Popup>
+
+        <Border x:Name="OpacityPreviewOverlay" Panel.ZIndex="45" Visibility="Collapsed" CornerRadius="12" IsHitTestVisible="False">
+            <Grid Margin="20">
+                <TextBlock x:Name="LblPreviewTag" Text="PREVIEW" Foreground="#33FFFFFF" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock x:Name="LblPreviewPrevious" Style="{StaticResource LyricHalo}" Foreground="#777777" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="LblPreviewCurrent" Style="{StaticResource LyricHalo}" Foreground="#FFCC33" FontSize="26" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                    <TextBlock x:Name="LblPreviewCurrentOriginal" Style="{StaticResource LyricHalo}" Foreground="#B3FFFFFF" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/>
+                    <TextBlock x:Name="LblPreviewNext" Style="{StaticResource LyricHalo}" Foreground="#777777" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Grid x:Name="DarkDialogOverlay" Panel.ZIndex="90" Visibility="Collapsed" Background="#CC050508"
+              Focusable="True" PreviewKeyDown="DarkDialogOverlay_PreviewKeyDown">
+            <Border Background="#FF141418" BorderBrush="#3AFFFFFF" BorderThickness="1" CornerRadius="14"
+                    Padding="22" MaxWidth="360" MinWidth="260" HorizontalAlignment="Center" VerticalAlignment="Center">
+                <StackPanel>
+                    <TextBlock x:Name="LblDarkDialogTitle" Foreground="#EEEEEE" FontSize="14" FontWeight="Bold"
+                               TextWrapping="Wrap" Margin="0,0,0,8"/>
+                    <TextBlock x:Name="LblDarkDialogBody" Foreground="#CCFFFFFF" FontSize="13"
+                               TextWrapping="Wrap" Margin="0,0,0,18"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="BtnDarkDialogNo" Style="{StaticResource SquareGlassButton}" MinWidth="88" Height="32"
+                                Padding="12,6" Margin="0,0,8,0" Click="BtnDarkDialogNo_Click"/>
+                        <Button x:Name="BtnDarkDialogYes" Style="{StaticResource FestivalGlassButton}" MinWidth="88" Height="32"
+                                Padding="12,6" Click="BtnDarkDialogYes_Click"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </Grid>
+</Window>
