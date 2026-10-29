@@ -1,4 +1,4 @@
-﻿using Frontline.Themes.Seasonal;
+using Frontline.Themes.Seasonal;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -415,7 +415,7 @@ namespace FrontLineOverlay
             }
 
             if (MainBorder != null)
-                MainBorder.Padding = themed ? new Thickness(20, 20, 20, SeasonGroundHeight) : new Thickness(20);
+                MainBorder.Padding = new Thickness(20); // The ground is decorative and must not move the menu.
 
             if (SeasonalLayer != null)
                 SeasonalLayer.Margin = new Thickness(0);
@@ -424,6 +424,20 @@ namespace FrontLineOverlay
             var veil = user?.PageVeil ?? PageVeil(theme);
             if (SearchInputPanel != null) { SearchInputPanel.Margin = veilMargin; SearchInputPanel.Background = veil; }
             if (FestivalHubPanel != null) { FestivalHubPanel.Margin = veilMargin; FestivalHubPanel.Background = veil; }
+
+            // Support actions follow the actual theme contrast, without affecting main buttons.
+            // The Christmas ground is light; all other currently supplied themes are dark.
+            Brush supportColor = themed && theme == SeasonalTheme.Christmas
+                ? Brushes.Black : Brushes.White;
+            if (BtnDonate != null) BtnDonate.Foreground = supportColor;
+            if (BtnRate != null) BtnRate.Foreground = supportColor;
+            if (BtnFeedback != null) BtnFeedback.Foreground = supportColor;
+            if (TxtSupportPrompt != null)
+                TxtSupportPrompt.Foreground = themed && theme == SeasonalTheme.Christmas
+                    ? Brushes.Black : Freeze(0xFF, 0x6E, 0x6E, 0x6E);
+            if (SupportDivider != null)
+                SupportDivider.Fill = themed && theme == SeasonalTheme.Christmas
+                    ? Freeze(0x88, 0, 0, 0) : Freeze(0xFF, 0x2C, 0x2C, 0x2C);
 
             PaintSeasonalCard(SearchContentBorder, theme, user);
             PaintSeasonalCard(FestivalContentBorder, theme, user);

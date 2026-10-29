@@ -18,14 +18,15 @@
                 <ResourceDictionary Source="pack://application:,,,/Styles/Sliders.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/Styles/ListHeaders.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <SolidColorBrush x:Key="Support.ButtonForeground" Color="White"/>
 
             <Style x:Key="SupportPillButton" TargetType="Button">
-                <Setter Property="Height" Value="36"/>
-                <Setter Property="Padding" Value="14,0"/>
+                <Setter Property="Height" Value="22"/>
+                <Setter Property="Padding" Value="9,0"/>
                 <Setter Property="Cursor" Value="Hand"/>
-                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="FontSize" Value="10"/>
                 <Setter Property="FontWeight" Value="SemiBold"/>
-                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="Foreground" Value="{DynamicResource Support.ButtonForeground}"/>
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
                 <Setter Property="SnapsToDevicePixels" Value="True"/>
@@ -40,7 +41,7 @@
                                 <Border x:Name="HoverOverlay" CornerRadius="18" Background="White" Opacity="0" IsHitTestVisible="False"/>
 
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="{TemplateBinding Padding}">
-                                    <Rectangle x:Name="Ico" Width="16" Height="16" VerticalAlignment="Center" Fill="{TemplateBinding Foreground}">
+                                    <Rectangle x:Name="Ico" Width="13" Height="13" VerticalAlignment="Center" Fill="{TemplateBinding Foreground}">
                                         <Rectangle.OpacityMask>
                                             <ImageBrush ImageSource="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" Stretch="Uniform"/>
                                         </Rectangle.OpacityMask>
@@ -160,7 +161,7 @@
                         <ListBox x:Name="FullLyricsList" Grid.Column="0" Visibility="Collapsed" Background="Transparent" BorderThickness="0" ScrollViewer.VerticalScrollBarVisibility="Hidden" HorizontalContentAlignment="Stretch" SelectionChanged="FullLyricsList_SelectionChanged">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Text}" Style="{StaticResource LyricHalo}" Foreground="#AAAAAA" FontSize="16" TextAlignment="Center" TextWrapping="Wrap" Padding="0,8" Cursor="Hand"/>
+                                    <TextBlock Text="{Binding Text}" Style="{StaticResource LyricHalo}" Foreground="#AAAAAA" FontSize="{Binding FontSize, RelativeSource={RelativeSource AncestorType=ListBox}}" TextAlignment="Center" TextWrapping="Wrap" Padding="0,8" Cursor="Hand"/>
                                 </DataTemplate>
                             </ListBox.ItemTemplate>
                             <ListBox.ItemContainerStyle>
@@ -236,11 +237,28 @@
                             <Button x:Name="BtnPrevTrack" Style="{StaticResource SquareGlassButton}" Padding="10,8" MinWidth="36" Margin="0,0,6,0" Click="BtnPrevTrack_Click">
                                 <Rectangle x:Name="ImgPrevTrack" Style="{StaticResource SkipGlyph}"/>
                             </Button>
-                            <Button x:Name="BtnListenSide" Style="{StaticResource SquareGlassButton}" Padding="12,6" FontSize="10" Margin="0,0,6,0" Click="BtnListen_Click">
-                                <StackPanel Orientation="Horizontal">
+                            <Button x:Name="BtnListenSide" Style="{StaticResource SquareGlassButton}" Padding="12,6" FontSize="10" Margin="0,0,6,0" Click="BtnListen_Click" IsEnabled="False">
+                                <Grid>
+<StackPanel x:Name="ListenNormalSide" Orientation="Horizontal" Visibility="Collapsed">
                                     <Rectangle x:Name="IcoListenSide" Style="{StaticResource MenuGlyph}" Margin="0,0,6,0"/>
                                     <TextBlock x:Name="TxtListenSide" Text="LISTEN" VerticalAlignment="Center"/>
                                 </StackPanel>
+<StackPanel x:Name="ListenLoadingSide" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <Ellipse Width="13" Height="13" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="2" StrokeDashArray="2 3" RenderTransformOrigin="0.5,0.5" Margin="0,0,7,0">
+                                                <Ellipse.RenderTransform><RotateTransform/></Ellipse.RenderTransform>
+                                                <Ellipse.Triggers>
+                                                    <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                                        <BeginStoryboard>
+                                                            <Storyboard RepeatBehavior="Forever">
+                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)" From="0" To="360" Duration="0:0:0.85"/>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </EventTrigger>
+                                                </Ellipse.Triggers>
+                                            </Ellipse>
+                                            <TextBlock x:Name="TxtListenLoadingSide" Text="STARTING" VerticalAlignment="Center" FontSize="10"/>
+                                        </StackPanel>
+</Grid>
                             </Button>
                             <ToggleButton x:Name="BtnAutoSide" Content="AUTO" Style="{StaticResource ToggleSwitchStyle}" Click="BtnAuto_Click" Margin="0,0,10,0"/>
                             <Button x:Name="BtnResetSide" Style="{StaticResource SquareGlassButton}" Padding="12,6" FontSize="10" Click="BtnReset_Click">
@@ -294,11 +312,28 @@
                                         </ControlTemplate>
                                     </Button.Template>
                                 </Button>
-                                <Button x:Name="BtnListenBig" Style="{StaticResource GlassButton}" Margin="0,0,8,0" Click="BtnListen_Click">
-                                    <StackPanel Orientation="Horizontal">
+                                <Button x:Name="BtnListenBig" Style="{StaticResource GlassButton}" Margin="0,0,8,0" Click="BtnListen_Click" IsEnabled="False">
+                                    <Grid>
+<StackPanel x:Name="ListenNormalBig" Orientation="Horizontal" Visibility="Collapsed">
                                         <Rectangle x:Name="IcoListenBig" Style="{StaticResource MenuGlyph}"/>
                                         <TextBlock x:Name="TxtListenBig" Text="LISTEN" VerticalAlignment="Center"/>
                                     </StackPanel>
+<StackPanel x:Name="ListenLoadingBig" Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Center">
+                                            <Ellipse Width="13" Height="13" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="2" StrokeDashArray="2 3" RenderTransformOrigin="0.5,0.5" Margin="0,0,7,0">
+                                                <Ellipse.RenderTransform><RotateTransform/></Ellipse.RenderTransform>
+                                                <Ellipse.Triggers>
+                                                    <EventTrigger RoutedEvent="FrameworkElement.Loaded">
+                                                        <BeginStoryboard>
+                                                            <Storyboard RepeatBehavior="Forever">
+                                                                <DoubleAnimation Storyboard.TargetProperty="(UIElement.RenderTransform).(RotateTransform.Angle)" From="0" To="360" Duration="0:0:0.85"/>
+                                                            </Storyboard>
+                                                        </BeginStoryboard>
+                                                    </EventTrigger>
+                                                </Ellipse.Triggers>
+                                            </Ellipse>
+                                            <TextBlock x:Name="TxtListenLoadingBig" Text="STARTING" VerticalAlignment="Center" FontSize="10"/>
+                                        </StackPanel>
+</Grid>
                                 </Button>
                                 <Button x:Name="BtnSearchBig" Style="{StaticResource GlassButton}" Margin="0,0,8,0" Click="BtnSearchShow_Click">
                                     <StackPanel Orientation="Horizontal">
@@ -326,7 +361,7 @@
                 <StackPanel x:Name="SupportBar" Grid.ColumnSpan="2" Panel.ZIndex="50"
                             Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                             Visibility="{Binding Visibility, ElementName=HomeControls}">
-                    <TextBlock x:Name="TxtSupportPrompt" Foreground="#FF6E6E6E" FontSize="12" VerticalAlignment="Center"/>
+                    <TextBlock x:Name="TxtSupportPrompt" Foreground="#FF6E6E6E" FontSize="10" VerticalAlignment="Center"/>
                     <Rectangle x:Name="SupportDivider" Width="1" Height="16" Fill="#FF2C2C2C" Margin="10,0,10,0" VerticalAlignment="Center"/>
 
                     <Button x:Name="BtnDonate" Style="{StaticResource SupportPillButton}" Margin="0,0,6,0" Click="BtnDonate_Click"/>

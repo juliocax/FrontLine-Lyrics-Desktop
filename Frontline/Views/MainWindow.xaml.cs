@@ -89,6 +89,7 @@ namespace FrontLineOverlay
         private string currentAppStatus = "IDLE";
         private string currentCoverUrl = "";
         private ClientWebSocket? _webSocket;
+        private bool _listenReady;
         private double bgOpacity = 0.8;
         private bool _playerClock;
         private bool _syncingLangPicker;
@@ -152,7 +153,7 @@ namespace FrontLineOverlay
         private readonly Dictionary<string, Dictionary<string, string>> uiStrings = new()
         {
             { "en", new() {
-                { "Listen", "LISTEN" }, { "Search", "SEARCH" }, { "ManualSearch", "MANUAL SEARCH" },
+                { "Listen", "LISTEN" }, { "ListenStarting", "STARTING" }, { "ListenStartingTip", "Starting audio service…" }, { "Search", "SEARCH" }, { "ManualSearch", "MANUAL SEARCH" },
                 { "Artist", "Artist:" }, { "Song", "Song:" }, { "Find", "FIND" }, { "Cancel", "CANCEL" },
                 { "Settings", "SETTINGS" }, { "SettingsTabLyrics", "Lyrics" }, { "SettingsTabTranslate", "Translate" }, { "SettingsTabApp", "General" }, { "ManualSync", "MANUAL SYNC" }, { "Translate", "TRANSLATE LYRICS" },
                 { "UILang", "APP LANGUAGE" }, { "Ready", "Ready." },
@@ -243,7 +244,7 @@ namespace FrontLineOverlay
                 { "TipUnlock", "Unlock overlay: move and click it again" },
             }},
             { "pt", new() {
-                { "Listen", "OUVIR" }, { "Search", "BUSCAR" }, { "ManualSearch", "BUSCA MANUAL" },
+                { "Listen", "OUVIR" }, { "ListenStarting", "INICIANDO" }, { "ListenStartingTip", "Iniciando serviço de áudio…" }, { "Search", "BUSCAR" }, { "ManualSearch", "BUSCA MANUAL" },
                 { "Artist", "Artista:" }, { "Song", "Música:" }, { "Find", "BUSCAR" }, { "Cancel", "CANCELAR" },
                 { "Settings", "CONFIGURAÇÕES" }, { "SettingsTabLyrics", "Letra" }, { "SettingsTabTranslate", "Traduzir" }, { "SettingsTabApp", "Geral" }, { "ManualSync", "SINC. MANUAL" }, { "Translate", "TRADUZIR LETRAS" },
                 { "UILang", "IDIOMA DO APP" }, { "Ready", "Pronto." },
@@ -334,7 +335,7 @@ namespace FrontLineOverlay
                 { "TipUnlock", "Destravar sobreposição: voltar a mover e clicar nela" },
             }},
             { "es", new() {
-                { "Listen", "ESCUCHAR" }, { "Search", "BUSCAR" }, { "ManualSearch", "BÚSQUEDA MANUAL" },
+                { "Listen", "ESCUCHAR" }, { "ListenStarting", "INICIANDO" }, { "ListenStartingTip", "Iniciando el servicio de audio…" }, { "Search", "BUSCAR" }, { "ManualSearch", "BÚSQUEDA MANUAL" },
                 { "Artist", "Artista:" }, { "Song", "Canción:" }, { "Find", "BUSCAR" }, { "Cancel", "CANCELAR" },
                 { "Settings", "AJUSTES" }, { "SettingsTabLyrics", "Letra" }, { "SettingsTabTranslate", "Traducir" }, { "SettingsTabApp", "General" }, { "ManualSync", "SINC. MANUAL" }, { "Translate", "TRADUCIR LETRAS" },
                 { "UILang", "IDIOMA DE LA APP" }, { "Ready", "Listo." },
@@ -425,7 +426,7 @@ namespace FrontLineOverlay
                 { "TipUnlock", "Desbloquear superposición: volver a moverla y hacer clic" },
             }},
             { "id", new() {
-                { "Listen", "DENGAR" }, { "Search", "CARI" }, { "ManualSearch", "PENCARIAN MANUAL" },
+                { "Listen", "DENGAR" }, { "ListenStarting", "MEMULAI" }, { "ListenStartingTip", "Memulai layanan audio…" }, { "Search", "CARI" }, { "ManualSearch", "PENCARIAN MANUAL" },
                 { "Artist", "Artis:" }, { "Song", "Lagu:" }, { "Find", "CARI" }, { "Cancel", "BATAL" },
                 { "Settings", "PENGATURAN" }, { "SettingsTabLyrics", "Lirik" }, { "SettingsTabTranslate", "Terjemah" }, { "SettingsTabApp", "Umum" }, { "ManualSync", "SINKRON MANUAL" }, { "Translate", "TERJEMAHKAN LIRIK" },
                 { "UILang", "BAHASA APLIKASI" }, { "Ready", "Siap." },
@@ -630,20 +631,14 @@ namespace FrontLineOverlay
 
         private void ApplyFontScale(double fontSize)
         {
-            double scale = fontSize / 26.0;
-            if (MainBorder != null)
-                MainBorder.LayoutTransform = new ScaleTransform(scale, scale);
-            if (SearchContentBorder != null)
-                SearchContentBorder.LayoutTransform = new ScaleTransform(scale, scale);
-            if (FestivalContentBorder != null)
-                FestivalContentBorder.LayoutTransform = new ScaleTransform(scale, scale);
-
-            if (SupportBar != null)
-            {
-                SupportBar.LayoutTransform = Math.Abs(scale - 1.0) < 0.001
-                    ? Transform.Identity
-                    : new ScaleTransform(1.0 / scale, 1.0 / scale);
-            }
+            // Scale only lyrics; preserve all menu, dock and support button dimensions.
+            // Direct font sizes keep wrapping based on the real available width.
+            double scale = Math.Max(0.1, fontSize / 26.0);
+            if (LblCurrent != null) LblCurrent.FontSize = fontSize;
+            if (LblPrevious != null) LblPrevious.FontSize = 14 * scale;
+            if (LblNext != null) LblNext.FontSize = 14 * scale;
+            if (LblCurrentOriginal != null) LblCurrentOriginal.FontSize = 14 * scale;
+            if (FullLyricsList != null) FullLyricsList.FontSize = 16 * scale;
             UpdateSupportBarLayout();
         }
 
@@ -652,11 +647,10 @@ namespace FrontLineOverlay
             if (SupportBar == null || TxtSupportPrompt == null || BtnDonate == null || BtnRate == null || BtnFeedback == null) return;
             if (!uiStrings.TryGetValue(currentAppLanguage, out var t)) return;
 
-            double scale = SldFontSize != null ? SldFontSize.Value / 26.0 : 1.0;
-            double w = ActualWidth > 0 ? ActualWidth / Math.Max(1.0, scale) : Width;
-
-            bool compact = w < 500;
-            bool showPrompt = w >= 640;
+            // Compact support controls according to window width, not lyric font size.
+            double w = ActualWidth > 0 ? ActualWidth : Width;
+            bool compact = w < 620;
+            bool showPrompt = w >= 800;
 
             TxtSupportPrompt.Text = t["SupportPrompt"];
             TxtSupportPrompt.Visibility = showPrompt ? Visibility.Visible : Visibility.Collapsed;
@@ -665,7 +659,7 @@ namespace FrontLineOverlay
             BtnDonate.Content = compact ? "" : t["SupportDonate"];
             BtnRate.Content = compact ? "" : t["SupportRate"];
             BtnFeedback.Content = compact ? "" : t["SupportFeedback"];
-            var pad = compact ? new Thickness(10, 0, 10, 0) : new Thickness(12, 0, 12, 0);
+            var pad = compact ? new Thickness(7, 0, 7, 0) : new Thickness(9, 0, 9, 0);
             BtnDonate.Padding = BtnRate.Padding = BtnFeedback.Padding = pad;
         }
 
@@ -847,6 +841,26 @@ namespace FrontLineOverlay
             _opacityPreviewTimer.Tick += OpacityPreviewTimer_Tick;
         }
 
+        private void SetListenReady(bool ready)
+        {
+            if (Dispatcher.HasShutdownStarted || Dispatcher.HasShutdownFinished) return;
+            if (!Dispatcher.CheckAccess())
+            {
+                Dispatcher.BeginInvoke(new Action(() => SetListenReady(ready)));
+                return;
+            }
+            _listenReady = ready;
+            BtnListenBig.IsEnabled = ready;
+            BtnListenSide.IsEnabled = ready;
+            ListenNormalBig.Visibility = ready ? Visibility.Visible : Visibility.Collapsed;
+            ListenNormalSide.Visibility = ready ? Visibility.Visible : Visibility.Collapsed;
+            ListenLoadingBig.Visibility = ready ? Visibility.Collapsed : Visibility.Visible;
+            ListenLoadingSide.Visibility = ready ? Visibility.Collapsed : Visibility.Visible;
+            var tooltip = ready ? uiStrings[currentAppLanguage]["TipListen"] : uiStrings[currentAppLanguage]["ListenStartingTip"];
+            BtnListenBig.ToolTip = tooltip;
+            BtnListenSide.ToolTip = tooltip;
+        }
+
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             string[] args = Environment.GetCommandLineArgs();
@@ -862,6 +876,7 @@ namespace FrontLineOverlay
             UpdateVisualState(false);
             ApplyUILanguage(currentAppLanguage);
 
+            SetListenReady(false);
             StartPythonServer();
             _ = Task.Run(() => ConnectWebSocket(), _shutdown.Token);
             InitTelemetry();
@@ -1012,6 +1027,8 @@ namespace FrontLineOverlay
             currentAppLanguage = lang;
 
             TxtListenBig.Text = t["Listen"];
+            TxtListenLoadingBig.Text = t["ListenStarting"];
+            TxtListenLoadingSide.Text = t["ListenStarting"];
             TxtSearchBig.Text = t["Search"];
             TxtListenSide.Text = t["SideListen"];
             TxtResetSide.Text = t["SideClear"];
@@ -1106,6 +1123,7 @@ namespace FrontLineOverlay
             BtnPrevTrack.ToolTip = t["PrevTrack"];
             BtnNextTrack.ToolTip = t["NextTrack"];
             BtnListenSide.ToolTip = t["TipListen"];
+            SetListenReady(_listenReady);
             BtnAutoSide.ToolTip = t["TipAuto"];
             BtnResetSide.ToolTip = t["TipClear"];
             BtnSearchSide.ToolTip = t["TipSearch"];
@@ -1307,6 +1325,7 @@ namespace FrontLineOverlay
                 {
                     await _webSocket.ConnectAsync(new Uri($"ws://127.0.0.1:{serverPort}"), _shutdown.Token);
                     CrashReporter.LogBreadcrumb("websocket.connected", serverPort);
+                    SetListenReady(true);
                     message.SetLength(0);
                     while (_webSocket.State == WebSocketState.Open && !_shutdown.IsCancellationRequested)
                     {
@@ -1334,6 +1353,7 @@ namespace FrontLineOverlay
                 {
                     if (!_shuttingDown) CrashReporter.Log(ex, "ConnectWebSocket");
                 }
+                SetListenReady(false);
                 if (_shutdown.IsCancellationRequested) break;
                 try { await Task.Delay(2000, _shutdown.Token); }
                 catch (OperationCanceledException) { break; }
@@ -1896,6 +1916,7 @@ namespace FrontLineOverlay
         }
         private void BtnListen_Click(object sender, RoutedEventArgs e)
         {
+            if (!_listenReady || _webSocket?.State != WebSocketState.Open) return;
             ReleaseAutoHold();
             SendCommand("LISTEN");
         }
