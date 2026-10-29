@@ -44,6 +44,11 @@
                     <StackPanel>
                         <TextBlock x:Name="TxtChangesTitle" FontSize="11" FontWeight="Bold" Foreground="#99FFFFFF" Margin="0,0,0,9"/>
                         <StackPanel x:Name="PanelChanges"/>
+                        <TextBlock x:Name="TxtFullRelease" Margin="6,12,0,1" FontSize="12.5" TextWrapping="Wrap"
+                                   Visibility="Collapsed">
+                            <Hyperlink x:Name="LinkFullRelease" Foreground="#FF8AB4FF"
+                                       TextDecorations="Underline" Click="LinkFullRelease_Click"/>
+                        </TextBlock>
                     </StackPanel>
                 </Border>
             </ScrollViewer>

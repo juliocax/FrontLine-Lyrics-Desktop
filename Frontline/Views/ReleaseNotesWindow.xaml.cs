@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System;
@@ -52,6 +53,37 @@ namespace FrontLineOverlay
         // Exemplo para a PRÓXIMA versão: substitua pela versão real ao publicar.
         private static readonly Dictionary<string, Dictionary<string, string[]>> Notes = new()
         {
+            ["1.5.0"] = new()
+            {
+                ["en"] = new[] {
+                    "Refreshed Christmas and New Year themes, plus cleaner Support, Rate and Feedback buttons.",
+                    "LISTEN now shows a loading animation until the audio service is ready.",
+                    "Improved lyric font resizing and updated seasonal theme dates.",
+                    "Optional anonymous settings telemetry, controlled under Settings → General.",
+                    "Coming to Supporter Early Access: 1, 3 or 5 lines, lyric alignment and more themes."
+                },
+                ["pt"] = new[] {
+                    "Temas de Natal e Ano-Novo renovados; botões Apoie, Avalie e Feedback redesenhados.",
+                    "O botão OUVIR agora mostra uma animação até o serviço de áudio ficar pronto.",
+                    "Melhorias no tamanho das letras e novas datas dos temas sazonais.",
+                    "Telemetria anônima opcional, controlada em Configurações → Geral.",
+                    "Em breve no Acesso Antecipado: 1, 3 ou 5 linhas, alinhamento e mais temas."
+                },
+                ["es"] = new[] {
+                    "Temas de Navidad y Año Nuevo renovados; botones de apoyo, valoración y comentarios rediseñados.",
+                    "ESCUCHAR muestra una animación mientras se inicia el servicio de audio.",
+                    "Mejor ajuste del tamaño de las letras y nuevas fechas de temas de temporada.",
+                    "Telemetría anónima opcional desde Ajustes → General.",
+                    "Próximamente en acceso anticipado: 1, 3 o 5 líneas, alineación y más temas."
+                },
+                ["id"] = new[] {
+                    "Tema Natal dan Tahun Baru diperbarui, begitu juga tombol Dukungan, Nilai, dan Masukan.",
+                    "DENGAR kini menampilkan animasi saat layanan audio dimulai.",
+                    "Ukuran font lirik lebih baik dan jadwal tema musiman diperbarui.",
+                    "Telemetri pengaturan anonim opsional di Pengaturan → Umum.",
+                    "Segera di Akses Awal pendukung: 1, 3, atau 5 baris, perataan lirik, dan tema lainnya."
+                }
+            },
             ["1.4.3"] = new()
             {
                 ["en"] = new[] { "Lyric color is now included in optional anonymous configuration statistics.", "New what's-new window on the first launch after an update.", "Release notes can also be opened from General settings." },
@@ -67,6 +99,16 @@ namespace FrontLineOverlay
             ["pt"] = new[] { "Novidades do FrontLine Lyrics", "Veja o que mudou nesta versão.", "NESTA VERSÃO", "ENTENDI", "As notas desta versão ainda não foram cadastradas." },
             ["es"] = new[] { "Novedades de FrontLine Lyrics", "Esto es lo que ha cambiado en esta versión.", "EN ESTA VERSIÓN", "ENTENDIDO", "Todavía no se han añadido notas para esta versión." },
             ["id"] = new[] { "Yang baru di FrontLine Lyrics", "Berikut perubahan dalam versi ini.", "DALAM RILIS INI", "MENGERTI", "Catatan untuk versi ini belum tersedia." }
+        };
+
+        private const string FullReleaseUrl = "https://buymeacoffee.com/juliocax/frontline-lyrics-1-5-0";
+
+        private static readonly Dictionary<string, string> FullReleaseLabels = new()
+        {
+            ["en"] = "Read the full announcement on Buy Me a Coffee",
+            ["pt"] = "Leia o anúncio completo no Buy Me a Coffee",
+            ["es"] = "Lee el anuncio completo en Buy Me a Coffee",
+            ["id"] = "Baca pengumuman lengkap di Buy Me a Coffee"
         };
 
         public ReleaseNotesWindow(string language)
@@ -87,6 +129,11 @@ namespace FrontLineOverlay
             TxtDescription.Text = labels[1];
             TxtChangesTitle.Text = labels[2];
             BtnDone.Content = labels[3];
+            TxtFullRelease.Visibility = CurrentVersion == "1.5.0"
+                ? Visibility.Visible : Visibility.Collapsed;
+            LinkFullRelease.Inlines.Clear();
+            if (CurrentVersion == "1.5.0")
+                LinkFullRelease.Inlines.Add(FullReleaseLabels[language]);
             PanelChanges.Children.Clear();
             var changes = Notes.TryGetValue(CurrentVersion, out var translations)
                 && translations.TryGetValue(language, out var items)
@@ -107,6 +154,18 @@ namespace FrontLineOverlay
             if (sender is ToggleButton b && b.Tag is string lang && Ui.ContainsKey(lang))
                 ApplyLanguage(lang);
         }
+        private void LinkFullRelease_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(FullReleaseUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine("Could not open release URL: " + ex.Message);
+            }
+        }
+
         private void BtnDone_Click(object sender, RoutedEventArgs e) => Close();
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
