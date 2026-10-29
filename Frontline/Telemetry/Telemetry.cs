@@ -1,0 +1,159 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Net.Http;
+using System.Text;
+using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
+using System.Linq;
+
+namespace FrontLineOverlay
+{
+    internal sealed record TelemetrySnapshot(string Theme, string LyricFont, string UiLanguage, string? LockShortcut, string LyricColor = "default");
+
+    internal static class Telemetry
+    {
+
+        private static string AppKey => TelemetryKey.Value;
+
+        private const string EventName = "settings_snapshot";
+        private const string SdkVersion = "frontline-http@1";
+        private static readonly TimeSpan MinInterval = TimeSpan.FromHours(24);
+
+        public const string KeyEnabled = "TelemetryEnabled";
+        public const string KeyWelcomeShown = "WelcomeShown";
+        private const string KeyLastSent = "TelemetryLastSentUtc";
+
+        private static readonly HttpClient Http = new() { Timeout = TimeSpan.FromSeconds(5) };
+        private static int _sending;
+
+        public static bool Enabled
+        {
+            get => AppSettings.GetBool(KeyEnabled, true);
+            set => AppSettings.SetBool(KeyEnabled, value);
+        }
+
+        public static bool WelcomeShown
+        {
+            get => AppSettings.GetBool(KeyWelcomeShown, false);
+            set => AppSettings.SetBool(KeyWelcomeShown, value);
+        }
+
+        private static bool IsConfigured => !string.IsNullOrWhiteSpace(AppKey);
+
+        private static string? Host =>
+            AppKey.StartsWith("A-EU-", StringComparison.Ordinal) ? "https://eu.aptabase.com" :
+            AppKey.StartsWith("A-US-", StringComparison.Ordinal) ? "https://us.aptabase.com" : null;
+
+        private static string AppVersion =>
+            typeof(Telemetry).Assembly.GetName().Version?.ToString(3) ?? "1.5.0";
+
+        private static bool IsDue()
+        {
+            var raw = AppSettings.GetString(KeyLastSent, "");
+            if (!DateTime.TryParse(raw, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var last))
+                return true;
+            var age = DateTime.UtcNow - last.ToUniversalTime();
+            return age >= MinInterval || age < TimeSpan.FromHours(-1);
+        }
+
+        private static string Clean(string? s, int max = 40)
+        {
+            s = (s ?? "").Trim();
+            return s.Length <= max ? s : s.Substring(0, max);
+        }
+
+        private static string CurrentLyricColor(string fallback)
+        {
+            try
+            {
+                var app = Application.Current;
+                if (app == null) return fallback;
+                return app.Dispatcher.Invoke(() =>
+                {
+                    var window = app.Windows.OfType<MainWindow>().FirstOrDefault();
+                    if (window?.CmbLyricColor?.SelectedItem is ComboBoxItem option)
+                    {
+                        if (option.Tag is string tag && !string.IsNullOrWhiteSpace(tag)) return Clean(tag);
+                        if (option.Content is string label && !string.IsNullOrWhiteSpace(label)) return Clean(label);
+                    }
+                    if (window?.LblPreviewCurrent?.Foreground is SolidColorBrush brush)
+                        return brush.Color.ToString();
+                    return fallback;
+                });
+            }
+            catch { return fallback; }
+        }
+
+        public static async Task SendSnapshotIfDueAsync(TelemetrySnapshot snap)
+        {
+#if DEBUG
+            System.Diagnostics.Debug.WriteLine($"[Telemetry] check: configured={IsConfigured}, host={Host}, enabled={Enabled}, welcome={WelcomeShown}, due={IsDue()}");
+#endif
+            if (!IsConfigured || Host == null) return;
+            if (!Enabled || !WelcomeShown) return;
+            if (!IsDue()) return;
+            if (Interlocked.Exchange(ref _sending, 1) == 1) return;
+
+            try
+            {
+                long epoch = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                string sessionId = (epoch * 100_000_000L + Random.Shared.NextInt64(0, 100_000_000L))
+                    .ToString(CultureInfo.InvariantCulture);
+
+                var evt = new
+                {
+                    timestamp = DateTime.UtcNow.ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture),
+                    sessionId,
+                    eventName = EventName,
+                    systemProps = new
+                    {
+                        locale = CultureInfo.CurrentUICulture.Name,
+                        osName = "Windows",
+#if DEBUG
+                        isDebug = true,
+#else
+                        isDebug = false,
+#endif
+                        appVersion = AppVersion,
+                        sdkVersion = SdkVersion
+                    },
+                    props = new Dictionary<string, object>
+                    {
+                        ["theme"] = Clean(snap.Theme),
+                        ["lyric_font"] = Clean(snap.LyricFont),
+                        ["lyric_color"] = Clean(CurrentLyricColor(snap.LyricColor)),
+                        ["ui_language"] = Clean(snap.UiLanguage, 8),
+                        ["lock_shortcut_set"] = snap.LockShortcut == null ? "no" : "yes",
+                        ["lock_shortcut"] = snap.LockShortcut == null ? "none" : Clean(snap.LockShortcut)
+                    }
+                };
+
+                var json = JsonSerializer.Serialize(new[] { evt });
+                using var req = new HttpRequestMessage(HttpMethod.Post, Host + "/api/v0/events")
+                {
+                    Content = new StringContent(json, Encoding.UTF8, "application/json")
+                };
+                req.Headers.Add("App-Key", AppKey);
+
+                using var res = await Http.SendAsync(req).ConfigureAwait(false);
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine("[Telemetry] " + (int)res.StatusCode + " " + json);
+#endif
+                if (res.IsSuccessStatusCode)
+                    AppSettings.SetString(KeyLastSent, DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture));
+            }
+            catch (Exception ex)
+            {
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine("[Telemetry] erro: " + ex.Message);
+#endif
+            }
+            finally { Volatile.Write(ref _sending, 0); }
+        }
+    }
+}
