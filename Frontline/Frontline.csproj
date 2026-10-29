@@ -17,10 +17,16 @@
     <None Update="assets\black-button.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="assets\bmc-logo.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="assets\double_arrow_left.svg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="assets\double_arrow_right.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="assets\feedback.svg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <None Update="assets\fonts\Anton_400Regular.ttf">
@@ -263,6 +269,9 @@
     <None Update="assets\logo.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+    <None Update="assets\rate.svg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="assets\text_down.svg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
@@ -277,6 +286,12 @@
     <Content Include="FrontlineServer\**">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Remove="Themes\Seasonal\Santa\**" />
+    <EmbeddedResource Remove="Themes\Seasonal\Santa\**" />
+    <None Remove="Themes\Seasonal\Santa\**" />
+    <Page Remove="Themes\Seasonal\Santa\**" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="FrontlineServer\" />
