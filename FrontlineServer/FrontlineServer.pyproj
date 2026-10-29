@@ -11,7 +11,7 @@
     <OutputPath>.</OutputPath>
     <Name>FrontlineServer</Name>
     <RootNamespace>FrontlineServer</RootNamespace>
-    <InterpreterId>MSBuild|.venv|$(MSBuildProjectFullPath)</InterpreterId>
+    <InterpreterId>MSBuild|env|$(MSBuildProjectFullPath)</InterpreterId>
     <SuppressPackageInstallationPrompt>True</SuppressPackageInstallationPrompt>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
@@ -45,10 +45,10 @@
     <Content Include="requirements.txt" />
   </ItemGroup>
   <ItemGroup>
-    <Interpreter Include=".venv\">
-      <Id>.venv</Id>
+    <Interpreter Include="env\">
+      <Id>env</Id>
       <Version>3.13</Version>
-      <Description>.venv (Python 3.13)</Description>
+      <Description>env (Python 3.13)</Description>
       <InterpreterPath>Scripts\python.exe</InterpreterPath>
       <WindowsInterpreterPath>Scripts\pythonw.exe</WindowsInterpreterPath>
       <PathEnvironmentVariable>PYTHONPATH</PathEnvironmentVariable>
