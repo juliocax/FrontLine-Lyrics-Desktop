@@ -33,6 +33,7 @@ https://github.com/user-attachments/assets/0a6f3278-49b2-43f0-9004-6709d65f74b9
 - [Installation](#installation)
 - [Usage Guide](#usage-guide)
 - [Screenshots](#screenshots)
+- [Project Structure](#project-structure)
 - [Building From Source](#building-from-source)
 - [Running Tests](#running-tests)
 - [Contributing](#contributing)
@@ -59,7 +60,8 @@ It works two ways, it can automatically follow the track info exposed by Windows
 - **Setlist.fm integration**: add your own [setlist.fm](https://www.setlist.fm/settings/apps) API key to search for a setlist by artist/band name (with optional country, venue, and year filters), pick from the top 10 matches, and drop it straight into Festival Mode as an editable playlist.
 - **Playlist management**: Festival Mode playlists are saved locally, create as many as you want, edit them by adding or removing songs, and delete the ones you no longer need.
 - **Manual sync adjustment everywhere**: the same next/previous line arrows used in Festival Mode are now also available for any track recognized via Shazam, letting you nudge the sync if it drifts. Not needed for tracks detected through the Windows Media Session API, since those already report accurate playback position.
-- **Customizable overlay**: adjustable font size and a compact/expanded layout.
+- **Customizable overlay**: adjustable lyric font size and a compact/expanded layout. Lyric-size adjustments are designed not to enlarge the main menu or support buttons.
+- **Automatic seasonal themes**: Halloween (October 15–November 1), Christmas (November 2–December 25), and New Year (December 26–January 2), where enabled for the user's region. The default theme is used outside these periods.
 - **Multi-language UI**: interface available in English, Portuguese, Spanish, and Bahasa Indonesia.
 - **Optional anonymous usage statistics**: a welcome screen at first launch explains what is sent (theme, lyric font, lyric color, app language and lock shortcut, never songs or lyrics), and it can be turned off at any time in Settings. See [PRIVACY.md](./PRIVACY.md).
 
@@ -100,7 +102,7 @@ The easiest way to install FrontLine Lyrics is through the Microsoft Store:
 
 1. Launch FrontLine Lyrics, the overlay appears on top of your other windows.
 2. Play music in any app (Spotify, browser, local player, etc.).
-3. Click **LISTEN** to start automatic recognition/follow, or toggle **AUTO** to keep it continuously syncing as tracks change.
+3. Wait until **LISTEN** is ready (a loading animation indicates that the recognition connection is still starting), then click **LISTEN** to recognize the song. Enable **AUTO** for continuous following as tracks change.
 4. Use **SEARCH** to look up lyrics by artist and song name directly.
 5. Use the translation toggles (Orig / Rom / EN / ES / FR / PT) to switch how the lyrics are displayed.
 6. Adjust font size, drag the window anywhere, and use the previous/next track buttons to control playback without leaving the overlay.
@@ -123,6 +125,96 @@ The easiest way to install FrontLine Lyrics is through the Microsoft Store:
     <td align="center"><img src="docs/img/imagem2.png" alt="Manual sync adjustment" width="320"/><br/><b>Manual sync</b><br/>Nudging the lyrics into sync line by line</td>
   </tr>
 </table>
+
+## Project Structure
+
+The following paths are relative to the repository root. This is a **curated map of the important folders and files**, based on the repository inventory; generated assets and every individual font/file are not listed. Windows uses `\` for path separators, while links here use `/`.
+
+```text
+Frontline.sln                     Visual Studio solution
+Frontline/                        .NET 8 WPF desktop application
+  Frontline.csproj                Project/build and version metadata
+  Directory.Build.props          Additional MSBuild configuration
+  App.xaml[.cs]                   App entry point and shared resources
+  Views/
+    MainWindow.xaml[.cs]          Main overlay, player, search, and settings UI
+    Mainwindow.appearance.cs      Font/appearance and seasonal UI coordination
+    MainWindow.telemetry.cs       Integration between UI and telemetry
+    WelcomeWindow.xaml[.cs]      First-run introduction and telemetry choice
+    ReleaseNotesWindow.xaml[.cs]  In-app version notes
+    LockButtonWindow.xaml[.cs]    Lock/unlock helper
+  Themes/
+    MainWindow_UserThemes.cs      Loads theme artwork into UI slots
+    UserThemes.cs                 User-selectable theme definitions
+    SvgGlyph.cs                   Theme glyph support
+    Seasonal/
+      Seasonaltheme.cs            Dates and regional eligibility of themes
+      Halloween*View.xaml[.cs]   Halloween visual layers/ground
+      Christmas*View.xaml[.cs]   Christmas visual layers/ground
+      NewYear*View.xaml[.cs]     New Year visual layers/ground
+      ChristmasResources.xaml    Christmas resources
+      SantaDockResources.xaml    Christmas dock styles
+      SantaLogoAdorn.xaml[.cs]   Christmas logo decoration
+    backstage/                    Backstage theme layers
+    goldenedition/                Golden Edition theme layers
+    mainstage/                    Main Stage theme layers
+  Styles/                          Shared button, toggle, slider, and UI styles
+    Buttons.xaml                  Button appearance
+    SeasonalResources.xaml        Seasonal styling resources
+  assets/                          Images, icons, SVG files, and bundled fonts
+    fonts/                        Font files and licenses
+  Settings/AppSettings.cs         Local setting persistence
+  Telemetry/
+    Telemetry.cs                   Optional Aptabase event reporting
+    TelemetryKey.cs               Telemetry key interface
+    TelemetryKey.Local.cs         Local key implementation (do not publish secrets)
+  Data/                            Search history and festival playlist storage
+  Services/                        Festival mode, setlist.fm client, crash reporting
+  Lyriccolorpresets.cs            Lyric color presets
+FrontlineServer/                   Python recognition/audio engine
+  FrontlineServer.py              Backend entry point
+  requirements.txt                Runtime Python requirements
+  FrontlineServer.spec            PyInstaller specification
+  engine/
+    audio_capture.py              System-audio capture
+    media_session.py              Windows media sessions
+    recognition.py                Music identification
+    lyrics.py                     Lyrics retrieval/parsing
+    translation.py                Translations
+    ws_server.py                  Local WebSocket protocol
+    music_manager.py              Music state orchestration
+    festival_ws.py                Festival WebSocket operations
+    setlistfm_client.py           Setlist.fm integration
+  tests/                           Python test suite and configuration
+  build/, dist/                    Generated packaging output
+.github/workflows/python-tests.yml  Automated backend tests
+docs/                              Website source pages, CSS, JS, illustrations
+  css/styles.css                  Website styling
+  js/i18n.js, js/site.js          Localization and site behavior
+  img/                            Website screenshots and illustrations
+  _site/, .jekyll-cache/          Generated site/cache content
+README.md                          This guide
+PRIVACY.md                         Privacy statement
+CONTRIBUTING.md                    Contribution guidelines
+LICENSE.txt                        MIT license text
+```
+
+### Where to make common changes
+
+| Goal | Start here |
+|---|---|
+| Edit the main overlay and button placement | `Frontline/Views/MainWindow.xaml` and `MainWindow.xaml.cs` |
+| Change lyric font, scaling or style behavior | `Frontline/Views/Mainwindow.appearance.cs`, `MainWindow.xaml.cs`, and the styles in `Frontline/Styles/` |
+| Change seasonal dates or country rules | `Frontline/Themes/Seasonal/Seasonaltheme.cs` |
+| Redraw Halloween, Christmas, or New Year artwork | `Frontline/Themes/Seasonal/*View.xaml` |
+| Register selectable themes | `Frontline/Themes/UserThemes.cs` and `MainWindow_UserThemes.cs` |
+| Edit the first-run and release-notes windows | `Frontline/Views/WelcomeWindow.*` and `ReleaseNotesWindow.*` |
+| Review anonymous telemetry | `Frontline/Telemetry/Telemetry.cs`, `Frontline/Views/MainWindow.telemetry.cs`, `PRIVACY.md` |
+| Change audio recognition and lyric fetching | `FrontlineServer/engine/recognition.py`, `lyrics.py`, `audio_capture.py` |
+| Edit the public website | `docs/` (source files, not `_site/` or `.jekyll-cache/`) |
+| Change the app version | `Frontline/Frontline.csproj` (check MSBuild overrides such as `Directory.Build.props`) |
+
+**Security:** never commit real telemetry keys or other secrets from local-only files. The folder inventory is a snapshot; check the working tree for newer files.
 
 ## Building From Source
 
@@ -190,10 +282,3 @@ If FrontLine Lyrics is useful to you, consider [buying me a coffee](https://www.
 ## License
 
 See [LICENSE](LICENSE.txt) for more information.
-
-
-## Release notes / Novidades
-
-The app displays a welcome screen on the first run. On the first launch after an app version change, it displays a similarly styled release-notes window, and you can reopen it in **Settings → General → View release notes** or by clicking the version label. Each version is identified by the assembly version (`Assembly.GetName().Version`). Add the notes in `ReleaseNotesWindow.xaml.cs` under `Notes` for each new version; example entries for 1.4.3 are provided and should be reviewed before release. If no entry exists for the installed version, a neutral fallback message is displayed.
-
-Optional Aptabase `settings_snapshot` reports now include `lyric_color`, in addition to the other settings. The telemetry toggle, 24-hour limit, and anonymous reporting behavior remain unchanged. Update `WelcomeWindow.xaml.cs` and PRIVACY.md as part of release review.

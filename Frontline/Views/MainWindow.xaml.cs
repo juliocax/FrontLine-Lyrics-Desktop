@@ -1111,10 +1111,7 @@ namespace FrontLineOverlay
             BtnFestivalBig.ToolTip = t["TipFestival"];
             BtnHelpHome.ToolTip = t["TipHelp"];
             BtnReleaseNotes.ToolTip = t["ReleaseNotesTooltip"];
-            if (BtnSettingsReleaseNotes != null)
-                BtnSettingsReleaseNotes.Content = t["ReleaseNotesButton"];
-            if (LblReleaseNotesTitle != null)
-                LblReleaseNotesTitle.Text = t["ReleaseNotesHeading"];
+
             BtnOverlayBack.ToolTip = t["TipBack"];
             BtnMenu.ToolTip = t["TipSettings"];
             BtnMinimize.ToolTip = t["TipMinimize"];

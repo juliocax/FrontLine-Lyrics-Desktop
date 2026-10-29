@@ -987,10 +987,6 @@
                   Click="ChkTelemetry_Click" VerticalAlignment="Center"/>
                             </Grid>
                             <TextBlock x:Name="LblTelemetryHint" Foreground="#66FFFFFF" FontSize="9" TextWrapping="Wrap" Margin="0,6,0,0"/>
-                            <Border Height="1" Background="#22FFFFFF" Margin="0,14,0,12"/>
-                            <TextBlock x:Name="LblReleaseNotesTitle" Text="WHAT'S NEW" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,8"/>
-                            <Button x:Name="BtnSettingsReleaseNotes" Content="VIEW RELEASE NOTES" Style="{StaticResource SquareGlassButton}"
-                                    HorizontalAlignment="Left" Padding="12,7" FontSize="10" Click="BtnReleaseNotes_Click"/>
                     </StackPanel>
                     </StackPanel>
                 </ScrollViewer>
