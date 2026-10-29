@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Frontline.Themes.Seasonal;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -344,6 +345,7 @@ namespace FrontLineOverlay
             {
                 _appliedTheme = theme;
                 _appliedUserTheme = user;
+                _appliedAdornTheme = AdornThemeFor(theme, user);
 
                 if (HalloweenLayer != null)
                     HalloweenLayer.Visibility = theme == SeasonalTheme.Halloween ? Visibility.Visible : Visibility.Collapsed;
@@ -384,8 +386,11 @@ namespace FrontLineOverlay
         {
             var theme = _appliedTheme ?? SeasonalTheme.None;
             bool lyricsOnly = isGhostMode || isResizing;
-            var user = ActiveUserTheme(theme);          
-            EnsureUserThemeContent(user);
+            var user = ActiveUserTheme(theme);
+            var adorn = AdornThemeFor(theme, user);
+            _appliedAdornTheme = adorn;
+            EnsureUserThemeContent(user, adorn);
+            RefreshUserThemeSlots();
             bool themed = (theme != SeasonalTheme.None || user != null) && !lyricsOnly;
 
             SetLayer(SeasonalLayer, themed);
@@ -615,6 +620,7 @@ namespace FrontLineOverlay
                 if (!File.Exists(path))
                 {
                     AlbumCoverImg.Source = null;
+                    SetLogoAdornShown(false);
                     return;
                 }
 
@@ -630,6 +636,10 @@ namespace FrontLineOverlay
                         ? baseLogo
                         : TintBitmap(baseLogo, themeColor);
                 }
+
+                // Mostra a decoração do tema apenas quando a logo padrão está presente.
+                if (AlbumCoverImg.Source is BitmapSource logo)
+                    UpdateLogoAdornSpace(logo.PixelWidth, logo.PixelHeight);
             }
             catch (Exception ex) { CrashReporter.Log(ex, "ApplyMenuLogo"); }
         }

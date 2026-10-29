@@ -72,6 +72,8 @@ namespace FrontLineOverlay
 
         private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v1.5.0.html";
         private const string FeedbackFormUrl = "https://forms.gle/bwV1xeKncmGPATDaA";
+        // Product ID taken from the Microsoft Store link already present in README.md (9P6LNJCL8ZCC).
+        private const string StoreReviewUrl = "ms-windows-store://review/?ProductId=9P6LNJCL8ZCC";
 
         [StructLayout(LayoutKind.Sequential)] public struct Win32Point { public int X; public int Y; }
         [StructLayout(LayoutKind.Sequential)] public struct RECT { public int Left; public int Top; public int Right; public int Bottom; }
@@ -161,7 +163,9 @@ namespace FrontLineOverlay
                 { "MockPrevious", "♪ this is a preview line ♪" }, { "MockCurrent", "This is how your lyrics will look" },
                 { "MockNext", "♪ next line preview ♪" }, { "MockCurrentOriginal", "(original) this is a preview line" },
                 { "DonateTip", "Leave an optional tip" }, { "ReleaseNotesButton", "VIEW RELEASE NOTES" }, { "ReleaseNotesHeading", "WHAT'S NEW" }, { "ReleaseNotesTooltip", "See what's new in this version" },
-                { "FeedbackLink", "Share your feedback (3-4 min)" },
+                { "FeedbackLink", "Share your feedback" },
+                { "SupportPrompt", "Enjoying the app?" }, { "SupportDonate", "Support" }, { "SupportRate", "Rate" }, { "SupportFeedback", "Feedback" },
+                { "TipSupportDonate", "Leave an optional tip to support development." }, { "TipSupportRate", "Rate FrontLine Lyrics on the Store." }, { "TipSupportFeedback", "Report problems or suggest improvements." },
                 { "PrevTrack", "Previous track" }, { "NextTrack", "Next track" },
                 { "SearchHistory", "SEARCH HISTORY" }, { "HistoryArtist", "Artist" },
                 { "HistorySong", "Song" }, { "HistoryDate", "Date" },
@@ -250,7 +254,9 @@ namespace FrontLineOverlay
                 { "MockPrevious", "♪ esta é uma linha de exemplo ♪" }, { "MockCurrent", "É assim que sua letra vai aparecer" },
                 { "MockNext", "♪ próxima linha de exemplo ♪" }, { "MockCurrentOriginal", "(original) esta é uma linha de exemplo" },
                 { "DonateTip", "Deixe uma gorjeta opcional" }, { "ReleaseNotesButton", "VER NOVIDADES DA VERSÃO" }, { "ReleaseNotesHeading", "NOVIDADES" }, { "ReleaseNotesTooltip", "Veja as novidades desta versão" },
-                { "FeedbackLink", "Dê sua opinião (3-4 min)" },
+                { "FeedbackLink", "Deixe seu feedback" },
+                { "SupportPrompt", "Gostando do app?" }, { "SupportDonate", "Apoie" }, { "SupportRate", "Avalie" }, { "SupportFeedback", "Feedback" },
+                { "TipSupportDonate", "Deixe uma gorjeta opcional para apoiar o desenvolvimento." }, { "TipSupportRate", "Avalie o Frontline Lyrics na loja." }, { "TipSupportFeedback", "Relate problemas ou sugira melhorias." },
                 { "PrevTrack", "Faixa anterior" }, { "NextTrack", "Próxima faixa" },
                 { "SearchHistory", "HISTÓRICO DE BUSCA" }, { "HistoryArtist", "Artista" },
                 { "HistorySong", "Música" }, { "HistoryDate", "Data" },
@@ -339,7 +345,9 @@ namespace FrontLineOverlay
                 { "MockPrevious", "♪ esta es una línea de ejemplo ♪" }, { "MockCurrent", "Así se verá tu letra" },
                 { "MockNext", "♪ próxima línea de ejemplo ♪" }, { "MockCurrentOriginal", "(original) esta es una línea de ejemplo" },
                 { "DonateTip", "Deja una propina opcional" }, { "ReleaseNotesButton", "VER NOTAS DE LA VERSIÓN" }, { "ReleaseNotesHeading", "NOVEDADES" }, { "ReleaseNotesTooltip", "Ver las novedades de esta versión" },
-                { "FeedbackLink", "Danos tu opinión (3-4 min)" },
+                { "FeedbackLink", "Deja tus comentarios" },
+                { "SupportPrompt", "¿Te gusta la app?" }, { "SupportDonate", "Apoya" }, { "SupportRate", "Valora" }, { "SupportFeedback", "Feedback" },
+                { "TipSupportDonate", "Deja una propina opcional para apoyar el desarrollo." }, { "TipSupportRate", "Valora FrontLine Lyrics en la tienda." }, { "TipSupportFeedback", "Informa de problemas o sugiere mejoras." },
                 { "PrevTrack", "Pista anterior" }, { "NextTrack", "Pista siguiente" },
                 { "SearchHistory", "HISTORIAL DE BÚSQUEDA" }, { "HistoryArtist", "Artista" },
                 { "HistorySong", "Canción" }, { "HistoryDate", "Fecha" },
@@ -428,7 +436,9 @@ namespace FrontLineOverlay
                 { "MockPrevious", "♪ ini baris contoh ♪" }, { "MockCurrent", "Lirik Anda akan tampil seperti ini" },
                 { "MockNext", "♪ baris berikutnya ♪" }, { "MockCurrentOriginal", "(asli) ini baris contoh" },
                 { "DonateTip", "Tinggalkan tip opsional" }, { "ReleaseNotesButton", "LIHAT CATATAN RILIS" }, { "ReleaseNotesHeading", "YANG BARU" }, { "ReleaseNotesTooltip", "Lihat yang baru di versi ini" },
-                { "FeedbackLink", "Beri masukan (3-4 menit)" },
+                { "FeedbackLink", "Berikan tanggapan Anda" },
+                { "SupportPrompt", "Suka aplikasinya?" }, { "SupportDonate", "Dukung" }, { "SupportRate", "Nilai" }, { "SupportFeedback", "Masukan" },
+                { "TipSupportDonate", "Tinggalkan tip opsional untuk mendukung pengembangan." }, { "TipSupportRate", "Beri nilai FrontLine Lyrics di toko." }, { "TipSupportFeedback", "Laporkan masalah atau sarankan perbaikan." },
                 { "PrevTrack", "Lagu sebelumnya" }, { "NextTrack", "Lagu berikutnya" },
                 { "SearchHistory", "RIWAYAT PENCARIAN" }, { "HistoryArtist", "Artis" },
                 { "HistorySong", "Lagu" }, { "HistoryDate", "Tanggal" },
@@ -629,12 +639,37 @@ namespace FrontLineOverlay
             if (FestivalContentBorder != null)
                 FestivalContentBorder.LayoutTransform = new ScaleTransform(scale, scale);
 
-            if (DonateBlock != null)
+            if (SupportBar != null)
             {
-                DonateBlock.LayoutTransform = Math.Abs(scale - 1.0) < 0.001
+                SupportBar.LayoutTransform = Math.Abs(scale - 1.0) < 0.001
                     ? Transform.Identity
                     : new ScaleTransform(1.0 / scale, 1.0 / scale);
             }
+            UpdateSupportBarLayout();
+        }
+
+        // Responsive behaviour of the bottom-right "Enjoying the app?" bar.
+        // Wide window: prompt + divider + icon/text buttons. Medium: buttons only. Narrow: icons only.
+        private void UpdateSupportBarLayout()
+        {
+            if (SupportBar == null || TxtSupportPrompt == null || BtnDonate == null || BtnRate == null || BtnFeedback == null) return;
+            if (!uiStrings.TryGetValue(currentAppLanguage, out var t)) return;
+
+            double scale = SldFontSize != null ? SldFontSize.Value / 26.0 : 1.0;
+            double w = ActualWidth > 0 ? ActualWidth / Math.Max(1.0, scale) : Width;
+
+            bool compact = w < 500;
+            bool showPrompt = w >= 640;
+
+            TxtSupportPrompt.Text = t["SupportPrompt"];
+            TxtSupportPrompt.Visibility = showPrompt ? Visibility.Visible : Visibility.Collapsed;
+            SupportDivider.Visibility = showPrompt ? Visibility.Visible : Visibility.Collapsed;
+
+            BtnDonate.Content = compact ? "" : t["SupportDonate"];
+            BtnRate.Content = compact ? "" : t["SupportRate"];
+            BtnFeedback.Content = compact ? "" : t["SupportFeedback"];
+            var pad = compact ? new Thickness(10, 0, 10, 0) : new Thickness(12, 0, 12, 0);
+            BtnDonate.Padding = BtnRate.Padding = BtnFeedback.Padding = pad;
         }
 
         private void BtnResetFont_Click(object sender, RoutedEventArgs e)
@@ -799,7 +834,7 @@ namespace FrontLineOverlay
             this.StateChanged += MainWindow_StateChanged;
             Loaded += MainWindow_Loaded;
             LocationChanged += (_, _) => ScheduleSave();
-            SizeChanged += (_, _) => ScheduleSave();
+            SizeChanged += (_, _) => { ScheduleSave(); UpdateSupportBarLayout(); };
             _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); PersistSettings(); };
 
             RestoreFontAndAuto();
@@ -824,30 +859,6 @@ namespace FrontLineOverlay
             RestoreWindowPlacement();
 
             LoadAppIcon();
-
-            try
-            {
-                string donateBtnPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "black-button.png");
-                BitmapImage? donateBmp = null;
-
-                if (File.Exists(donateBtnPath))
-                {
-                    donateBmp = new BitmapImage();
-                    donateBmp.BeginInit();
-                    donateBmp.UriSource = new Uri(donateBtnPath, UriKind.Absolute);
-                    donateBmp.CacheOption = BitmapCacheOption.OnLoad;
-                    donateBmp.EndInit();
-                    if (donateBmp.CanFreeze) donateBmp.Freeze();
-                }
-                else
-                {
-                    try { donateBmp = new BitmapImage(new Uri("pack://application:,,,/assets/black-button.png")); }
-                    catch { donateBmp = null; }
-                }
-
-                if (donateBmp != null) ImgDonateButton.Source = donateBmp;
-            }
-            catch (Exception ex) { CrashReporter.Log(ex, "LoadDonate"); }
 
             LoadSkipIcons();
             LoadCoverArt("");
@@ -1021,8 +1032,7 @@ namespace FrontLineOverlay
             if (LblAppLangTitle != null) LblAppLangTitle.Text = t["UILang"];
             LblKeepOriginal.Text = t["KeepOriginal"];
             LblPreviewTag.Text = t["PreviewLabel"];
-            TxtDonateLabel.Text = t["DonateTip"];
-            BtnFeedback.Content = t["FeedbackLink"];
+            UpdateSupportBarLayout();
             LblSearchHistoryTitle.Text = t["SearchHistory"];
             LblSearchHistoryEmpty.Text = t["HistoryEmpty"];
             LblFontSizeTitle.Text = t["FontSizeTitle"];
@@ -1117,7 +1127,9 @@ namespace FrontLineOverlay
             BtnFestivalStart.ToolTip = _festivalModeActive ? t["TipFestivalDone"] : t["TipFestivalStart"];
             BtnFestivalAddSong.ToolTip = t["TipFestivalAdd"];
             BtnManualSyncToggle.ToolTip = t["TipManualSync"];
-            BtnDonate.ToolTip = t["DonateTip"];
+            BtnDonate.ToolTip = t["TipSupportDonate"];
+            BtnRate.ToolTip = t["TipSupportRate"];
+            BtnFeedback.ToolTip = t["TipSupportFeedback"];
             BtnLockOverlay.ToolTip = t["TipLock"];
             _lockWin?.SetTip(t["TipUnlock"]);
         }
@@ -1532,6 +1544,11 @@ namespace FrontLineOverlay
                 ApplySkipGlyph(IcoSearchSide, LoadSkipIcon("icon_search"));
                 ApplySkipGlyph(IcoFestivalSearch, LoadSkipIcon("icon_search"));
 
+                // Support bar icons (assets/bmc-logo.svg, rate.svg, feedback.svg) — used as alpha masks by SupportPillButton.
+                BtnDonate.Tag = LoadSkipIcon("bmc-logo");
+                BtnRate.Tag = LoadSkipIcon("rate");
+                BtnFeedback.Tag = LoadSkipIcon("feedback");
+
                 _icoLock = LoadSkipIcon("lock");
                 _icoLockOpen = LoadSkipIcon("lock_open");
                 ApplySkipGlyph(ImgLockIcon, isLocked ? _icoLock : _icoLockOpen);
@@ -1735,6 +1752,7 @@ namespace FrontLineOverlay
                 }
 
                 AlbumCoverImg.Source = DecodeBitmap(new Uri(url, UriKind.Absolute));
+                SetLogoAdornShown(false);
             }
             catch (Exception ex)
             {
@@ -1942,6 +1960,19 @@ namespace FrontLineOverlay
             catch (Exception ex)
             {
                 CrashReporter.Log(ex, "Donate");
+                AlertDark("Não foi possível abrir o link: " + ex.Message);
+            }
+        }
+
+        private void BtnRate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(StoreReviewUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                CrashReporter.Log(ex, "RateApp");
                 AlertDark("Não foi possível abrir o link: " + ex.Message);
             }
         }

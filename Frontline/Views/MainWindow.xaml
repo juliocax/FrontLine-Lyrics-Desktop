@@ -18,6 +18,68 @@
                 <ResourceDictionary Source="pack://application:,,,/Styles/Sliders.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/Styles/ListHeaders.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+
+            <Style x:Key="SupportPillButton" TargetType="Button">
+                <Setter Property="Height" Value="36"/>
+                <Setter Property="Padding" Value="14,0"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="FontSize" Value="13"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Foreground" Value="#FFFFFF"/>
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Grid>
+                                <Border x:Name="Bd" CornerRadius="18" 
+                                        Background="{TemplateBinding Background}" 
+                                        BorderThickness="0"/>
+
+                                <Border x:Name="HoverOverlay" CornerRadius="18" Background="White" Opacity="0" IsHitTestVisible="False"/>
+
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="{TemplateBinding Padding}">
+                                    <Rectangle x:Name="Ico" Width="16" Height="16" VerticalAlignment="Center" Fill="{TemplateBinding Foreground}">
+                                        <Rectangle.OpacityMask>
+                                            <ImageBrush ImageSource="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}}" Stretch="Uniform"/>
+                                        </Rectangle.OpacityMask>
+                                    </Rectangle>
+                                    <TextBlock x:Name="Lbl" Text="{TemplateBinding Content}" 
+                                               FontSize="{TemplateBinding FontSize}"
+                                               Foreground="{TemplateBinding Foreground}"
+                                               Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <DataTrigger Binding="{Binding Content, RelativeSource={RelativeSource TemplatedParent}}" Value="">
+                                    <Setter TargetName="Lbl" Property="Visibility" Value="Collapsed"/>
+                                </DataTrigger>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Trigger.EnterActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0.12" Duration="0:0:0.15"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.EnterActions>
+                                    <Trigger.ExitActions>
+                                        <BeginStoryboard>
+                                            <Storyboard>
+                                                <DoubleAnimation Storyboard.TargetName="HoverOverlay" Storyboard.TargetProperty="Opacity" To="0" Duration="0:0:0.15"/>
+                                            </Storyboard>
+                                        </BeginStoryboard>
+                                    </Trigger.ExitActions>
+                                </Trigger>
+                                <Trigger Property="IsPressed" Value="True">
+                                    <Setter TargetName="Bd" Property="Opacity" Value="0.7"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
         </ResourceDictionary>
     </Window.Resources>
 
@@ -46,46 +108,17 @@
                     <Image x:Name="AlbumCoverImg" Grid.Row="0" Stretch="Uniform" Margin="0,0,0,12"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            RenderOptions.BitmapScalingMode="HighQuality"/>
+                    <Viewbox x:Name="LogoAdornHost" Grid.Row="0" Panel.ZIndex="5" Margin="0,0,0,12" Stretch="Uniform"
+                        HorizontalAlignment="Center" VerticalAlignment="Center"
+                        IsHitTestVisible="False" Visibility="Collapsed">           
+                        <Grid x:Name="LogoAdornSpace" Width="1000" Height="1000">
+                            <ContentControl x:Name="UserThemeLogoAdorn" IsHitTestVisible="False"/>
+                        </Grid>
+                    </Viewbox>
                     <StackPanel Grid.Row="1" VerticalAlignment="Bottom">
                         <TextBlock x:Name="LblSongTitle" Foreground="#E0E0E0" FontSize="13" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,2" Visibility="Collapsed"/>
                         <TextBlock x:Name="LblArtistName" Text="Ready." Foreground="#888888" FontSize="12" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,10"/>
                         <TextBlock x:Name="LblTranslating" Text="Translating..." Foreground="#A955FF" FontSize="9" FontWeight="SemiBold" Margin="0,0,0,0" HorizontalAlignment="Center" Visibility="Collapsed"/>
-
-                        <StackPanel x:Name="DonateBlock"
-                                    HorizontalAlignment="Center"
-                                    Margin="0,4,0,0"
-                                    Visibility="{Binding Visibility, ElementName=HomeControls}">
-                            <Button x:Name="BtnDonate"
-                                    Style="{StaticResource ImageOverlayButtonStyle}"
-                                    HorizontalAlignment="Center"
-                                    Click="BtnDonate_Click">
-                                <StackPanel HorizontalAlignment="Center" Width="150">
-                                    <TextBlock x:Name="TxtDonateLabel" Foreground="#CCCCCC" FontSize="11" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,6"/>
-                                    <Image x:Name="ImgDonateButton" Width="150" Height="40" Stretch="Uniform" HorizontalAlignment="Center"/>
-                                </StackPanel>
-                            </Button>
-                            <Button x:Name="BtnFeedback"
-                                    Margin="0,10,0,0"
-                                    HorizontalAlignment="Center"
-                                    Background="Transparent" BorderThickness="0" Cursor="Hand"
-                                    Click="BtnFeedback_Click">          
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <TextBlock x:Name="TxtFeedback"
-                                           Text="{TemplateBinding Content}"
-                                           Foreground="#66FFFFFF"
-                                           FontSize="10" FontWeight="SemiBold"
-                                           TextAlignment="Center" TextWrapping="Wrap"/>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="TxtFeedback" Property="Foreground" Value="#CCFFFFFF"/>
-                                                <Setter TargetName="TxtFeedback" Property="TextDecorations" Value="Underline"/>
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-                        </StackPanel>
                     </StackPanel>
                 </Grid>
 
@@ -240,8 +273,9 @@
                     </Grid>
 
                     <Viewbox x:Name="HomeControls" Grid.RowSpan="2" Visibility="Visible" StretchDirection="DownOnly" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,10,0">
-                        <Border Background="#FA0A0A0A" BorderBrush="#50FFFFFF" BorderThickness="1" CornerRadius="25" Padding="15,8">
-                            <StackPanel Orientation="Horizontal">
+                        <Border x:Name="HomeDock" Background="#FA0A0A0A" BorderBrush="#50FFFFFF" BorderThickness="1" CornerRadius="25" Padding="15,8">
+                            <Grid>
+                                <StackPanel Orientation="Horizontal">
                                 <Button x:Name="BtnReleaseNotes" Margin="5,0,16,0" Click="BtnReleaseNotes_Click" ToolTip="See what's new in this version"
                                         Background="Transparent" BorderThickness="0" Cursor="Hand" VerticalAlignment="Center">
                                     <Button.Template>
@@ -282,10 +316,25 @@
                                 <Button x:Name="BtnHelpHome" Style="{StaticResource GlassButton}" Width="36" Height="36" Padding="0" Click="BtnStartHelp_Click">
                                     <Rectangle x:Name="IcoHelpHome" Style="{StaticResource MenuGlyph}" Margin="0"/>
                                 </Button>
-                            </StackPanel>
+                                </StackPanel>
+                                <ContentControl x:Name="UserThemeDockAdorn" IsHitTestVisible="False" Visibility="Collapsed" Panel.ZIndex="5"/>
+                            </Grid>
                         </Border>
                     </Viewbox>
                 </Grid>
+
+                <StackPanel x:Name="SupportBar" Grid.ColumnSpan="2" Panel.ZIndex="50"
+                            Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                            Visibility="{Binding Visibility, ElementName=HomeControls}">
+                    <TextBlock x:Name="TxtSupportPrompt" Foreground="#FF6E6E6E" FontSize="12" VerticalAlignment="Center"/>
+                    <Rectangle x:Name="SupportDivider" Width="1" Height="16" Fill="#FF2C2C2C" Margin="10,0,10,0" VerticalAlignment="Center"/>
+
+                    <Button x:Name="BtnDonate" Style="{StaticResource SupportPillButton}" Margin="0,0,6,0" Click="BtnDonate_Click"/>
+
+                    <Button x:Name="BtnRate" Style="{StaticResource SupportPillButton}" Margin="0,0,6,0" Click="BtnRate_Click"/>
+
+                    <Button x:Name="BtnFeedback" Style="{StaticResource SupportPillButton}" Click="BtnFeedback_Click"/>
+                </StackPanel>
             </Grid>
         </Border>
 
