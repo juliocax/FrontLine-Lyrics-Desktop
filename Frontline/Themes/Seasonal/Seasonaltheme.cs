@@ -30,7 +30,7 @@ namespace Frontline.Themes.Seasonal
             "GB", "SE", "DE", "PT", "IT", "NL", "ES", "CH", "IE", "LT", "UA", "BE", "FR", "RU", "GR", "AT", "NO", "GE", "RO", "PL", "DK", "FI",
             "PH", "AU", "SG", "VN", "TW", "TH", "JP", "HK", "KR", "NZ", "PG",
             "NG", "ZW", "GH", "KE", "TG", "ZA", "MW", "TZ", "CI", "CM", "RE",
-          
+
             "ID", "MY", "IN", "MM", "CN", "LB", "NP", "LK", "LA", "KZ", "MN", "AE", "BA", "ET"
         };
 
@@ -46,15 +46,16 @@ namespace Frontline.Themes.Seasonal
             "EG", "MA", "PK", "IQ", "SA", "TR", "BD", "KW", "DZ", "JO"
         };
 
-        // dates
+        // Calendario sazonal: Halloween 15/10-01/11; Natal 02/11-25/12;
+        // Ano-Novo 26/12-02/01. Dia 26/12 pertence ao Ano-Novo.
         private static bool InHalloweenWindow(DateTime d) =>
             (d.Month == 10 && d.Day >= 15) || (d.Month == 11 && d.Day == 1);
 
         private static bool InChristmasWindow(DateTime d) =>
-            d.Month == 12 && d.Day >= 1 && d.Day <= 26;
+            (d.Month == 11 && d.Day >= 2) || (d.Month == 12 && d.Day <= 25);
 
         private static bool InNewYearWindow(DateTime d) =>
-            (d.Month == 12 && d.Day >= 30) || (d.Month == 1 && d.Day <= 3);
+            (d.Month == 12 && d.Day >= 26) || (d.Month == 1 && d.Day <= 2);
 
         // system region (Windows Settings > Time & language > Region
         [DllImport("kernel32.dll", CharSet = CharSet.Unicode, SetLastError = true)]

@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+using System.Windows.Interop;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -12,6 +14,34 @@ namespace FrontLineOverlay
 {
     public partial class WelcomeWindow : Window
     {
+        // Prefere cantos arredondados nativos no Windows 11, sem usar janela em camadas.
+        [DllImport("dwmapi.dll", PreserveSig = true)]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
+
+        private void EnableNativeRoundedCorners()
+        {
+            try
+            {
+                const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+                const int DWMWCP_ROUND = 2;
+                const int DWMWA_BORDER_COLOR = 34;
+                const int DWMWA_COLOR_NONE = unchecked((int)0xFFFFFFFE);
+                int preference = DWMWCP_ROUND;
+                var hwnd = new WindowInteropHelper(this).Handle;
+                if (hwnd != IntPtr.Zero)
+                    DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
+                        ref preference, sizeof(int));
+                if (hwnd != IntPtr.Zero)
+                {
+                    int borderColor = DWMWA_COLOR_NONE;
+                    DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR,
+                        ref borderColor, sizeof(int));
+                }
+            }
+            catch (DllNotFoundException) { }
+            catch (EntryPointNotFoundException) { }
+        }
+
         private const string SourceUrl = "https://github.com/juliocax/FrontLine-Lyrics-Desktop";
         private static readonly string[] Supported = { "en", "pt", "es", "id" };
 
@@ -139,6 +169,7 @@ namespace FrontLineOverlay
         public WelcomeWindow(string language, bool telemetryEnabled, string tutorialsUrl)
         {
             InitializeComponent();
+            SourceInitialized += (_, _) => EnableNativeRoundedCorners();
             _tutorialsUrl = tutorialsUrl;
             ToggleTelemetry.IsChecked = telemetryEnabled;
             MaxHeight = SystemParameters.WorkArea.Height - 20;

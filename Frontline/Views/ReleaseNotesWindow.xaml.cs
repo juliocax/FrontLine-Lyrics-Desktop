@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+using System.Windows.Interop;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -11,6 +13,34 @@ namespace FrontLineOverlay
 {
     public partial class ReleaseNotesWindow : Window
     {
+        // Prefere cantos arredondados nativos no Windows 11, sem usar janela em camadas.
+        [DllImport("dwmapi.dll", PreserveSig = true)]
+        private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
+
+        private void EnableNativeRoundedCorners()
+        {
+            try
+            {
+                const int DWMWA_WINDOW_CORNER_PREFERENCE = 33;
+                const int DWMWCP_ROUND = 2;
+                const int DWMWA_BORDER_COLOR = 34;
+                const int DWMWA_COLOR_NONE = unchecked((int)0xFFFFFFFE);
+                int preference = DWMWCP_ROUND;
+                var hwnd = new WindowInteropHelper(this).Handle;
+                if (hwnd != IntPtr.Zero)
+                    DwmSetWindowAttribute(hwnd, DWMWA_WINDOW_CORNER_PREFERENCE,
+                        ref preference, sizeof(int));
+                if (hwnd != IntPtr.Zero)
+                {
+                    int borderColor = DWMWA_COLOR_NONE;
+                    DwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR,
+                        ref borderColor, sizeof(int));
+                }
+            }
+            catch (DllNotFoundException) { }
+            catch (EntryPointNotFoundException) { }
+        }
+
         // Usa a mesma versão enviada pela telemetria. Altere o número de versão
         // no projeto a cada release; a chave salva permite exibir uma vez por versão.
         public static string CurrentVersion =>
@@ -42,6 +72,7 @@ namespace FrontLineOverlay
         public ReleaseNotesWindow(string language)
         {
             InitializeComponent();
+            SourceInitialized += (_, _) => EnableNativeRoundedCorners();
             MaxHeight = SystemParameters.WorkArea.Height - 20;
             _language = Ui.ContainsKey(language) ? language : "en";
             ApplyLanguage(_language);
