@@ -365,3 +365,9 @@ FodyWeavers.xsd
 # Jekyll build output 
 _site/
 .jekyll-cache/
+
+# local telemetry key
+TelemetryKey.Local.cs
+
+# Visual Studio Code settings
+launchSettings.json

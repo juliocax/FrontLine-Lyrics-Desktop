@@ -1,0 +1,73 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ===== Paleta ===== -->
+    <Color x:Key="Xmas.NightColor">#0B101C</Color>
+    <Color x:Key="Xmas.RedColor">#B32632</Color>
+    <Color x:Key="Xmas.PineColor">#246744</Color>
+    <Color x:Key="Xmas.SnowColor">#F2F7FC</Color>
+    <Color x:Key="Xmas.FrostColor">#C9D9E8</Color>
+    <Color x:Key="Xmas.GoldColor">#D6B65D</Color>
+
+    <SolidColorBrush x:Key="Xmas.NightBrush" Color="{StaticResource Xmas.NightColor}"/>
+    <SolidColorBrush x:Key="Xmas.RedBrush"   Color="{StaticResource Xmas.RedColor}"/>
+    <SolidColorBrush x:Key="Xmas.PineBrush"  Color="{StaticResource Xmas.PineColor}"/>
+    <SolidColorBrush x:Key="Xmas.SnowBrush"  Color="{StaticResource Xmas.SnowColor}"/>
+    <SolidColorBrush x:Key="Xmas.FrostBrush" Color="{StaticResource Xmas.FrostColor}"/>
+    <SolidColorBrush x:Key="Xmas.GoldBrush"  Color="{StaticResource Xmas.GoldColor}"/>
+    <SolidColorBrush x:Key="Xmas.IceBrush"   Color="#E3EEF8"/>
+    <LinearGradientBrush x:Key="Xmas.HillBackBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#D3E1EF" Offset="0"/>
+        <GradientStop Color="#A9BFD6" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="Xmas.HillMidBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#EEF5FB" Offset="0"/>
+        <GradientStop Color="#C4D8EB" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="Xmas.HillFrontBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#FFFFFF" Offset="0"/>
+        <GradientStop Color="#E2ECF6" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="Xmas.SkyBrush" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#66101830" Offset="0"/>
+        <GradientStop Color="#00080C18" Offset="0.8"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="Xmas.TrunkBrush" Color="#6E4A28"/>
+    <SolidColorBrush x:Key="Xmas.PineLightBrush" Color="#2E7D53"/>
+    <SolidColorBrush x:Key="Xmas.PineDarkBrush"  Color="#1D5436"/>
+
+    <!-- ===== Chão de neve (3 camadas, curvas Bézier) ===== -->
+    <Geometry x:Key="Xmas.HillBack">M0,30 C40,10 110,0 180,14 C250,28 310,44 390,22 C460,4 530,6 600,26 L600,100 L0,100 Z</Geometry>
+    <Geometry x:Key="Xmas.HillMid">M0,34 C70,14 150,16 230,34 C300,50 360,30 440,14 C510,2 560,12 600,24 L600,100 L0,100 Z</Geometry>
+    <Geometry x:Key="Xmas.HillFront">M0,22 C80,6 160,14 250,30 C330,44 400,36 480,22 C530,13 570,12 600,18 L600,100 L0,100 Z</Geometry>
+
+    <!-- ===== Estilos compartilhados ===== -->
+    <Style x:Key="Xmas.Hill" TargetType="Path">
+        <Setter Property="Stretch" Value="Fill"/>
+        <Setter Property="VerticalAlignment" Value="Bottom"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+    </Style>
+
+    <Style x:Key="Xmas.Flake" TargetType="Ellipse">
+        <Setter Property="Fill" Value="{StaticResource Xmas.SnowBrush}"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="Canvas.Top" Value="0"/>
+    </Style>
+
+    <Style x:Key="Xmas.Crystal" TargetType="Path">
+        <Setter Property="Fill" Value="{StaticResource Xmas.SnowBrush}"/>
+        <Setter Property="Stretch" Value="Uniform"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="Canvas.Top" Value="0"/>
+    </Style>
+
+    <!-- ===== Logo: gradiente de "papel de presente" (vermelho com faixa dourada) ===== -->
+    <LinearGradientBrush x:Key="Xmas.GiftBrush" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FFE8505A" Offset="0.00"/>
+        <GradientStop Color="#FFB32632" Offset="0.30"/>
+        <GradientStop Color="#FFF3D88C" Offset="0.47"/>
+        <GradientStop Color="#FFD6B65D" Offset="0.53"/>
+        <GradientStop Color="#FFB32632" Offset="0.70"/>
+        <GradientStop Color="#FF7A1620" Offset="1.00"/>
+    </LinearGradientBrush>
+</ResourceDictionary>

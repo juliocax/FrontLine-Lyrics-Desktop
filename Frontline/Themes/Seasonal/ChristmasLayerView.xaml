@@ -1,0 +1,8 @@
+<UserControl x:Class="FrontLineOverlay.ChristmasLayerView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             IsHitTestVisible="False">
+    <!-- Intencionalmente vazia: esta camada fica NA FRENTE da interface.
+         Toda a decoração do tema agora está em ChristmasGroundView (atrás dos controles). -->
+    <Grid/>
+</UserControl>

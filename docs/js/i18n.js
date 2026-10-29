@@ -53,6 +53,7 @@ const FL_TRANSLATIONS = {
       eaDesc: "Support the project once and get new features before everyone else. Available now: Seasonal themes (Halloween, Christmas, New Year) and custom lyric colors (solid, metallic, gradients)."
     },
     docs_hub: {
+      card15_desc: "Documentation for v1.5.0, including the optional anonymous telemetry switch in General settings.",
       h1: "Choose the documentation version",
       subtitle: "Select the version of FrontLine Lyrics you are using to see the correct instructions.",
       card1_label: "Previous Version",
@@ -62,6 +63,9 @@ const FL_TRANSLATIONS = {
       card2_desc: "Documentation for version 1.4.2, including tabbed settings, lyric customization, theme selection, and the new click-through overlay lock."
     },
     doc: {
+      step2v15t: "The settings menu (v1.5.0)",
+      step2v15_telemetry: "Turn anonymous usage statistics on or off using the Telemetry switch in Settings → General. When enabled, FrontLine sends limited configuration data at most once every 24 hours; it does not send songs, artists, lyrics, or searches.",
+      step2v15_screenshotNote: "Screenshot from v1.4.2. In v1.5.0, the General tab also includes a switch to enable or disable anonymous telemetry.",
       eyebrow: "Tutorial",
       title: "How to use FrontLine Lyrics",
       subtitle: "The same walkthrough that shows up inside the app the first time you open it — just with more room to breathe.",
@@ -271,6 +275,7 @@ const FL_TRANSLATIONS = {
       pix: "Chave Pix disponível no perfil do GitHub"
     },
     docs_hub: {
+      card15_desc: "Documentação da v1.5.0, incluindo o botão de telemetria anônima opcional nas configurações gerais.",
       h1: "Escolha a versão da documentação",
       subtitle: "Selecione a versão do FrontLine Lyrics que você está usando para ver as instruções corretas.",
       card1_label: "Versão anterior",
@@ -280,6 +285,9 @@ const FL_TRANSLATIONS = {
       card2_desc: "Documentação da versão 1.4.2, com configurações em abas, personalização das letras, escolha de temas e novo bloqueio do overlay com cliques transparentes."
     },
     doc: {
+      step2v15t: "O menu de configurações (v1.5.0)",
+      step2v15_telemetry: "Ative ou desative as estatísticas anônimas de uso pelo botão de telemetria em Configurações → Geral. Quando ativada, a telemetria envia dados limitados das configurações no máximo uma vez a cada 24 horas; não envia músicas, artistas, letras ou pesquisas.",
+      step2v15_screenshotNote: "Captura de tela da v1.4.2. Na v1.5.0, a aba Geral também possui o botão para ativar ou desativar a telemetria anônima.",
       eyebrow: "Tutorial",
       title: "Como usar o FrontLine Lyrics",
       subtitle: "O mesmo passo a passo que aparece dentro do aplicativo na primeira vez que você abre — só que aqui, com mais calma.",
@@ -486,6 +494,7 @@ const FL_TRANSLATIONS = {
       pix: "Clave Pix disponible en el perfil de GitHub"
     },
     docs_hub: {
+      card15_desc: "Documentación de v1.5.0, incluido el interruptor de telemetría anónima opcional en la configuración general.",
       h1: "Elige la versión de la documentación",
       subtitle: "Selecciona la versión de FrontLine Lyrics que estás usando para ver las instrucciones correctas.",
       card1_label: "Versión anterior",
@@ -495,6 +504,9 @@ const FL_TRANSLATIONS = {
       card2_desc: "Documentación de la versión 1.4.2, con ajustes por pestañas, personalización de letras, temas y nuevo bloqueo del overlay que deja pasar los clics."
     },
     doc: {
+      step2v15t: "El menú de configuración (v1.5.0)",
+      step2v15_telemetry: "Activa o desactiva las estadísticas anónimas mediante el interruptor de telemetría en Configuración → General. Cuando está activado, se envían datos limitados de configuración como máximo una vez cada 24 horas; nunca canciones, artistas, letras ni búsquedas.",
+      step2v15_screenshotNote: "Captura de v1.4.2. En v1.5.0, la pestaña General también incluye el interruptor de telemetría anónima.",
       eyebrow: "Tutorial",
       title: "Cómo usar FrontLine Lyrics",
       subtitle: "El mismo paso a paso que aparece dentro de la app la primera vez que la abres, pero aquí con más calma.",
@@ -701,6 +713,7 @@ const FL_TRANSLATIONS = {
       pix: "Clé Pix disponible sur le profil GitHub"
     },
     docs_hub: {
+      card15_desc: "Documentation de la v1.5.0, avec l’interrupteur facultatif de télémétrie anonyme dans les paramètres généraux.",
       h1: "Choisissez la version de la documentation",
       subtitle: "Sélectionnez la version de FrontLine Lyrics que vous utilisez pour voir les bonnes instructions.",
       card1_label: "Version précédente",
@@ -710,6 +723,9 @@ const FL_TRANSLATIONS = {
       card2_desc: "Documentation de la version 1.4.2 : paramètres par onglets, personnalisation des paroles, thèmes et nouveau verrouillage de l’overlay laissant passer les clics."
     },
     doc: {
+      step2v15t: "Le menu des paramètres (v1.5.0)",
+      step2v15_telemetry: "Activez ou désactivez les statistiques d’utilisation anonymes via l’interrupteur de télémétrie dans Paramètres → Général. Si cette option est activée, seules des données de configuration limitées sont envoyées, au maximum une fois toutes les 24 heures ; jamais les chansons, artistes, paroles ou recherches.",
+      step2v15_screenshotNote: "Capture d’écran de la v1.4.2. Dans la v1.5.0, l’onglet Général inclut aussi un interrupteur pour la télémétrie anonyme.",
       eyebrow: "Tutoriel",
       title: "Comment utiliser FrontLine Lyrics",
       subtitle: "Le même guide qui s'affiche dans l'application la première fois que vous l'ouvrez — mais ici, en prenant votre temps.",
@@ -916,6 +932,7 @@ const FL_TRANSLATIONS = {
       pix: "Kunci Pix tersedia di profil GitHub"
     },
     docs_hub: {
+      card15_desc: "Dokumentasi v1.5.0, termasuk sakelar telemetri anonim opsional di pengaturan umum.",
       h1: "Pilih versi dokumentasi",
       subtitle: "Pilih versi FrontLine Lyrics yang Anda gunakan untuk melihat petunjuk yang benar.",
       card1_label: "Versi sebelumnya",
@@ -925,6 +942,9 @@ const FL_TRANSLATIONS = {
       card2_desc: "Dokumentasi versi 1.4.2, mencakup pengaturan bertab, penyesuaian lirik, tema, dan fitur kunci overlay baru yang meneruskan klik."
     },
     doc: {
+      step2v15t: "Menu pengaturan (v1.5.0)",
+      step2v15_telemetry: "Aktifkan atau nonaktifkan statistik penggunaan anonim melalui sakelar telemetri di Pengaturan → Umum. Jika aktif, aplikasi mengirim data pengaturan terbatas paling banyak sekali setiap 24 jam; tidak mengirim lagu, artis, lirik, atau pencarian.",
+      step2v15_screenshotNote: "Tangkapan layar dari v1.4.2. Pada v1.5.0, tab Umum juga memiliki sakelar untuk mengaktifkan atau menonaktifkan telemetri anonim.",
       eyebrow: "Tutorial",
       title: "Cara menggunakan FrontLine Lyrics",
       subtitle: "Panduan yang sama seperti yang muncul di dalam aplikasi saat pertama kali dibuka — hanya saja di sini bisa dibaca lebih santai.",

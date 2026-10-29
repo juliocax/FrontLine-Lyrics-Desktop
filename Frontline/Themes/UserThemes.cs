@@ -19,6 +19,14 @@ namespace FrontLineOverlay
 
         public Brush LogoColor { get; init; } = UserThemes.Solid(0xFF, 0xFF, 0xFF, 0xFF);
 
+        public Func<UserControl>? CreateLogoAdorn { get; init; }
+
+        public Func<UserControl>? CreateDockAdorn { get; init; }
+        public Uri? DockResources { get; init; }                
+        public Brush? DockBackground { get; init; }
+        public Brush? DockBorder { get; init; }
+        public System.Windows.CornerRadius? DockCornerRadius { get; init; }
+
         public string DisplayName(string lang) =>
             Names.TryGetValue(lang, out var n) ? n :
             Names.TryGetValue("en", out var en) ? en : Id;
@@ -28,6 +36,10 @@ namespace FrontLineOverlay
     {
 
         public const string DefaultId = "default";
+
+        public static readonly Brush DefaultDockBackground = Solid(0xFA, 0x0A, 0x0A, 0x0A);
+        public static readonly Brush DefaultDockBorder = Solid(0x50, 0xFF, 0xFF, 0xFF);
+        public static readonly System.Windows.CornerRadius DefaultDockCornerRadius = new(25);
 
         public static SolidColorBrush Solid(byte a, byte r, byte g, byte b)
         {
@@ -120,6 +132,36 @@ namespace FrontLineOverlay
             },
 
         };
+
+        // Tema sazonal de Natal: NÃO está em "All", portanto não aparece no ComboBox
+        // nem pode ser salvo como AppTheme. É usado só pelo modo Automático (gorro, logo e dock).
+        private static readonly UserThemeDef SantaSeasonal =
+        new UserThemeDef
+            {
+                Id = "santa",
+                Names = N("Santa Hat", "Gorro de Natal", "Gorro Navideño", "Topi Santa"),
+                CreateGround = () => new ChristmasGroundView(),
+                CreateLayer = () => new ChristmasLayerView(),
+                CreateLogoAdorn = () => new SantaLogoAdorn(),
+                DockResources = new Uri("pack://application:,,,/Themes/Seasonal/SantaDockResources.xaml"),
+                DockBackground = Solid(0xFA, 0x14, 0x0A, 0x0C),
+                DockBorder = Solid(0x90, 0xE0, 0x3A, 0x3A),
+                DockCornerRadius = new System.Windows.CornerRadius(22),
+                PageVeil = Solid(0x66, 0x10, 0x18, 0x24),
+                CardBackground = Solid(0xF0, 0x10, 0x14, 0x1C),
+                CardBorder = Solid(0x00, 0x00, 0x00, 0x00),
+                LogoColor = LogoGradient(
+                    new System.Windows.Point(0, 0), new System.Windows.Point(1, 1),
+                    (0xFFE8505A, 0.00),
+                    (0xFFB32632, 0.30),
+                    (0xFFF3D88C, 0.47),
+                    (0xFFD6B65D, 0.53),
+                    (0xFFB32632, 0.70),
+                    (0xFF7A1620, 1.00)),
+            };
+
+        public static UserThemeDef? FindSeasonal(string? id) =>
+            id == SantaSeasonal.Id ? SantaSeasonal : null;
 
         public static UserThemeDef? Find(string? id) =>
             All.FirstOrDefault(t => t.Id == id);

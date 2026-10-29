@@ -1,0 +1,135 @@
+<UserControl x:Class="FrontLineOverlay.ChristmasGroundView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             IsHitTestVisible="False">
+
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Styles/SeasonalResources.xaml"/>
+                <ResourceDictionary Source="pack://application:,,,/Themes/Seasonal/ChristmasResources.xaml"/>
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </UserControl.Resources>
+
+    <Grid>
+        <!-- 1. véu noturno (fundo escuro original) -->
+        <Rectangle Fill="{StaticResource Xmas.SkyBrush}"/>
+
+        <!-- 2. céu: somente neve caindo (animada em ChristmasGroundView.xaml.cs) -->
+        <Canvas x:Name="SnowCanvas" ClipToBounds="True" IsHitTestVisible="False">
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.005 25.9 0.05 10.6" Width="2.2" Height="2.2" Opacity="0.49"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.022 12.0 0.09 7.3" Width="5" Height="5" Opacity="0.82"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.036 30.7 0.12 5.8" Width="1.8" Height="1.8" Opacity="0.52"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.055 15.3 0.22 8.5" Width="4" Height="4" Opacity="0.69"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.063 11.3 0.31 10.5" Width="5" Height="5" Opacity="0.81"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.080 23.9 0.55 4.5" Width="2.6" Height="2.6" Opacity="0.52"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.089 13.5 0.31 8.7" Width="5" Height="5" Opacity="0.85"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.105 28.0 0.24 8.6" Width="2.2" Height="2.2" Opacity="0.55"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.126 14.3 0.98 4.9" Width="4.6" Height="4.6" Opacity="0.8"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.139 29.6 0.42 11.7" Width="2.2" Height="2.2" Opacity="0.48"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.151 20.1 0.35 8.0" Width="3.4" Height="3.4" Opacity="0.72"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.159 30.6 0.47 9.3" Width="2" Height="2" Opacity="0.46"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.181 14.3 0.39 9.3" Width="4.6" Height="4.6" Opacity="0.74"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.192 27.4 0.49 5.7" Width="2.2" Height="2.2" Opacity="0.52"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.210 17.7 0.87 4.6" Width="4" Height="4" Opacity="0.74"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.222 28.8 0.86 6.2" Width="2.2" Height="2.2" Opacity="0.53"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.234 21.7 0.15 5.4" Width="4" Height="4" Opacity="0.7"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.247 18.1 0.18 6.3" Width="4.6" Height="4.6" Opacity="0.76"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.265 24.4 0.69 8.1" Width="3.4" Height="3.4" Opacity="0.7"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.281 28.1 0.87 11.6" Width="1.8" Height="1.8" Opacity="0.53"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.294 17.8 0.1 9.1" Width="4" Height="4" Opacity="0.68"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.302 24.4 0.11 8.8" Width="2.6" Height="2.6" Opacity="0.53"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.322 11.2 0.36 4.2" Width="5" Height="5" Opacity="0.9"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.337 27.5 0.96 8.8" Width="2.2" Height="2.2" Opacity="0.54"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.346 19.3 0.47 7.9" Width="4.6" Height="4.6" Opacity="0.75"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.360 22.9 0.48 9.5" Width="3.4" Height="3.4" Opacity="0.68"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.375 13.0 0.69 11.3" Width="5" Height="5" Opacity="0.89"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.391 28.9 0.26 6.9" Width="2" Height="2" Opacity="0.48"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.410 14.3 0.5 9.1" Width="5" Height="5" Opacity="0.87"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.425 26.9 0.82 9.9" Width="2.6" Height="2.6" Opacity="0.55"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.436 22.8 0.99 10.3" Width="3.4" Height="3.4" Opacity="0.67"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.446 20.8 0.94 11.9" Width="3.4" Height="3.4" Opacity="0.75"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.463 22.0 0.47 6.7" Width="2.6" Height="2.6" Opacity="0.59"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.484 28.3 0.65 10.4" Width="1.8" Height="1.8" Opacity="0.44"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.495 20.5 0.75 7.8" Width="4" Height="4" Opacity="0.7"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.510 18.3 0.95 9.8" Width="3.4" Height="3.4" Opacity="0.67"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.524 29.1 0.17 5.0" Width="2" Height="2" Opacity="0.47"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.540 27.4 0.6 7.8" Width="2.2" Height="2.2" Opacity="0.61"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.546 11.4 0.01 11.8" Width="5" Height="5" Opacity="0.88"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.565 26.1 0.87 10.6" Width="2.2" Height="2.2" Opacity="0.5"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.576 23.0 0.76 6.6" Width="3" Height="3" Opacity="0.64"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.597 31.3 0.35 7.7" Width="1.8" Height="1.8" Opacity="0.52"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.612 20.8 0.88 5.0" Width="4" Height="4" Opacity="0.69"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.622 17.7 0.61 10.2" Width="4.6" Height="4.6" Opacity="0.76"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.632 27.9 0.33 8.1" Width="2" Height="2" Opacity="0.53"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.653 30.2 0.06 5.5" Width="2" Height="2" Opacity="0.46"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.660 16.2 0.76 11.3" Width="4.6" Height="4.6" Opacity="0.8"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.680 14.7 0.2 6.2" Width="5" Height="5" Opacity="0.86"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.696 17.1 0.7 11.0" Width="5" Height="5" Opacity="0.9"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.704 16.7 0.2 7.6" Width="5" Height="5" Opacity="0.84"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.720 18.2 0.24 4.6" Width="3.4" Height="3.4" Opacity="0.7"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.739 29.7 0.64 6.9" Width="2.2" Height="2.2" Opacity="0.51"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.746 13.8 0.95 7.2" Width="4.6" Height="4.6" Opacity="0.81"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.770 22.4 0.43 8.1" Width="2.6" Height="2.6" Opacity="0.57"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.775 18.3 0.37 6.7" Width="3.4" Height="3.4" Opacity="0.67"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.795 17.3 0.62 8.1" Width="4" Height="4" Opacity="0.68"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.813 28.1 0.1 6.1" Width="2.6" Height="2.6" Opacity="0.52"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.825 24.8 0.82 10.8" Width="3" Height="3" Opacity="0.66"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.841 16.0 0.92 8.6" Width="4" Height="4" Opacity="0.78"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.845 30.5 0.18 11.2" Width="1.8" Height="1.8" Opacity="0.47"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.859 29.6 0.08 10.8" Width="2" Height="2" Opacity="0.46"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.883 12.4 0.99 7.3" Width="4.6" Height="4.6" Opacity="0.87"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.894 28.6 0.24 4.9" Width="1.8" Height="1.8" Opacity="0.45"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.902 27.8 0.63 8.2" Width="2.6" Height="2.6" Opacity="0.55"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.921 25.0 0.8 12.0" Width="2.2" Height="2.2" Opacity="0.48"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.930 14.4 0.19 7.8" Width="5" Height="5" Opacity="0.9"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.946 19.6 0.55 11.1" Width="4" Height="4" Opacity="0.82"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.962 28.2 0.34 10.7" Width="2.6" Height="2.6" Opacity="0.62"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.980 21.9 0.98 10.7" Width="4" Height="4" Opacity="0.67"/>
+            <Ellipse Style="{StaticResource Xmas.Flake}" Tag="0.994 22.5 0.06 9.3" Width="3" Height="3" Opacity="0.62"/>
+            <Path Style="{StaticResource Xmas.Crystal}" Data="{StaticResource SnowflakeGeometry}" Tag="0.050 33.2 0.69 8.3" Width="11" Height="11" Opacity="0.51"/>
+            <Path Style="{StaticResource Xmas.Crystal}" Data="{StaticResource SnowflakeGeometry}" Tag="0.136 29.2 0.96 13.8" Width="9" Height="9" Opacity="0.61"/>
+            <Path Style="{StaticResource Xmas.Crystal}" Data="{StaticResource SnowflakeGeometry}" Tag="0.235 28.6 0.18 10.0" Width="11" Height="11" Opacity="0.48"/>
+            <Path Style="{StaticResource Xmas.Crystal}" Data="{StaticResource SnowflakeGeometry}" Tag="0.337 28.4 0.5 8.0" Width="14" Height="14" Opacity="0.53"/>
+            <Path Style="{StaticResource Xmas.Crystal}" Data="{StaticResource SnowflakeGeometry}" Tag="0.425 33.0 0.39 9.8" Width="12" Height="12" Opacity="0.64"/>
+            <Path Style="{StaticResource Xmas.Crystal}" Data="{StaticResource SnowflakeGeometry}" Tag="0.525 36.2 0.16 13.4" Width="13" Height="13" Opacity="0.69"/>
+            <Path Style="{StaticResource Xmas.Crystal}" Data="{StaticResource SnowflakeGeometry}" Tag="0.656 29.9 0.98 8.9" Width="15" Height="15" Opacity="0.67"/>
+            <Path Style="{StaticResource Xmas.Crystal}" Data="{StaticResource SnowflakeGeometry}" Tag="0.759 35.9 0.72 11.1" Width="9" Height="9" Opacity="0.58"/>
+            <Path Style="{StaticResource Xmas.Crystal}" Data="{StaticResource SnowflakeGeometry}" Tag="0.862 27.7 0.52 11.0" Width="13" Height="13" Opacity="0.7"/>
+            <Path Style="{StaticResource Xmas.Crystal}" Data="{StaticResource SnowflakeGeometry}" Tag="0.968 34.2 0.8 12.3" Width="15" Height="15" Opacity="0.74"/>
+        </Canvas>
+
+        <!-- 3. árvore: atrás das colinas de neve -->
+        <Viewbox Width="115" Height="96" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                 Margin="0,0,66,77" Stretch="Uniform" IsHitTestVisible="False">
+            <Canvas Width="180" Height="230">
+                <Rectangle Canvas.Left="81" Canvas.Top="198" Width="18" Height="26" Fill="{StaticResource Xmas.TrunkBrush}"/>
+                <Path Data="M90,134 L152,200 L28,200 Z" Fill="{StaticResource Xmas.PineDarkBrush}"/>
+                <Path Data="M90,134 L114.8,160.4 L103,157 L90,166 L77,157 L65.2,160.4 Z" Fill="{StaticResource Xmas.SnowBrush}"/>
+                <Path Data="M90,96 L140,156 L40,156 Z" Fill="{StaticResource Xmas.PineBrush}"/>
+                <Path Data="M90,96 L110,120 L101,117 L90,124 L79,117 L70,120 Z" Fill="{StaticResource Xmas.SnowBrush}"/>
+                <Path Data="M90,62 L128,114 L52,114 Z" Fill="{StaticResource Xmas.PineLightBrush}"/>
+                <Path Data="M90,62 L105.2,82.8 L98,80 L90,86 L82,80 L74.8,82.8 Z" Fill="{StaticResource Xmas.SnowBrush}"/>
+                <Path Data="M90,34 L118,78 L62,78 Z" Fill="{StaticResource Xmas.PineBrush}"/>
+                <Path Data="M90,34 L102.6,53.8 L96,51 L90,56 L84,51 L77.4,53.8 Z" Fill="{StaticResource Xmas.SnowBrush}"/>
+                <Path Data="M90.0,8.0 L93.5,17.1 L103.3,17.7 L95.7,23.9 L98.2,33.3 L90.0,28.0 L81.8,33.3 L84.3,23.9 L76.7,17.7 L86.5,17.1 Z" Fill="{StaticResource Xmas.GoldBrush}"/>
+                <Ellipse Canvas.Left="68"  Canvas.Top="92"  Width="12" Height="12" Fill="{StaticResource Xmas.RedBrush}"/>
+                <Ellipse Canvas.Left="98"  Canvas.Top="98"  Width="12" Height="12" Fill="{StaticResource Xmas.GoldBrush}"/>
+                <Ellipse Canvas.Left="102" Canvas.Top="136" Width="12" Height="12" Fill="{StaticResource Xmas.RedBrush}"/>
+                <Ellipse Canvas.Left="64"  Canvas.Top="140" Width="12" Height="12" Fill="{StaticResource Xmas.GoldBrush}"/>
+                <Ellipse Canvas.Left="53"  Canvas.Top="179" Width="14" Height="14" Fill="{StaticResource Xmas.RedBrush}"/>
+                <Ellipse Canvas.Left="82"  Canvas.Top="172" Width="12" Height="12" Fill="{StaticResource Xmas.GoldBrush}"/>
+                <Ellipse Canvas.Left="111" Canvas.Top="181" Width="14" Height="14" Fill="{StaticResource Xmas.RedBrush}"/>
+            </Canvas>
+        </Viewbox>
+
+        <!-- 4. chão de neve: 3 colinas com degradê (a árvore fica atrás delas) -->
+        <Path Style="{StaticResource Xmas.Hill}" Data="{StaticResource Xmas.HillBack}"
+              Fill="{StaticResource Xmas.HillBackBrush}" Height="84"/>
+        <Path Style="{StaticResource Xmas.Hill}" Data="{StaticResource Xmas.HillMid}"
+              Fill="{StaticResource Xmas.HillMidBrush}" Height="66"/>
+        <Path Style="{StaticResource Xmas.Hill}" Data="{StaticResource Xmas.HillFront}"
+              Fill="{StaticResource Xmas.HillFrontBrush}" Height="48"/>
+    </Grid>
+</UserControl>

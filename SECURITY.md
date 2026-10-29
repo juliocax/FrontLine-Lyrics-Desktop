@@ -20,4 +20,4 @@ This project has two components that could be relevant to a report:
 - **FrontLineOverlay** (C# / WPF) — the floating overlay window
 - **FrontlineServer** (Python) — handles system audio capture (WASAPI loopback), song recognition, and lyrics fetching, and exposes a local WebSocket server used only for communication between the overlay and the backend on the same machine
 
-The app does not record or transmit raw audio, only anonymous fingerprints used for song recognition. See [PRIVACY.md](./PRIVACY.md) for details on what data is and isn't collected.
+The app does not record or transmit raw audio, only anonymous fingerprints used for song recognition. It can also send optional, anonymous usage statistics (such as the selected theme and language), which never include songs, lyrics or personal data and can be turned off in Settings. See [PRIVACY.md](./PRIVACY.md) for details on what data is and isn't collected.

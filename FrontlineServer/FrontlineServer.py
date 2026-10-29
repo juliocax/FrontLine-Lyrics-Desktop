@@ -24,6 +24,8 @@ import asyncio
 import logging
 import subprocess
 import traceback
+import ctypes
+import threading
 from logging.handlers import RotatingFileHandler
 
 if sys.platform == "win32":
@@ -77,6 +79,19 @@ def global_exception_handler(exctype, value, tb):
     logging.critical("".join(traceback.format_exception(exctype, value, tb)))
 
 
+def _watch_parent(parent_pid: int):
+    """Encerra o servidor quando o overlay (processo pai) morre."""
+    SYNCHRONIZE = 0x00100000
+    kernel32 = ctypes.windll.kernel32
+    handle = kernel32.OpenProcess(SYNCHRONIZE, False, parent_pid)
+    if not handle:
+        logging.warning("Pai %s não existe mais; encerrando.", parent_pid)
+        os._exit(0)
+    kernel32.WaitForSingleObject(handle, 0xFFFFFFFF)  # INFINITE
+    logging.info("Processo pai encerrou; fechando o servidor.")
+    os._exit(0)
+
+
 sys.excepthook = global_exception_handler
 # Wraps the hook above so it also writes python_crash.log.
 instalar_crash_guard()
@@ -85,6 +100,15 @@ instalar_crash_guard()
 if __name__ == "__main__":
     # pyinstaller --noconfirm --onedir --windowed --collect-all anyascii --collect-all winrt --hidden-import winrt.windows.media.control --hidden-import winrt.windows.storage.streams --hidden-import crash_guard --hidden-import media_session --hidden-import music_manager --hidden-import audio_capture --hidden-import recognition --hidden-import lyrics --hidden-import cover_art --hidden-import translation --hidden-import smtc_policy --hidden-import tuning --hidden-import task_utils --hidden-import workers --hidden-import ws_server --name "FrontlineServer" "FrontlineServer.py"
     server_port = 8765
+    
+    if len(sys.argv) > 2 and sys.platform == "win32":
+        try:
+            threading.Thread(
+                target=_watch_parent, args=(int(sys.argv[2]),),
+                daemon=True, name="parent-watchdog",
+            ).start()
+        except ValueError:
+            pass
 
     if len(sys.argv) > 1:
         try:
