@@ -1,0 +1,10 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <SolidColorBrush x:Key="Dock.ButtonBg" Color="#FF1B0E10"/>
+    <SolidColorBrush x:Key="Dock.ButtonFg" Color="#FFFDF2F2"/>
+    <SolidColorBrush x:Key="Dock.ButtonBorder" Color="#55E85D5D"/>
+    <SolidColorBrush x:Key="Dock.ButtonHoverBg" Color="#FF3A1519"/>
+    <SolidColorBrush x:Key="Dock.ButtonHoverBorder" Color="#AAFF8A8A"/>
+    <SolidColorBrush x:Key="Dock.FestivalBorder" Color="#8834C759"/>
+    <SolidColorBrush x:Key="Dock.FestivalSquareBorder" Color="#9934C759"/>
+</ResourceDictionary>

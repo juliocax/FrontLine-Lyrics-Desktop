@@ -1,5 +1,7 @@
-﻿using System;
+using Frontline.Themes.Seasonal;
+using System;
 using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
 
 namespace FrontLineOverlay
@@ -11,6 +13,10 @@ namespace FrontLineOverlay
         private string _themeId = ThemeAuto;
         private string? _userThemeLoadedId;
         private UserThemeDef? _appliedUserTheme;
+
+        private UserThemeDef? _appliedAdornTheme;
+        private string? _adornLoadedId;
+        private const string SantaThemeId = "santa";
 
         private static readonly Dictionary<string, Dictionary<string, string>> UserThemeStrings = new()
         {
@@ -61,7 +67,7 @@ namespace FrontLineOverlay
             if (CmbUserTheme?.SelectedItem is ComboBoxItem item && item.Tag is string id && id != _themeId)
             {
                 _themeId = id;
-                ApplySeasonalTheme();   
+                ApplySeasonalTheme();
                 ScheduleSave();
             }
         }
@@ -72,22 +78,86 @@ namespace FrontLineOverlay
         private UserThemeDef? ActiveUserTheme(SeasonalTheme seasonal) =>
             seasonal != SeasonalTheme.None ? null : UserThemes.Find(_themeId);
 
-        private void EnsureUserThemeContent(UserThemeDef? user)
+        private UserThemeDef? AdornThemeFor(SeasonalTheme seasonal, UserThemeDef? user) =>
+            seasonal == SeasonalTheme.Christmas ? UserThemes.Find(SantaThemeId)
+            : seasonal != SeasonalTheme.None ? null
+            : user;
+
+        private void EnsureUserThemeContent(UserThemeDef? user, UserThemeDef? adorn)
         {
-            string? want = user?.Id;
-            if (_userThemeLoadedId == want) return;
-            _userThemeLoadedId = want;
-            try
+            string? wantUser = user?.Id;
+            if (_userThemeLoadedId != wantUser)
             {
-                if (UserThemeGround != null) UserThemeGround.Content = user?.CreateGround?.Invoke();
-                if (UserThemeLayer != null) UserThemeLayer.Content = user?.CreateLayer?.Invoke();
+                try { if (UserThemeGround != null) UserThemeGround.Content = user?.CreateGround?.Invoke(); }
+                catch (Exception ex) { CrashReporter.Log(ex, "UserThemeGround"); }
+
+                try { if (UserThemeLayer != null) UserThemeLayer.Content = user?.CreateLayer?.Invoke(); }
+                catch (Exception ex) { CrashReporter.Log(ex, "UserThemeLayer"); }
+
+                _userThemeLoadedId = wantUser;
             }
-            catch (Exception ex)
+
+            string? wantAdorn = adorn?.Id;
+            if (_adornLoadedId != wantAdorn)
             {
-                CrashReporter.Log(ex, "EnsureUserThemeContent");
-                if (UserThemeGround != null) UserThemeGround.Content = null;
-                if (UserThemeLayer != null) UserThemeLayer.Content = null;
+                try { if (UserThemeLogoAdorn != null) UserThemeLogoAdorn.Content = adorn?.CreateLogoAdorn?.Invoke(); }
+                catch (Exception ex) { CrashReporter.Log(ex, "UserThemeLogoAdorn"); }
+
+                try { if (UserThemeDockAdorn != null) UserThemeDockAdorn.Content = adorn?.CreateDockAdorn?.Invoke(); }
+                catch (Exception ex) { CrashReporter.Log(ex, "UserThemeDockAdorn"); }
+
+                try { ApplyUserThemeDock(adorn); }
+                catch (Exception ex) { CrashReporter.Log(ex, "ApplyUserThemeDock"); }
+
+                _adornLoadedId = wantAdorn;
             }
+        }
+
+        private void ApplyUserThemeDock(UserThemeDef? user)
+        {
+            if (HomeDock != null)
+            {
+                HomeDock.Background = user?.DockBackground ?? UserThemes.DefaultDockBackground;
+                HomeDock.BorderBrush = user?.DockBorder ?? UserThemes.DefaultDockBorder;
+                HomeDock.CornerRadius = user?.DockCornerRadius ?? UserThemes.DefaultDockCornerRadius;
+            }
+            foreach (FrameworkElement? host in new FrameworkElement?[] { HomeControls, PlayingControls })
+            {
+                if (host == null) continue;
+                host.Resources.MergedDictionaries.Clear();
+                if (user?.DockResources != null)
+                    host.Resources.MergedDictionaries.Add(new ResourceDictionary { Source = user.DockResources });
+            }
+        }
+
+        private const double LogoAdornWidth = 1000;
+        private bool _logoShown;
+
+        private void UpdateLogoAdornSpace(int pixelWidth, int pixelHeight)
+        {
+            _logoShown = true;
+            if (LogoAdornSpace != null && pixelWidth > 0)
+            {
+                LogoAdornSpace.Width = LogoAdornWidth;
+                LogoAdornSpace.Height = LogoAdornWidth * pixelHeight / pixelWidth;
+            }
+            RefreshUserThemeSlots();
+        }
+
+        private void SetLogoAdornShown(bool shown)
+        {
+            _logoShown = shown;
+            RefreshUserThemeSlots();
+        }
+
+        private void RefreshUserThemeSlots()
+        {
+            var user = _appliedAdornTheme;
+            bool on = user != null && !(isGhostMode || isResizing);
+            if (LogoAdornHost != null)
+                LogoAdornHost.Visibility = on && _logoShown && user!.CreateLogoAdorn != null && UserThemeLogoAdorn?.Content != null ? Visibility.Visible : Visibility.Collapsed;
+            if (UserThemeDockAdorn != null)
+                UserThemeDockAdorn.Visibility = on && user!.CreateDockAdorn != null ? Visibility.Visible : Visibility.Collapsed;
         }
     }
 }

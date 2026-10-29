@@ -19,6 +19,14 @@ namespace FrontLineOverlay
 
         public Brush LogoColor { get; init; } = UserThemes.Solid(0xFF, 0xFF, 0xFF, 0xFF);
 
+        public Func<UserControl>? CreateLogoAdorn { get; init; }
+
+        public Func<UserControl>? CreateDockAdorn { get; init; }
+        public Uri? DockResources { get; init; }                
+        public Brush? DockBackground { get; init; }
+        public Brush? DockBorder { get; init; }
+        public System.Windows.CornerRadius? DockCornerRadius { get; init; }
+
         public string DisplayName(string lang) =>
             Names.TryGetValue(lang, out var n) ? n :
             Names.TryGetValue("en", out var en) ? en : Id;
@@ -28,6 +36,10 @@ namespace FrontLineOverlay
     {
 
         public const string DefaultId = "default";
+
+        public static readonly Brush DefaultDockBackground = Solid(0xFA, 0x0A, 0x0A, 0x0A);
+        public static readonly Brush DefaultDockBorder = Solid(0x50, 0xFF, 0xFF, 0xFF);
+        public static readonly System.Windows.CornerRadius DefaultDockCornerRadius = new(25);
 
         public static SolidColorBrush Solid(byte a, byte r, byte g, byte b)
         {
@@ -59,6 +71,24 @@ namespace FrontLineOverlay
                     Color.FromArgb((byte)(argb >> 24), (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb), offset));
             b.Freeze();
             return b;
+        }
+
+        private static Brush LoadBrush(string key, Brush fallback)
+        {
+            try
+            {
+                var dict = new System.Windows.ResourceDictionary
+                {
+                    Source = new Uri("pack://application:,,,/Themes/Seasonal/ChristmasResources.xaml", UriKind.Absolute)
+                };
+                if (dict[key] is Brush b)
+                {
+                    if (b.CanFreeze) b.Freeze();
+                    return b;
+                }
+            }
+            catch { /* recurso ausente: usa o fallback */ }
+            return fallback;
         }
 
         private static Dictionary<string, string> N(string en, string pt, string es, string id) =>
@@ -117,6 +147,23 @@ namespace FrontLineOverlay
                     (0xFFFF2A3A, 0.35),   
                     (0xFFB0121C, 0.70),   
                     (0xFF5E060C, 1.00)),  
+            },
+
+            new UserThemeDef
+            {
+                Id = "santa",
+                Names = N("Ugly Sweater Christmas", "Natal do Suéter Feio", "Navidad del Suéter Feo", "Natal Sweter Jelek"),
+                CreateGround = () => new ChristmasGroundView(),
+                CreateLayer = () => new ChristmasLayerView(),
+                CreateLogoAdorn = () => new SantaLogoAdorn(),
+                DockResources = new Uri("pack://application:,,,/Themes/Seasonal/SantaDockResources.xaml"),
+                DockBackground = Solid(0xFA, 0x14, 0x0A, 0x0C),
+                DockBorder = Solid(0x90, 0xE0, 0x3A, 0x3A),
+                DockCornerRadius = new System.Windows.CornerRadius(22),
+                PageVeil = Solid(0x66, 0x10, 0x18, 0x24),
+                CardBackground = Solid(0xF0, 0x10, 0x14, 0x1C),
+                CardBorder = Solid(0x00, 0x00, 0x00, 0x00),
+                LogoColor = LoadBrush("Xmas.SweaterBrush", Solid(0xFF, 0xFF, 0xFF, 0xFF)),
             },
 
         };

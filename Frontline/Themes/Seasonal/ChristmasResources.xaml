@@ -1,0 +1,107 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ===== Paleta ===== -->
+    <Color x:Key="Xmas.NightColor">#0B101C</Color>
+    <Color x:Key="Xmas.RedColor">#B32632</Color>
+    <Color x:Key="Xmas.PineColor">#246744</Color>
+    <Color x:Key="Xmas.SnowColor">#F2F7FC</Color>
+    <Color x:Key="Xmas.FrostColor">#C9D9E8</Color>
+    <Color x:Key="Xmas.GoldColor">#D6B65D</Color>
+
+    <SolidColorBrush x:Key="Xmas.NightBrush" Color="{StaticResource Xmas.NightColor}"/>
+    <SolidColorBrush x:Key="Xmas.RedBrush"   Color="{StaticResource Xmas.RedColor}"/>
+    <SolidColorBrush x:Key="Xmas.PineBrush"  Color="{StaticResource Xmas.PineColor}"/>
+    <SolidColorBrush x:Key="Xmas.SnowBrush"  Color="{StaticResource Xmas.SnowColor}"/>
+    <SolidColorBrush x:Key="Xmas.FrostBrush" Color="{StaticResource Xmas.FrostColor}"/>
+    <SolidColorBrush x:Key="Xmas.GoldBrush"  Color="{StaticResource Xmas.GoldColor}"/>
+    <SolidColorBrush x:Key="Xmas.IceBrush"   Color="#E3EEF8"/>
+    <SolidColorBrush x:Key="Xmas.TrunkBrush" Color="#6E4A28"/>
+    <SolidColorBrush x:Key="Xmas.PineLightBrush" Color="#2E7D53"/>
+    <SolidColorBrush x:Key="Xmas.PineDarkBrush"  Color="#1D5436"/>
+
+    <!-- ===== Chão de neve (3 camadas, curvas Bézier) ===== -->
+    <Geometry x:Key="Xmas.HillBack">M0,30 C70,6 140,6 220,26 C300,46 360,6 450,12 C520,17 560,34 600,22 L600,86 L0,86 Z</Geometry>
+    <Geometry x:Key="Xmas.HillMid">M0,40 C60,22 130,20 210,36 C290,52 350,22 430,26 C500,30 550,44 600,34 L600,86 L0,86 Z</Geometry>
+    <Geometry x:Key="Xmas.HillFront">M0,50 C90,36 170,40 260,48 C340,56 400,34 480,38 C540,41 575,50 600,46 L600,86 L0,86 Z</Geometry>
+
+    <!-- ===== Estilos compartilhados ===== -->
+    <Style x:Key="Xmas.Hill" TargetType="Path">
+        <Setter Property="Stretch" Value="Fill"/>
+        <Setter Property="VerticalAlignment" Value="Bottom"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+    </Style>
+
+    <Style x:Key="Xmas.Flake" TargetType="Ellipse">
+        <Setter Property="Fill" Value="{StaticResource Xmas.SnowBrush}"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="Canvas.Top" Value="0"/>
+    </Style>
+
+    <Style x:Key="Xmas.Crystal" TargetType="Path">
+        <Setter Property="Fill" Value="{StaticResource Xmas.SnowBrush}"/>
+        <Setter Property="Stretch" Value="Uniform"/>
+        <Setter Property="IsHitTestVisible" Value="False"/>
+        <Setter Property="Canvas.Top" Value="0"/>
+    </Style>
+
+    <!-- ===== Padrão do suéter (usado como UserThemeDef.LogoColor) =====
+         Tile 48x72 DIPs, repetido e recortado pela silhueta da logo.
+         Para ampliar/reduzir o padrão, altere Viewport (ex.: 64,96 e Viewbox 0,0,48,72 mantém a proporção). -->
+    <DrawingBrush x:Key="Xmas.SweaterBrush"
+                  TileMode="Tile" Stretch="Fill"
+                  ViewportUnits="Absolute" Viewport="0,0,48,72"
+                  ViewboxUnits="Absolute" Viewbox="0,0,48,72"
+                  RenderOptions.CachingHint="Cache">
+        <DrawingBrush.Drawing>
+            <DrawingGroup>
+                <!-- base vermelha -->
+                <GeometryDrawing Brush="{StaticResource Xmas.RedBrush}">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="0,0,48,72"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- faixa branca (barra / punho / gola quando repete) -->
+                <GeometryDrawing Brush="{StaticResource Xmas.SnowBrush}">
+                    <GeometryDrawing.Geometry>
+                        <RectangleGeometry Rect="0,0,48,6"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+
+                <!-- zigue-zague branco -->
+                <GeometryDrawing Geometry="M0,18 L6,10 L12,18 L18,10 L24,18 L30,10 L36,18 L42,10 L48,18">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{StaticResource Xmas.SnowBrush}" Thickness="2.2" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+
+                <!-- zigue-zague verde (fase invertida) -->
+                <GeometryDrawing Geometry="M0,22 L6,30 L12,22 L18,30 L24,22 L30,30 L36,22 L42,30 L48,22">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{StaticResource Xmas.PineLightBrush}" Thickness="2.2" LineJoin="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+
+                <!-- pinheiros verdes -->
+                <GeometryDrawing Brush="{StaticResource Xmas.PineLightBrush}"
+                                 Geometry="M12,34 L18,43 L14.5,43 L20,51 L4,51 L9.5,43 L6,43 Z
+                                           M36,34 L42,43 L38.5,43 L44,51 L28,51 L33.5,43 L30,43 Z"/>
+                <!-- troncos e pontinhos -->
+                <GeometryDrawing Brush="{StaticResource Xmas.SnowBrush}"
+                                 Geometry="M10.5,51 L13.5,51 L13.5,54 L10.5,54 Z
+                                           M34.5,51 L37.5,51 L37.5,54 L34.5,54 Z
+                                           M22.8,40.2 A1.2,1.2 0 1 1 25.2,40.2 A1.2,1.2 0 1 1 22.8,40.2 Z
+                                           M22.8,46.2 A1.2,1.2 0 1 1 25.2,46.2 A1.2,1.2 0 1 1 22.8,46.2 Z"/>
+
+                <!-- flocos de neve -->
+                <GeometryDrawing Geometry="M6.5,62 L17.5,62 M9.25,57.24 L14.75,66.76 M14.75,57.24 L9.25,66.76
+                                           M30.5,62 L41.5,62 M33.25,57.24 L38.75,66.76 M38.75,57.24 L33.25,66.76">
+                    <GeometryDrawing.Pen>
+                        <Pen Brush="{StaticResource Xmas.SnowBrush}" Thickness="1.5" StartLineCap="Round" EndLineCap="Round"/>
+                    </GeometryDrawing.Pen>
+                </GeometryDrawing>
+            </DrawingGroup>
+        </DrawingBrush.Drawing>
+    </DrawingBrush>
+</ResourceDictionary>
