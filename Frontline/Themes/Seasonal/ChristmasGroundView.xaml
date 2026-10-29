@@ -101,8 +101,8 @@
         </Canvas>
 
         <!-- 3. árvore: atrás das colinas de neve -->
-        <Viewbox Width="140" Height="179" HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                 Margin="0,0,40,34" Stretch="Uniform" IsHitTestVisible="False">
+        <Viewbox Width="115" Height="96" HorizontalAlignment="Right" VerticalAlignment="Bottom"
+                 Margin="0,0,66,77" Stretch="Uniform" IsHitTestVisible="False">
             <Canvas Width="180" Height="230">
                 <Rectangle Canvas.Left="81" Canvas.Top="198" Width="18" Height="26" Fill="{StaticResource Xmas.TrunkBrush}"/>
                 <Path Data="M90,134 L152,200 L28,200 Z" Fill="{StaticResource Xmas.PineDarkBrush}"/>

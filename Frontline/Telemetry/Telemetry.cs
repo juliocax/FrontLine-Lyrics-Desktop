@@ -10,6 +10,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Linq;
+using Frontline.Themes.Seasonal;
 
 namespace FrontLineOverlay
 {
@@ -89,6 +90,44 @@ namespace FrontLineOverlay
             catch { return fallback; }
         }
 
+        private static (string Theme, string Mode) CurrentTheme(string fallback)
+        {
+            string selected = AppSettings.GetString("AppTheme",
+                AppSettings.GetBool("SeasonalEnabled", true) ? "auto" : "default");
+            try
+            {
+                var app = Application.Current;
+                if (app != null)
+                {
+                    selected = app.Dispatcher.Invoke(() =>
+                    {
+                        var window = app.Windows.OfType<MainWindow>().FirstOrDefault();
+                        return window?.CmbUserTheme?.SelectedItem is ComboBoxItem item
+                               && item.Tag is string id && !string.IsNullOrWhiteSpace(id)
+                            ? id : selected;
+                    });
+                }
+            }
+            catch { /*  */ }
+
+            if (string.Equals(selected, "auto", StringComparison.OrdinalIgnoreCase))
+            {
+                string seasonal = SeasonalThemeProvider.GetCurrent() switch
+                {
+                    SeasonalTheme.Halloween => "halloween",
+                    SeasonalTheme.Christmas => "christmas",
+                    SeasonalTheme.NewYear => "newyear",
+                    _ => "default"
+                };
+                return (seasonal, "auto");
+            }
+
+            if (string.Equals(selected, "default", StringComparison.OrdinalIgnoreCase))
+                return ("default", "manual");
+
+            return (!string.IsNullOrWhiteSpace(selected) ? Clean(selected) : Clean(fallback), "manual");
+        }
+
         public static async Task SendSnapshotIfDueAsync(TelemetrySnapshot snap)
         {
 #if DEBUG
@@ -104,6 +143,8 @@ namespace FrontLineOverlay
                 long epoch = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                 string sessionId = (epoch * 100_000_000L + Random.Shared.NextInt64(0, 100_000_000L))
                     .ToString(CultureInfo.InvariantCulture);
+
+                var currentTheme = CurrentTheme(snap.Theme);
 
                 var evt = new
                 {
@@ -124,7 +165,8 @@ namespace FrontLineOverlay
                     },
                     props = new Dictionary<string, object>
                     {
-                        ["theme"] = Clean(snap.Theme),
+                        ["theme"] = currentTheme.Theme,
+                        ["theme_mode"] = currentTheme.Mode,
                         ["lyric_font"] = Clean(snap.LyricFont),
                         ["lyric_color"] = Clean(CurrentLyricColor(snap.LyricColor)),
                         ["ui_language"] = Clean(snap.UiLanguage, 8),
