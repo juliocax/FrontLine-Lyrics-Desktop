@@ -1,5 +1,14 @@
-﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Cores padrão do dock. Um tema sobrescreve estas chaves em HomeControls.Resources (veja Themes/*/…DockResources.xaml) -->
+    <SolidColorBrush x:Key="Dock.ButtonBg" Color="#FF0A0A0A"/>
+    <SolidColorBrush x:Key="Dock.ButtonFg" Color="#E0E0E0"/>
+    <SolidColorBrush x:Key="Dock.ButtonBorder" Color="#33FFFFFF"/>
+    <SolidColorBrush x:Key="Dock.ButtonHoverBg" Color="#FF262626"/>
+    <SolidColorBrush x:Key="Dock.ButtonHoverBorder" Color="#66FFFFFF"/>
+    <SolidColorBrush x:Key="Dock.FestivalBorder" Color="#667A53E4"/>
+    <SolidColorBrush x:Key="Dock.FestivalSquareBorder" Color="#887A53E4"/>
 
     <Style x:Key="ImageOverlayButtonStyle" TargetType="Button">
         <Setter Property="Background" Value="Transparent"/>
@@ -41,9 +50,9 @@
     </Style>
 
     <Style x:Key="GlassButton" TargetType="Button">
-        <Setter Property="Background" Value="#FF0A0A0A"/>
-        <Setter Property="Foreground" Value="#E0E0E0"/>
-        <Setter Property="BorderBrush" Value="#33FFFFFF"/>
+        <Setter Property="Background" Value="{DynamicResource Dock.ButtonBg}"/>
+        <Setter Property="Foreground" Value="{DynamicResource Dock.ButtonFg}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Dock.ButtonBorder}"/>
         <Setter Property="BorderThickness" Value="1"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
         <Setter Property="Padding" Value="15,8"/>
@@ -56,8 +65,8 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="BgBorder" Property="Background" Value="#FF262626"/>
-                            <Setter TargetName="BgBorder" Property="BorderBrush" Value="#66FFFFFF"/>
+                            <Setter TargetName="BgBorder" Property="Background" Value="{DynamicResource Dock.ButtonHoverBg}"/>
+                            <Setter TargetName="BgBorder" Property="BorderBrush" Value="{DynamicResource Dock.ButtonHoverBorder}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -66,7 +75,7 @@
     </Style>
 
     <Style x:Key="FestivalGlassButton" TargetType="Button" BasedOn="{StaticResource GlassButton}">
-        <Setter Property="BorderBrush" Value="#667A53E4"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Dock.FestivalBorder}"/>
     </Style>
 
     <Style x:Key="SquareGlassButton" TargetType="Button" BasedOn="{StaticResource GlassButton}">
@@ -78,8 +87,8 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="BgBorder" Property="Background" Value="#FF262626"/>
-                            <Setter TargetName="BgBorder" Property="BorderBrush" Value="#66FFFFFF"/>
+                            <Setter TargetName="BgBorder" Property="Background" Value="{DynamicResource Dock.ButtonHoverBg}"/>
+                            <Setter TargetName="BgBorder" Property="BorderBrush" Value="{DynamicResource Dock.ButtonHoverBorder}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -88,7 +97,7 @@
     </Style>
 
     <Style x:Key="FestivalSquareButton" TargetType="Button" BasedOn="{StaticResource SquareGlassButton}">
-        <Setter Property="BorderBrush" Value="#887A53E4"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource Dock.FestivalSquareBorder}"/>
     </Style>
 
     <Style x:Key="TopWindowBtn" TargetType="Button">
