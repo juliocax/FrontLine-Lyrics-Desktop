@@ -73,24 +73,6 @@ namespace FrontLineOverlay
             return b;
         }
 
-        private static Brush LoadBrush(string key, Brush fallback)
-        {
-            try
-            {
-                var dict = new System.Windows.ResourceDictionary
-                {
-                    Source = new Uri("pack://application:,,,/Themes/Seasonal/ChristmasResources.xaml", UriKind.Absolute)
-                };
-                if (dict[key] is Brush b)
-                {
-                    if (b.CanFreeze) b.Freeze();
-                    return b;
-                }
-            }
-            catch { /* recurso ausente: usa o fallback */ }
-            return fallback;
-        }
-
         private static Dictionary<string, string> N(string en, string pt, string es, string id) =>
             new() { ["en"] = en, ["pt"] = pt, ["es"] = es, ["id"] = id };
 
@@ -149,10 +131,15 @@ namespace FrontLineOverlay
                     (0xFF5E060C, 1.00)),  
             },
 
-            new UserThemeDef
+        };
+
+        // Tema sazonal de Natal: NÃO está em "All", portanto não aparece no ComboBox
+        // nem pode ser salvo como AppTheme. É usado só pelo modo Automático (gorro, logo e dock).
+        private static readonly UserThemeDef SantaSeasonal =
+        new UserThemeDef
             {
                 Id = "santa",
-                Names = N("Ugly Sweater Christmas", "Natal do Suéter Feio", "Navidad del Suéter Feo", "Natal Sweter Jelek"),
+                Names = N("Santa Hat", "Gorro de Natal", "Gorro Navideño", "Topi Santa"),
                 CreateGround = () => new ChristmasGroundView(),
                 CreateLayer = () => new ChristmasLayerView(),
                 CreateLogoAdorn = () => new SantaLogoAdorn(),
@@ -163,10 +150,18 @@ namespace FrontLineOverlay
                 PageVeil = Solid(0x66, 0x10, 0x18, 0x24),
                 CardBackground = Solid(0xF0, 0x10, 0x14, 0x1C),
                 CardBorder = Solid(0x00, 0x00, 0x00, 0x00),
-                LogoColor = LoadBrush("Xmas.SweaterBrush", Solid(0xFF, 0xFF, 0xFF, 0xFF)),
-            },
+                LogoColor = LogoGradient(
+                    new System.Windows.Point(0, 0), new System.Windows.Point(1, 1),
+                    (0xFFE8505A, 0.00),
+                    (0xFFB32632, 0.30),
+                    (0xFFF3D88C, 0.47),
+                    (0xFFD6B65D, 0.53),
+                    (0xFFB32632, 0.70),
+                    (0xFF7A1620, 1.00)),
+            };
 
-        };
+        public static UserThemeDef? FindSeasonal(string? id) =>
+            id == SantaSeasonal.Id ? SantaSeasonal : null;
 
         public static UserThemeDef? Find(string? id) =>
             All.FirstOrDefault(t => t.Id == id);

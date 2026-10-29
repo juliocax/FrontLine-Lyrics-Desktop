@@ -79,7 +79,7 @@ namespace FrontLineOverlay
             seasonal != SeasonalTheme.None ? null : UserThemes.Find(_themeId);
 
         private UserThemeDef? AdornThemeFor(SeasonalTheme seasonal, UserThemeDef? user) =>
-            seasonal == SeasonalTheme.Christmas ? UserThemes.Find(SantaThemeId)
+            seasonal == SeasonalTheme.Christmas ? UserThemes.FindSeasonal(SantaThemeId)
             : seasonal != SeasonalTheme.None ? null
             : user;
 
