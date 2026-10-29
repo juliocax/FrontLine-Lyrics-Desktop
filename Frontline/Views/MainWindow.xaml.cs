@@ -72,7 +72,6 @@ namespace FrontLineOverlay
 
         private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v1.5.0.html";
         private const string FeedbackFormUrl = "https://forms.gle/bwV1xeKncmGPATDaA";
-        // Product ID taken from the Microsoft Store link already present in README.md (9P6LNJCL8ZCC).
         private const string StoreReviewUrl = "ms-windows-store://review/?ProductId=9P6LNJCL8ZCC";
 
         [StructLayout(LayoutKind.Sequential)] public struct Win32Point { public int X; public int Y; }
@@ -648,8 +647,6 @@ namespace FrontLineOverlay
             UpdateSupportBarLayout();
         }
 
-        // Responsive behaviour of the bottom-right "Enjoying the app?" bar.
-        // Wide window: prompt + divider + icon/text buttons. Medium: buttons only. Narrow: icons only.
         private void UpdateSupportBarLayout()
         {
             if (SupportBar == null || TxtSupportPrompt == null || BtnDonate == null || BtnRate == null || BtnFeedback == null) return;
@@ -1544,7 +1541,6 @@ namespace FrontLineOverlay
                 ApplySkipGlyph(IcoSearchSide, LoadSkipIcon("icon_search"));
                 ApplySkipGlyph(IcoFestivalSearch, LoadSkipIcon("icon_search"));
 
-                // Support bar icons (assets/bmc-logo.svg, rate.svg, feedback.svg) — used as alpha masks by SupportPillButton.
                 BtnDonate.Tag = LoadSkipIcon("bmc-logo");
                 BtnRate.Tag = LoadSkipIcon("rate");
                 BtnFeedback.Tag = LoadSkipIcon("feedback");
