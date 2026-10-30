@@ -137,10 +137,12 @@
 
                         <Grid x:Name="LyricsNormalView" Grid.Column="0" IsHitTestVisible="False">
                             <StackPanel VerticalAlignment="Center">
+                                <TextBlock x:Name="LblPrevious2" Style="{StaticResource LyricHalo}" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,8" Visibility="Collapsed"/>
                                 <TextBlock x:Name="LblPrevious" Style="{StaticResource LyricHalo}" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                                <TextBlock x:Name="LblCurrent" Style="{StaticResource LyricHalo}" Foreground="#FFCC33" FontSize="26" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                                <TextBlock x:Name="LblCurrent" Style="{StaticResource LyricHalo}" Foreground="#FFCC33" FontSize="26" FontWeight="Bold" TextAlignment="Center" HorizontalAlignment="Stretch" TextWrapping="Wrap"/>
                                 <TextBlock x:Name="LblCurrentOriginal" Style="{StaticResource LyricHalo}" Foreground="#99FFFFFF" FontSize="14" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,4,0,0" Visibility="Collapsed"/>
                                 <TextBlock x:Name="LblNext" Style="{StaticResource LyricHalo}" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0"/>
+                                <TextBlock x:Name="LblNext2" Style="{StaticResource LyricHalo}" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0" Visibility="Collapsed"/>
                             </StackPanel>
                         </Grid>
                         <StackPanel x:Name="FestivalAdvanceView" Grid.Column="0" Visibility="Collapsed" VerticalAlignment="Center" Margin="8,0" Panel.ZIndex="10">
@@ -911,6 +913,30 @@
                                         <Button Grid.Column="1" Content="↺" Style="{StaticResource SquareGlassButton}" Width="24" Height="24" Padding="0" FontSize="12" Click="BtnResetLyricStyle_Click"/>
                                     </Grid>
                                     <ComboBox x:Name="CmbLyricStyle" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbLyricStyle_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed"/>
+                                </StackPanel>
+                            </Grid>
+
+                            <Grid Margin="0,0,0,12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="8"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <StackPanel>
+                                    <TextBlock x:Name="LblLyricLinesTitle" Text="LYRIC LINES" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <ComboBox x:Name="CmbLyricLines" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbLyricLines_SelectionChanged">
+                                        <ComboBoxItem Tag="1" Content="1"/>
+                                        <ComboBoxItem Tag="3" Content="3" IsSelected="True"/>
+                                        <ComboBoxItem Tag="5" Content="5"/>
+                                    </ComboBox>
+                                </StackPanel>
+                                <StackPanel Grid.Column="2">
+                                    <TextBlock x:Name="LblLyricAlignmentTitle" Text="ALIGNMENT" Foreground="#66FFFFFF" FontSize="9" FontWeight="Bold" Margin="0,0,0,6"/>
+                                    <ComboBox x:Name="CmbLyricAlignment" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbLyricAlignment_SelectionChanged">
+                                        <ComboBoxItem Tag="left" Content="Left"/>
+                                        <ComboBoxItem Tag="center" Content="Center" IsSelected="True"/>
+                                        <ComboBoxItem Tag="right" Content="Right"/>
+                                    </ComboBox>
                                 </StackPanel>
                             </Grid>
 

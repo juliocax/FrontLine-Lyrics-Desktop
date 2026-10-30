@@ -128,6 +128,42 @@ namespace FrontLineOverlay
             return (!string.IsNullOrWhiteSpace(selected) ? Clean(selected) : Clean(fallback), "manual");
         }
 
+        // Read the live selection first (settings are saved with a short delay).
+        // Fall back to persisted values for older installations or if the window is unavailable.
+        private static (int Lines, string Alignment) CurrentLyricLayout()
+        {
+            double savedLines = AppSettings.GetDouble("LyricLineCount", 3);
+            int lines = savedLines == 1 || savedLines == 5 ? (int)savedLines : 3;
+            string alignment = AppSettings.GetString("LyricAlignment", "center").ToLowerInvariant();
+            if (alignment != "left" && alignment != "right") alignment = "center";
+
+            try
+            {
+                var app = Application.Current;
+                if (app != null)
+                {
+                    return app.Dispatcher.Invoke(() =>
+                    {
+                        var window = app.Windows.OfType<MainWindow>().FirstOrDefault();
+                        if (window?.CmbLyricLines?.SelectedItem is ComboBoxItem lineItem &&
+                            int.TryParse(lineItem.Tag?.ToString(), out int selectedLines) &&
+                            (selectedLines == 1 || selectedLines == 3 || selectedLines == 5))
+                            lines = selectedLines;
+
+                        if (window?.CmbLyricAlignment?.SelectedItem is ComboBoxItem alignItem)
+                        {
+                            string? selected = alignItem.Tag?.ToString()?.ToLowerInvariant();
+                            if (selected == "left" || selected == "center" || selected == "right")
+                                alignment = selected;
+                        }
+                        return (lines, alignment);
+                    });
+                }
+            }
+            catch { /* Keep the persisted values. */ }
+            return (lines, alignment);
+        }
+
         public static async Task SendSnapshotIfDueAsync(TelemetrySnapshot snap)
         {
 #if DEBUG
@@ -145,6 +181,7 @@ namespace FrontLineOverlay
                     .ToString(CultureInfo.InvariantCulture);
 
                 var currentTheme = CurrentTheme(snap.Theme);
+                var lyricLayout = CurrentLyricLayout();
 
                 var evt = new
                 {
@@ -169,6 +206,8 @@ namespace FrontLineOverlay
                         ["theme_mode"] = currentTheme.Mode,
                         ["lyric_font"] = Clean(snap.LyricFont),
                         ["lyric_color"] = Clean(CurrentLyricColor(snap.LyricColor)),
+                        ["lyric_lines"] = lyricLayout.Lines,
+                        ["lyric_alignment"] = lyricLayout.Alignment,
                         ["ui_language"] = Clean(snap.UiLanguage, 8),
                         ["lock_shortcut_set"] = snap.LockShortcut == null ? "no" : "yes",
                         ["lock_shortcut"] = snap.LockShortcut == null ? "none" : Clean(snap.LockShortcut)

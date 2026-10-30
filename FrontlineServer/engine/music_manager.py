@@ -916,6 +916,7 @@ class MusicManager:
     def get_current_state(self) -> Dict[str, Any]:
         """Calculates the current line based on playback time and returns the full app state."""
         current_line, previous_line, next_line = "", "", ""
+        current_lyric_index = -1
         current_line_original = ""
         overlay_msg, status = "", ""
 
@@ -956,6 +957,7 @@ class MusicManager:
             else:
                 for i, item in enumerate(self.synced_lyrics):
                     if elapsed_time >= item['timestamp']:
+                        current_lyric_index = i
                         current_line = item['text'] if item['text'].strip() else "♫"
                         previous_line = self.synced_lyrics[i-1]['text'] if i > 0 else ""
                         next_line = self.synced_lyrics[i+1]['text'] if i + 1 < len(self.synced_lyrics) else ""
@@ -994,6 +996,7 @@ class MusicManager:
             "auto_mode": self.auto_mode,
             "is_translating": self.is_translating,
             "current_lyrics": current_line,
+            "current_lyric_index": current_lyric_index if status == "SYNCED" else -1,
             "previous_lyrics": previous_line,
             "next_lyrics": next_line,
             "current_lyrics_original": current_line_original,

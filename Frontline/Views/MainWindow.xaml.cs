@@ -129,6 +129,11 @@ namespace FrontLineOverlay
         private bool _shuttingDown;
         private int _pythonRestartCount;
         private string? _lastFullLyricsJson;
+        private List<LyricLine>? _visibleLyrics;
+        private int _currentLyricIndex = -1;
+        private int _lyricLineCount = 3;
+        private string _lyricAlignment = "center";
+
         private string? _autoHoldKey;
         private DateTime _autoHoldUntilUtc = DateTime.MinValue;
 
@@ -623,6 +628,89 @@ namespace FrontLineOverlay
             SetSettingsPreviewMode(false);
         }
 
+        private static string LocalizedAlignment(string language, string alignment) =>
+            language switch
+            {
+                "pt" => alignment switch { "left" => "Esquerda", "right" => "Direita", _ => "Centro" },
+                "es" => alignment switch { "left" => "Izquierda", "right" => "Derecha", _ => "Centro" },
+                "id" => alignment switch { "left" => "Kiri", "right" => "Kanan", _ => "Tengah" },
+                _ => alignment switch { "left" => "Left", "right" => "Right", _ => "Center" }
+            };
+
+        private void UpdateLyricSettingsLanguage()
+        {
+            if (LblLyricLinesTitle == null || LblLyricAlignmentTitle == null) return;
+            LblLyricLinesTitle.Text = currentAppLanguage switch
+            {
+                "pt" => "LINHAS DA LETRA", "es" => "LÍNEAS DE LETRA", "id" => "BARIS LIRIK", _ => "LYRIC LINES"
+            };
+            LblLyricAlignmentTitle.Text = currentAppLanguage switch
+            {
+                "pt" => "ALINHAMENTO", "es" => "ALINEACIÓN", "id" => "PERATAAN", _ => "ALIGNMENT"
+            };
+            if (CmbLyricAlignment != null)
+            {
+                foreach (ComboBoxItem item in CmbLyricAlignment.Items)
+                    item.Content = LocalizedAlignment(currentAppLanguage, item.Tag?.ToString() ?? "center");
+            }
+        }
+
+        private void CmbLyricLines_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbLyricLines?.SelectedItem is not ComboBoxItem selected ||
+                !int.TryParse(selected.Tag?.ToString(), out int count)) return;
+            _lyricLineCount = count is 1 or 3 or 5 ? count : 3;
+            RefreshLyricDisplay();
+            if (!_loadingSettings) ScheduleSave();
+        }
+
+        private void CmbLyricAlignment_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbLyricAlignment?.SelectedItem is not ComboBoxItem selected) return;
+            string value = selected.Tag?.ToString() ?? "center";
+            _lyricAlignment = value is "left" or "right" ? value : "center";
+            RefreshLyricDisplay();
+            if (!_loadingSettings) ScheduleSave();
+        }
+
+        private void RefreshLyricDisplay()
+        {
+            if (LblCurrent == null || LblPrevious == null || LblNext == null ||
+                LblPrevious2 == null || LblNext2 == null || LblCurrentOriginal == null) return;
+
+            TextAlignment align = _lyricAlignment switch
+            {
+                "left" => TextAlignment.Left, "right" => TextAlignment.Right, _ => TextAlignment.Center
+            };
+            foreach (TextBlock label in new[] { LblPrevious2, LblPrevious, LblCurrent,
+                         LblCurrentOriginal, LblNext, LblNext2 })
+            {
+                label.TextAlignment = align;
+                label.HorizontalAlignment = HorizontalAlignment.Stretch;
+            }
+
+            bool showSides = _lyricLineCount >= 3;
+            bool showOuter = _lyricLineCount == 5;
+            LblPrevious.Visibility = showSides ? Visibility.Visible : Visibility.Collapsed;
+            LblNext.Visibility = showSides ? Visibility.Visible : Visibility.Collapsed;
+            LblPrevious2.Visibility = showOuter ? Visibility.Visible : Visibility.Collapsed;
+            LblNext2.Visibility = showOuter ? Visibility.Visible : Visibility.Collapsed;
+
+            if (showOuter && _visibleLyrics != null && _currentLyricIndex >= 0)
+            {
+                int index = _currentLyricIndex;
+                LblPrevious2.Text = index >= 2 && index - 2 < _visibleLyrics.Count
+                    ? _visibleLyrics[index - 2].Text : "";
+                LblNext2.Text = index + 2 < _visibleLyrics.Count
+                    ? _visibleLyrics[index + 2].Text : "";
+            }
+            else
+            {
+                LblPrevious2.Text = "";
+                LblNext2.Text = "";
+            }
+        }
+
         private void SldFontSize_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             ApplyFontScale(e.NewValue);
@@ -635,6 +723,8 @@ namespace FrontLineOverlay
             // Direct font sizes keep wrapping based on the real available width.
             double scale = Math.Max(0.1, fontSize / 26.0);
             if (LblCurrent != null) LblCurrent.FontSize = fontSize;
+            if (LblPrevious2 != null) LblPrevious2.FontSize = 14 * scale;
+            if (LblNext2 != null) LblNext2.FontSize = 14 * scale;
             if (LblPrevious != null) LblPrevious.FontSize = 14 * scale;
             if (LblNext != null) LblNext.FontSize = 14 * scale;
             if (LblCurrentOriginal != null) LblCurrentOriginal.FontSize = 14 * scale;
@@ -1050,6 +1140,7 @@ namespace FrontLineOverlay
             LblSearchHistoryTitle.Text = t["SearchHistory"];
             LblSearchHistoryEmpty.Text = t["HistoryEmpty"];
             LblFontSizeTitle.Text = t["FontSizeTitle"];
+            UpdateLyricSettingsLanguage();
             LblBgOpacityTitle.Text = t["BgOpacityTitle"];
             LblLockShortcutTitle.Text = t["LockShortcutTitle"];
             LblLockShortcutHint.Text = t["LockShortcutHint"];
@@ -1405,6 +1496,8 @@ namespace FrontLineOverlay
                 string currentLanguage = root.TryGetProperty("current_language", out var cl) ? cl.GetString() ?? "original" : "original";
                 string song = root.TryGetProperty("song", out var songEl) ? songEl.GetString() ?? "" : "";
                 string artist = root.TryGetProperty("artist", out var artEl) ? artEl.GetString() ?? "" : "";
+                int lyricIndex = root.TryGetProperty("current_lyric_index", out var li) && li.TryGetInt32(out int parsedIndex)
+                    ? parsedIndex : -1;
                 string previousLyrics = root.TryGetProperty("previous_lyrics", out var prevEl) ? prevEl.GetString() ?? "" : "";
                 string nextLyrics = root.TryGetProperty("next_lyrics", out var nextEl) ? nextEl.GetString() ?? "" : "";
                 string? coverUrl = root.TryGetProperty("cover_art", out var c) ? c.GetString() : null;
@@ -1454,6 +1547,9 @@ namespace FrontLineOverlay
                         HomeControls.Visibility = (festivalMode || IsFestivalHubOpen) ? Visibility.Collapsed : Visibility.Visible;
                         isGhostMode = false;
                         LblCurrent.Text = ""; LblPrevious.Text = ""; LblNext.Text = "";
+                        _visibleLyrics = null;
+                        _currentLyricIndex = -1;
+                        RefreshLyricDisplay();
                         LblCurrentOriginal.Text = ""; LblCurrentOriginal.Visibility = Visibility.Collapsed;
                         lastCurrentLyricsOriginal = ""; lastIsTranslatedActive = false;
                         if (_lastFullLyricsJson != null)
@@ -1500,6 +1596,8 @@ namespace FrontLineOverlay
                         LblCurrent.Text = currentLyrics;
                         LblPrevious.Text = previousLyrics;
                         LblNext.Text = nextLyrics;
+                        _currentLyricIndex = lyricIndex;
+                        RefreshLyricDisplay();
                         lastCurrentLyricsOriginal = currentLyricsOriginal;
                         lastIsTranslatedActive = isTranslatedActive;
                         RefreshOriginalLyricsDisplay();
@@ -1507,7 +1605,9 @@ namespace FrontLineOverlay
                     if (fullLyricsRaw != null && fullLyricsRaw != _lastFullLyricsJson)
                     {
                         _lastFullLyricsJson = fullLyricsRaw;
-                        FullLyricsList.ItemsSource = JsonSerializer.Deserialize<List<LyricLine>>(fullLyricsRaw);
+                        _visibleLyrics = JsonSerializer.Deserialize<List<LyricLine>>(fullLyricsRaw);
+                        FullLyricsList.ItemsSource = _visibleLyrics;
+                        RefreshLyricDisplay();
                     }
 
                     ApplyFestivalFromServer(festivalMode, artist, song, status, festivalAdvanceSong, festivalAdvanceArtist);
@@ -2228,6 +2328,19 @@ namespace FrontLineOverlay
                 double font = AppSettings.GetDouble("FontSize", 26);
                 if (SldFontSize != null)
                     SldFontSize.Value = Math.Clamp(font, SldFontSize.Minimum, SldFontSize.Maximum);
+                _lyricLineCount = (int)AppSettings.GetDouble("LyricLineCount", 3);
+                if (_lyricLineCount is not (1 or 3 or 5)) _lyricLineCount = 3;
+                if (CmbLyricLines != null)
+                    foreach (ComboBoxItem item in CmbLyricLines.Items)
+                        if (item.Tag?.ToString() == _lyricLineCount.ToString())
+                            CmbLyricLines.SelectedItem = item;
+                _lyricAlignment = AppSettings.GetString("LyricAlignment", "center");
+                if (_lyricAlignment is not ("left" or "center" or "right")) _lyricAlignment = "center";
+                if (CmbLyricAlignment != null)
+                    foreach (ComboBoxItem item in CmbLyricAlignment.Items)
+                        if (item.Tag?.ToString() == _lyricAlignment)
+                            CmbLyricAlignment.SelectedItem = item;
+                RefreshLyricDisplay();
                 _wantAuto = AppSettings.GetBool("AutoMode", false);
                 if (BtnAutoSide != null)
                     BtnAutoSide.IsChecked = _wantAuto;
@@ -2354,6 +2467,8 @@ namespace FrontLineOverlay
                 if (SldFontSize != null)
                     AppSettings.SetDouble("FontSize", SldFontSize.Value);
                 AppSettings.SetDouble("BgOpacity", SldBgOpacity != null ? SldBgOpacity.Value : bgOpacity);
+                AppSettings.SetDouble("LyricLineCount", _lyricLineCount);
+                AppSettings.SetString("LyricAlignment", _lyricAlignment);
                 AppSettings.SetBool("AutoMode", _wantAuto);
                 AppSettings.SetString("AppLanguage", currentAppLanguage);
                 PersistAppearance();
