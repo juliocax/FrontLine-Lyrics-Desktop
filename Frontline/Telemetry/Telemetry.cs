@@ -130,10 +130,10 @@ namespace FrontLineOverlay
 
         // Read the live selection first (settings are saved with a short delay).
         // Fall back to persisted values for older installations or if the window is unavailable.
-        private static (int Lines, string Alignment) CurrentLyricLayout()
+        private static (string Lines, string Alignment) CurrentLyricLayout()
         {
             double savedLines = AppSettings.GetDouble("LyricLineCount", 3);
-            int lines = savedLines == 1 || savedLines == 5 ? (int)savedLines : 3;
+            string lines = savedLines == 0 ? "all" : savedLines == 1 || savedLines == 5 ? ((int)savedLines).ToString(CultureInfo.InvariantCulture) : "3";
             string alignment = AppSettings.GetString("LyricAlignment", "center").ToLowerInvariant();
             if (alignment != "left" && alignment != "right") alignment = "center";
 
@@ -147,8 +147,8 @@ namespace FrontLineOverlay
                         var window = app.Windows.OfType<MainWindow>().FirstOrDefault();
                         if (window?.CmbLyricLines?.SelectedItem is ComboBoxItem lineItem &&
                             int.TryParse(lineItem.Tag?.ToString(), out int selectedLines) &&
-                            (selectedLines == 1 || selectedLines == 3 || selectedLines == 5))
-                            lines = selectedLines;
+                            (selectedLines == 0 || selectedLines == 1 || selectedLines == 3 || selectedLines == 5))
+                            lines = selectedLines == 0 ? "all" : selectedLines.ToString(CultureInfo.InvariantCulture);
 
                         if (window?.CmbLyricAlignment?.SelectedItem is ComboBoxItem alignItem)
                         {

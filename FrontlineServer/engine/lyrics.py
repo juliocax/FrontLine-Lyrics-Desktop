@@ -8,6 +8,7 @@ test and easy to swap for another lyrics provider later.
 
 import logging
 import re
+import unicodedata
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
@@ -41,17 +42,41 @@ def clean_lrclib_query(artist: str, song: str) -> Tuple[str, str]:
     return cleaned_artist, cleaned_song
 
 
+def _normalized_name(value: str) -> str:
+    """Compare names without case, accents or punctuation differences."""
+    value = unicodedata.normalize("NFKD", value or "")
+    value = "".join(c for c in value if not unicodedata.combining(c))
+    return " ".join(re.findall(r"[a-z0-9]+", value.casefold()))
+
+
+def _normalized_title(value: str) -> str:
+    """Ignore *descriptive* suffixes, but not different song titles."""
+    value = _PAREN_OR_BRACKET.sub("", value or "")
+    value = _DASH_SUFFIX.sub("", value)
+    return _normalized_name(value)
+
+
 def names_are_close(query: str, candidate: str) -> bool:
-    """Loose title/artist match: exact, substring, or a shared long first word."""
-    q = (query or "").lower().strip()
-    c = (candidate or "").lower().strip()
-    if not q or not c:
+    """Require a genuine name match; substring/first-word matches are unsafe."""
+    return bool(_normalized_name(query)) and _normalized_name(query) == _normalized_name(candidate)
+
+
+def _valid_track(item: Any, artist: str, song: str) -> bool:
+    """Require both the requested song and performer to match the LRCLIB record.
+
+    An unrelated song must never be accepted merely because a broad search
+    returned it. Covers under a *different* artist are deliberately not treated
+    as time-synced matches for a live performance.
+    """
+    if not isinstance(item, dict) or not item.get("syncedLyrics"):
         return False
-    if q == c or q in c or c in q:
-        return True
-    q0 = q.split()[0]
-    c0 = c.split()[0]
-    return len(q0) >= 4 and (q0 in c or c0 in q)
+    wanted_title = _normalized_title(song)
+    found_title = _normalized_title(str(item.get("trackName") or ""))
+    if not wanted_title or wanted_title != found_title:
+        return False
+    wanted_artist = _normalized_name(artist)
+    found_artist = _normalized_name(str(item.get("artistName") or ""))
+    return bool(wanted_artist) and wanted_artist == found_artist
 
 
 def parse_synced_lrc(synced_lyrics: str) -> List[Dict[str, Any]]:
@@ -66,35 +91,18 @@ def parse_synced_lrc(synced_lyrics: str) -> List[Dict[str, Any]]:
         if text:
             lines.append({"timestamp": timestamp, "text": text})
     if lines:
-        # Sentinel line so the UI knows where the last line ends.
         lines.append({"timestamp": lines[-1]["timestamp"] + 5.0, "text": "End"})
     return lines
 
 
 def pick_lrclib_search_hit(results: Any, artist: str, song: str) -> Optional[Dict[str, Any]]:
-    """Pick a search result with synced lyrics; does not require an exact artist match."""
+    """Accept only synced lyrics for the requested song *and* artist."""
     if not isinstance(results, list):
         return None
-    scored: List[Tuple[int, Dict[str, Any]]] = []
     for item in results:
-        if not isinstance(item, dict) or not item.get("syncedLyrics"):
-            continue
-        score = 0
-        if names_are_close(artist, item.get("artistName") or ""):
-            score += 2
-        if names_are_close(song, item.get("trackName") or ""):
-            score += 2
-        if score > 0:
-            scored.append((score, item))
-    if not scored:
-        for item in results:
-            if not isinstance(item, dict) or not item.get("syncedLyrics"):
-                continue
-            if names_are_close(song, item.get("trackName") or ""):
-                return item
-        return None
-    scored.sort(key=lambda pair: -pair[0])
-    return scored[0][1]
+        if _valid_track(item, artist, song):
+            return item
+    return None
 
 
 def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]]:
@@ -136,10 +144,13 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
         )
         if r.status_code == 200:
             payload = r.json()
-            if payload.get("syncedLyrics"):
+            if _valid_track(payload, who, track):
                 lines = parse_synced_lrc(payload["syncedLyrics"])
                 if lines:
                     return lines
+            elif isinstance(payload, dict) and payload.get("syncedLyrics"):
+                logging.warning("LRCLIB /get returned mismatched track: requested=%r - %r, got=%r - %r",
+                                who, track, payload.get("artistName"), payload.get("trackName"))
         return None
 
     def lookup_search(track: str, who: str, query: str) -> Optional[List[Dict[str, Any]]]:
@@ -152,14 +163,13 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
         if r.status_code != 200:
             return None
         hit = pick_lrclib_search_hit(r.json(), who, track)
-        if hit and hit.get("syncedLyrics"):
+        if hit:
             lines = parse_synced_lrc(hit["syncedLyrics"])
             if lines:
                 return lines
         return None
 
     try:
-        # 1) Exact get for every (artist, title) candidate we have.
         for who, track in attempts:
             try:
                 lines = lookup_get(track, who)
@@ -168,7 +178,6 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
             except Exception as e:
                 logging.warning(f"Exact match search failed (lrclib): {e}")
 
-        # 2) Broad search with "title artist".
         who, track = attempts[0]
         try:
             lines = lookup_search(track, who, f"{track} {who}".strip())
@@ -177,7 +186,6 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
         except Exception as e:
             logging.warning(f"Broad search failed (lrclib): {e}")
 
-        # 3) Title-only search as a last resort.
         if who:
             try:
                 lines = lookup_search(track, who, track)

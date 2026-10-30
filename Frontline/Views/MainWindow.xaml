@@ -145,6 +145,18 @@
                                 <TextBlock x:Name="LblNext2" Style="{StaticResource LyricHalo}" Foreground="#555555" FontSize="14" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,8,0,0" Visibility="Collapsed"/>
                             </StackPanel>
                         </Grid>
+                        <!-- Reading-only full-song mode; never changes song timing on scroll. -->
+                        <Grid x:Name="LyricsReadingView" Grid.Column="0" Visibility="Collapsed">
+                            <ScrollViewer x:Name="LyricsReadingScroll" VerticalScrollBarVisibility="Hidden"
+                                          HorizontalScrollBarVisibility="Disabled" Background="Transparent"
+                                          PanningMode="VerticalOnly" PreviewMouseWheel="LyricsReadingScroll_PreviewMouseWheel">
+                                <StackPanel x:Name="LyricsReadingPanel" Margin="6,10,6,20"/>
+                            </ScrollViewer>
+                            <Button x:Name="BtnResumeLyricsFollow" Content="↳" HorizontalAlignment="Right"
+                                    VerticalAlignment="Bottom" Width="34" Height="34" Margin="0,0,8,8"
+                                    Visibility="Collapsed" Click="BtnResumeLyricsFollow_Click"
+                                    ToolTip="Resume automatic lyric following"/>
+                        </Grid>
                         <StackPanel x:Name="FestivalAdvanceView" Grid.Column="0" Visibility="Collapsed" VerticalAlignment="Center" Margin="8,0" Panel.ZIndex="10">
                             <StackPanel.Effect>
                                 <DropShadowEffect Color="Black" BlurRadius="12" ShadowDepth="0" Opacity="0.75"/>
@@ -928,6 +940,7 @@
                                         <ComboBoxItem Tag="1" Content="1"/>
                                         <ComboBoxItem Tag="3" Content="3" IsSelected="True"/>
                                         <ComboBoxItem Tag="5" Content="5"/>
+                                        <ComboBoxItem Tag="0" Content="Full"/>
                                     </ComboBox>
                                 </StackPanel>
                                 <StackPanel Grid.Column="2">

@@ -132,6 +132,12 @@ namespace FrontLineOverlay
         private List<LyricLine>? _visibleLyrics;
         private int _currentLyricIndex = -1;
         private int _lyricLineCount = 3;
+        private readonly List<TextBlock> _readingLines = new();
+        private int _readingHighlighted = -1;
+        private int _readingLastScrolled = -1;
+        private bool _readingFollowing = true;
+        private DateTime _readingManualUntil = DateTime.MinValue;
+
         private string _lyricAlignment = "center";
 
         private string? _autoHoldKey;
@@ -648,6 +654,13 @@ namespace FrontLineOverlay
             {
                 "pt" => "ALINHAMENTO", "es" => "ALINEACIÓN", "id" => "PERATAAN", _ => "ALIGNMENT"
             };
+            if (CmbLyricLines != null)
+                foreach (ComboBoxItem item in CmbLyricLines.Items)
+                    if (item.Tag?.ToString() == "0")
+                        item.Content = currentAppLanguage switch
+                        {
+                            "pt" => "Inteira", "es" => "Completa", "id" => "Penuh", _ => "Full"
+                        };
             if (CmbLyricAlignment != null)
             {
                 foreach (ComboBoxItem item in CmbLyricAlignment.Items)
@@ -659,8 +672,10 @@ namespace FrontLineOverlay
         {
             if (CmbLyricLines?.SelectedItem is not ComboBoxItem selected ||
                 !int.TryParse(selected.Tag?.ToString(), out int count)) return;
-            _lyricLineCount = count is 1 or 3 or 5 ? count : 3;
+            _lyricLineCount = count is 0 or 1 or 3 or 5 ? count : 3;
             RefreshLyricDisplay();
+            _readingFollowing = true;
+            _readingManualUntil = DateTime.MinValue;
             if (!_loadingSettings) ScheduleSave();
         }
 
@@ -689,6 +704,22 @@ namespace FrontLineOverlay
                 label.HorizontalAlignment = HorizontalAlignment.Stretch;
             }
 
+            if (LyricsReadingView != null)
+            {
+                bool fullReading = _lyricLineCount == 0 && !isManualSyncMode &&
+                    currentAppStatus != "IDLE" && currentAppStatus != "LISTENING" &&
+                    currentAppStatus != "SEARCHING" && _visibleLyrics?.Count > 0;
+                LyricsReadingView.Visibility = fullReading ? Visibility.Visible : Visibility.Collapsed;
+                if (fullReading)
+                {
+                    LyricsNormalView.Visibility = Visibility.Collapsed;
+                    UpdateReadingLineStyles();
+                }
+                else if (!isManualSyncMode && currentAppStatus != "LISTENING" && currentAppStatus != "SEARCHING")
+                    LyricsNormalView.Visibility = Visibility.Visible;
+            }
+            foreach (var label in _readingLines) label.TextAlignment = align;
+
             bool showSides = _lyricLineCount >= 3;
             bool showOuter = _lyricLineCount == 5;
             LblPrevious.Visibility = showSides ? Visibility.Visible : Visibility.Collapsed;
@@ -711,6 +742,86 @@ namespace FrontLineOverlay
             }
         }
 
+        // Full lyrics: display-only ScrollViewer separate from manual synchronization ListBox.
+        private void RebuildReadingLines()
+        {
+            if (LyricsReadingPanel == null) return;
+            LyricsReadingPanel.Children.Clear();
+            _readingLines.Clear();
+            _readingHighlighted = -1;
+            _readingLastScrolled = -1;
+            if (_visibleLyrics == null) return;
+            foreach (var lyric in _visibleLyrics)
+            {
+                var line = new TextBlock
+                {
+                    Text = lyric.Text,
+                    TextWrapping = TextWrapping.Wrap,
+                    TextAlignment = _lyricAlignment == "left" ? TextAlignment.Left :
+                        _lyricAlignment == "right" ? TextAlignment.Right : TextAlignment.Center,
+                    FontSize = Math.Max(12, SldFontSize?.Value ?? 26) * 0.72,
+                    Foreground = new SolidColorBrush(Color.FromRgb(160, 160, 160)),
+                    FontWeight = FontWeights.Normal,
+                    Margin = new Thickness(0, 5, 0, 5)
+                };
+                _readingLines.Add(line);
+                LyricsReadingPanel.Children.Add(line);
+            }
+            _readingFollowing = true;
+            _readingManualUntil = DateTime.MinValue;
+            if (BtnResumeLyricsFollow != null) BtnResumeLyricsFollow.Visibility = Visibility.Collapsed;
+            UpdateReadingLineStyles();
+        }
+
+        private void UpdateReadingLineStyles()
+        {
+            if (_readingLines.Count == 0) return;
+            int idx = _currentLyricIndex;
+            if (idx < 0 || idx >= _readingLines.Count) return;
+            if (_readingHighlighted != idx)
+            {
+                if (_readingHighlighted >= 0 && _readingHighlighted < _readingLines.Count)
+                {
+                    var old = _readingLines[_readingHighlighted];
+                    old.Foreground = new SolidColorBrush(Color.FromRgb(160, 160, 160));
+                    old.FontWeight = FontWeights.Normal;
+                }
+                var current = _readingLines[idx];
+                current.Foreground = LblCurrent.Foreground;
+                current.FontWeight = FontWeights.Bold;
+                _readingHighlighted = idx;
+            }
+            if (_readingFollowing && _readingLastScrolled != idx && DateTime.UtcNow >= _readingManualUntil &&
+                LyricsReadingView?.Visibility == Visibility.Visible)
+            {
+                _readingLastScrolled = idx;
+                var target = _readingLines[idx];
+                target.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (!target.IsLoaded || !_readingFollowing || LyricsReadingScroll == null) return;
+                    var pos = target.TransformToAncestor(LyricsReadingPanel).Transform(new Point(0, 0));
+                    LyricsReadingScroll.ScrollToVerticalOffset(Math.Max(0,
+                        pos.Y - (LyricsReadingScroll.ViewportHeight - target.ActualHeight) / 2));
+                }), DispatcherPriority.Background);
+            }
+        }
+
+        private void LyricsReadingScroll_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            _readingFollowing = false;
+            _readingManualUntil = DateTime.MaxValue; // Resume only when user requests it.
+            BtnResumeLyricsFollow.Visibility = Visibility.Visible;
+        }
+
+        private void BtnResumeLyricsFollow_Click(object sender, RoutedEventArgs e)
+        {
+            _readingFollowing = true;
+            _readingLastScrolled = -1;
+            _readingManualUntil = DateTime.MinValue;
+            BtnResumeLyricsFollow.Visibility = Visibility.Collapsed;
+            UpdateReadingLineStyles();
+        }
+
         private void SldFontSize_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             ApplyFontScale(e.NewValue);
@@ -729,6 +840,7 @@ namespace FrontLineOverlay
             if (LblNext != null) LblNext.FontSize = 14 * scale;
             if (LblCurrentOriginal != null) LblCurrentOriginal.FontSize = 14 * scale;
             if (FullLyricsList != null) FullLyricsList.FontSize = 16 * scale;
+            foreach (var line in _readingLines) line.FontSize = Math.Max(12, fontSize * 0.72);
             UpdateSupportBarLayout();
         }
 
@@ -1371,7 +1483,7 @@ namespace FrontLineOverlay
             {
                 isManualSyncMode = false;
                 if (FullLyricsList != null) FullLyricsList.Visibility = Visibility.Collapsed;
-                if (LyricsNormalView != null) LyricsNormalView.Visibility = Visibility.Visible;
+                RefreshLyricDisplay();
             }
         }
 
@@ -1556,6 +1668,9 @@ namespace FrontLineOverlay
                         {
                             _lastFullLyricsJson = null;
                             FullLyricsList.ItemsSource = null;
+                            if (LyricsReadingPanel != null) LyricsReadingPanel.Children.Clear();
+                            _readingLines.Clear();
+                            _readingHighlighted = -1;
                         }
                         LoadingSpinner.Visibility = Visibility.Collapsed;
                         StopLoadingSpinnerAnimation();
@@ -1607,9 +1722,11 @@ namespace FrontLineOverlay
                         _lastFullLyricsJson = fullLyricsRaw;
                         _visibleLyrics = JsonSerializer.Deserialize<List<LyricLine>>(fullLyricsRaw);
                         FullLyricsList.ItemsSource = _visibleLyrics;
+                        RebuildReadingLines();
                         RefreshLyricDisplay();
                     }
 
+                    RefreshLyricDisplay();
                     ApplyFestivalFromServer(festivalMode, artist, song, status, festivalAdvanceSong, festivalAdvanceArtist);
                     SyncTimingTools();
 
@@ -2000,7 +2117,7 @@ namespace FrontLineOverlay
             SetOverlayBackVisible(IsFestivalHubOpen);
             if (!isResizing) UpdateVisualState(isGhostMode);
         }
-        private void BtnManualSync_Toggle(object sender, RoutedEventArgs e) { isManualSyncMode = !isManualSyncMode; FullLyricsList.Visibility = isManualSyncMode ? Visibility.Visible : Visibility.Collapsed; LyricsNormalView.Visibility = isManualSyncMode ? Visibility.Collapsed : Visibility.Visible; BtnMenu.IsChecked = false; }
+        private void BtnManualSync_Toggle(object sender, RoutedEventArgs e) { isManualSyncMode = !isManualSyncMode; FullLyricsList.Visibility = isManualSyncMode ? Visibility.Visible : Visibility.Collapsed; RefreshLyricDisplay(); BtnMenu.IsChecked = false; }
         private void FullLyricsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (FullLyricsList.SelectedItem is not LyricLine s) return;
@@ -2010,6 +2127,7 @@ namespace FrontLineOverlay
             FullLyricsList.Visibility = Visibility.Collapsed;
             LyricsNormalView.Visibility = Visibility.Visible;
             FullLyricsList.SelectedItem = null;
+            RefreshLyricDisplay();
         }
         private void BtnListen_Click(object sender, RoutedEventArgs e)
         {
@@ -2329,7 +2447,7 @@ namespace FrontLineOverlay
                 if (SldFontSize != null)
                     SldFontSize.Value = Math.Clamp(font, SldFontSize.Minimum, SldFontSize.Maximum);
                 _lyricLineCount = (int)AppSettings.GetDouble("LyricLineCount", 3);
-                if (_lyricLineCount is not (1 or 3 or 5)) _lyricLineCount = 3;
+                if (_lyricLineCount is not (0 or 1 or 3 or 5)) _lyricLineCount = 3;
                 if (CmbLyricLines != null)
                     foreach (ComboBoxItem item in CmbLyricLines.Items)
                         if (item.Tag?.ToString() == _lyricLineCount.ToString())
