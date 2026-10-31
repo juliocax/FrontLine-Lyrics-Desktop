@@ -1,4 +1,4 @@
-using System.Diagnostics;
+﻿using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System;
@@ -53,6 +53,33 @@ namespace FrontLineOverlay
         // Exemplo para a PRÓXIMA versão: substitua pela versão real ao publicar.
         private static readonly Dictionary<string, Dictionary<string, string[]>> Notes = new()
         {
+            ["1.5.1"] = new()
+            {
+                ["en"] = new[] {
+                    "Added clear notices when the lyrics service is unavailable or an internet connection fails.",
+                    "Improved Spotify track-change detection and playback synchronization during slow lyrics requests.",
+                    "Fixed incorrect lyrics matches and improved searches for covers, remasters and featured artists.",
+                    "Improved recovery from failed recognition and lyrics lookups."
+                },
+                ["pt"] = new[] {
+                    "Novos avisos quando a fonte de letras estiver indisponível ou houver problemas de conexão.",
+                    "Melhorias na detecção de troca de faixa do Spotify e na sincronização durante buscas lentas.",
+                    "Correções de letras incorretas e buscas aprimoradas para covers, remasters e participações.",
+                    "Melhor recuperação de falhas no reconhecimento e na busca de letras."
+                },
+                ["es"] = new[] {
+                    "Nuevos avisos cuando la fuente de letras no esté disponible o haya problemas de conexión.",
+                    "Mejor detección de cambios de pista en Spotify y sincronización durante búsquedas lentas.",
+                    "Correcciones de letras incorrectas y búsquedas mejoradas para versiones, remasterizaciones y colaboraciones.",
+                    "Mejor recuperación ante fallos de reconocimiento y búsqueda de letras."
+                },
+                ["id"] = new[] {
+                    "Notifikasi baru saat sumber lirik tidak tersedia atau koneksi internet bermasalah.",
+                    "Peningkatan deteksi pergantian lagu Spotify dan sinkronisasi saat pencarian lirik lambat.",
+                    "Perbaikan hasil lirik yang keliru serta pencarian versi cover, remaster, dan kolaborasi.",
+                    "Pemulihan yang lebih baik saat pengenalan lagu atau pencarian lirik gagal."
+                }
+            },
             ["1.5.0"] = new()
             {
                 ["en"] = new[] {
@@ -129,10 +156,10 @@ namespace FrontLineOverlay
             TxtDescription.Text = labels[1];
             TxtChangesTitle.Text = labels[2];
             BtnDone.Content = labels[3];
-            TxtFullRelease.Visibility = CurrentVersion == "1.5.0"
+            TxtFullRelease.Visibility = (CurrentVersion == "1.5.0" || CurrentVersion == "1.5.1")
                 ? Visibility.Visible : Visibility.Collapsed;
             LinkFullRelease.Inlines.Clear();
-            if (CurrentVersion == "1.5.0")
+            if ((CurrentVersion == "1.5.0" || CurrentVersion == "1.5.1"))
                 LinkFullRelease.Inlines.Add(FullReleaseLabels[language]);
             PanelChanges.Children.Clear();
             var changes = Notes.TryGetValue(CurrentVersion, out var translations)

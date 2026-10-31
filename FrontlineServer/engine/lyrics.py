@@ -8,6 +8,7 @@ test and easy to swap for another lyrics provider later.
 
 import logging
 import re
+import unicodedata
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
@@ -42,17 +43,92 @@ def clean_lrclib_query(artist: str, song: str) -> Tuple[str, str]:
     return cleaned_artist, cleaned_song
 
 
+def _normalized_name(value: str) -> str:
+    """Compare names without case, accents or punctuation differences."""
+    value = unicodedata.normalize("NFKD", value or "")
+    value = "".join(c for c in value if not unicodedata.combining(c))
+    return " ".join(re.findall(r"[a-z0-9]+", value.casefold()))
+
+
+# Descriptors that can be ignored only as isolated version annotations.
+_VERSION_SUFFIX = re.compile(
+    r"\s*[-–—]\s*(?:remaster(?:ed)?(?:\s+\d{4})?|\d{4}\s+remaster(?:ed)?|"
+    r"live(?:\s+at\s+.+)?|radio\s+edit|acoustic(?:\s+version)?|"
+    r"(?:official\s+)?(?:music\s+)?video|lyric\s+video|"
+    r"cover(?:\s+version)?|demo|instrumental|single\s+version)\s*$",
+    re.I,
+)
+
+
+def _normalized_title(value: str) -> str:
+    """Normalize decorative version labels without treating other titles as equivalent."""
+    value = _PAREN_OR_BRACKET.sub("", value or "")
+    value = _DASH_SUFFIX.sub("", value)
+    value = _VERSION_SUFFIX.sub("", value)
+    return _normalized_name(value)
+
+
 def names_are_close(query: str, candidate: str) -> bool:
-    """Loose title/artist match: exact, substring, or a shared long first word."""
-    q = (query or "").lower().strip()
-    c = (candidate or "").lower().strip()
-    if not q or not c:
-        return False
-    if q == c or q in c or c in q:
-        return True
-    q0 = q.split()[0]
-    c0 = c.split()[0]
-    return len(q0) >= 4 and (q0 in c or c0 in q)
+    """Strict name comparison used by other callers."""
+    return bool(_normalized_name(query)) and _normalized_name(query) == _normalized_name(candidate)
+
+
+_FEAT_IN_TITLE = re.compile(r"\b(?:feat\.?|ft\.?|featuring)\s+([^\r\n)\]]+)", re.I)
+_ARTIST_JOIN = re.compile(r"\s*(?:,|;|\s+&\s+|\s+and\s+|\s+feat\.?\s+|\s+ft\.?\s+|\s+featuring\s+)\s*", re.I)
+
+
+def _artist_parts(value: str) -> List[str]:
+    """Split only recognizable performer separators, not arbitrary substrings."""
+    return [_normalized_name(p) for p in _ARTIST_JOIN.split(value or "") if _normalized_name(p)]
+
+
+def _performers(artist: str, song: str) -> Tuple[str, set]:
+    names = _artist_parts(artist)
+    featured = set(names[1:])
+    for match in _FEAT_IN_TITLE.finditer(song or ""):
+        featured.update(_artist_parts(match.group(1)))
+    return (names[0] if names else ""), featured
+
+
+def _title_variants(raw_title: str, main_artist: str) -> List[str]:
+    variants = [_normalized_title(raw_title)]
+    # Some LRCLIB records include "Artist - Song" in trackName.
+    parts = re.split(r"\s+[-–—:]\s+", raw_title, maxsplit=1)
+    if len(parts) == 2:
+        prefix_names = _artist_parts(parts[0])
+        if prefix_names and prefix_names[0] == main_artist:
+            variants.append(_normalized_title(parts[1]))
+    return variants
+
+
+def _match_score(item: Any, artist: str, song: str) -> int:
+    """Match the *original* track identity, regardless of lookup query variants.
+
+    A requested featured performer may be credited either in trackName or
+    artistName. Reject solo recordings when a feature was explicitly requested.
+    """
+    if not isinstance(item, dict) or not item.get("syncedLyrics"):
+        return 0
+    wanted_main, wanted_feat = _performers(artist, song)
+    raw_found_title = str(item.get("trackName") or "")
+    found_main, found_feat = _performers(str(item.get("artistName") or ""), raw_found_title)
+    if not wanted_main or wanted_main != found_main:
+        return 0
+    if wanted_feat and not wanted_feat.issubset(found_feat):
+        return 0
+    wanted_title = _normalized_title(song)
+    if not wanted_title or wanted_title not in _title_variants(raw_found_title, wanted_main):
+        return 0
+    score = 100 if _normalized_title(raw_found_title) == wanted_title else 80
+    if wanted_feat:
+        score += 20
+    elif found_feat:
+        score -= 40  # Prefer solo recording when no feature was requested.
+    return score
+
+
+def _valid_track(item: Any, artist: str, song: str) -> bool:
+    return _match_score(item, artist, song) > 0
 
 
 def parse_synced_lrc(synced_lyrics: str) -> List[Dict[str, Any]]:
@@ -73,29 +149,14 @@ def parse_synced_lrc(synced_lyrics: str) -> List[Dict[str, Any]]:
 
 
 def pick_lrclib_search_hit(results: Any, artist: str, song: str) -> Optional[Dict[str, Any]]:
-    """Pick a search result with synced lyrics; does not require an exact artist match."""
+    """Prefer exact artist/title; allow artist-prefixed titles as fallback."""
     if not isinstance(results, list):
         return None
-    scored: List[Tuple[int, Dict[str, Any]]] = []
-    for item in results:
-        if not isinstance(item, dict) or not item.get("syncedLyrics"):
-            continue
-        score = 0
-        if names_are_close(artist, item.get("artistName") or ""):
-            score += 2
-        if names_are_close(song, item.get("trackName") or ""):
-            score += 2
-        if score > 0:
-            scored.append((score, item))
-    if not scored:
-        for item in results:
-            if not isinstance(item, dict) or not item.get("syncedLyrics"):
-                continue
-            if names_are_close(song, item.get("trackName") or ""):
-                return item
-        return None
-    scored.sort(key=lambda pair: -pair[0])
-    return scored[0][1]
+    ranked = sorted(
+        ((score, item) for item in results if (score := _match_score(item, artist, song)) > 0),
+        key=lambda pair: -pair[0],
+    )
+    return ranked[0][1] if ranked else None
 
 
 def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]]:
@@ -108,8 +169,12 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
     """
     headers = {"User-Agent": "FrontLineLyricsApp/1.3.0"}
     clean_artist, clean_song = clean_lrclib_query(artist, song)
+    requested_main, requested_feat = _performers(artist, song)
     attempts: List[Tuple[str, str]] = []
-    for pair in ((clean_artist, clean_song), (artist or "", song or "")):
+    # Feature-specific search first. The old order found the solo recording and
+    # returned immediately, even when the user requested a feat. version.
+    for pair in ((clean_artist, song or ""), (artist or "", song or ""),
+                 (clean_artist, clean_song)):
         key = (pair[0].lower().strip(), pair[1].lower().strip())
         if not key[1] or key in {(a.lower(), s.lower()) for a, s in attempts}:
             continue
@@ -143,16 +208,21 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
             observed["server_errors"] += 1
         if r.status_code == 200:
             payload = r.json()
-            if payload.get("syncedLyrics"):
+            if _valid_track(payload, artist, song):
                 lines = parse_synced_lrc(payload["syncedLyrics"])
                 if lines:
                     return lines
+            elif isinstance(payload, dict) and payload.get("syncedLyrics"):
+                logging.warning(
+                    "LRCLIB /get returned mismatched track: requested=%r - %r, got=%r - %r",
+                    who, track, payload.get("artistName"), payload.get("trackName"),
+                )
         return None
 
-    def lookup_search(track: str, who: str, query: str) -> Optional[List[Dict[str, Any]]]:
+    def lookup_search(track: str, who: str, query: Optional[str] = None) -> Optional[List[Dict[str, Any]]]:
         r = session.get(
             "https://lrclib.net/api/search",
-            params={"q": query},
+            params={"q": query} if query is not None else {"track_name": track, "artist_name": who},
             headers=headers,
             timeout=6,
         )
@@ -163,8 +233,17 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
             observed["server_errors"] += 1
         if r.status_code != 200:
             return None
-        hit = pick_lrclib_search_hit(r.json(), who, track)
-        if hit and hit.get("syncedLyrics"):
+        results = r.json()
+        hit = pick_lrclib_search_hit(results, artist, song)
+        if not hit:
+            # Metadata only: do not log copyrighted lyric text.
+            logging.info(
+                "LRCLIB search no strict match: query=%r, artist=%r, candidates=%r",
+                query if query is not None else track, who,
+                [(x.get("trackName"), x.get("artistName")) for x in results[:8] if isinstance(x, dict)]
+                if isinstance(results, list) else "invalid response",
+            )
+        if hit:
             lines = parse_synced_lrc(hit["syncedLyrics"])
             if lines:
                 return lines
@@ -182,10 +261,51 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
                 elif isinstance(e, requests.exceptions.RetryError): observed["server_errors"] += 1
                 logging.warning(f"Exact match search failed (lrclib): {e}")
 
-        # 2) Broad search with "title artist".
+        # 2) Structured search: no competing q parameter, and the server can
+        # filter artist/title separately. This is especially important for
+        # covers, whose results may be buried in the 20-result q limit.
         who, track = attempts[0]
+        if who:
+            try:
+                lines = lookup_search(track, who)
+                if lines:
+                    return lines
+            except Exception as e:
+                if service_health.classify_exception(e): observed["connection_errors"] += 1
+                elif isinstance(e, requests.exceptions.RetryError): observed["server_errors"] += 1
+                logging.warning("Structured search failed (lrclib): %s", e)
+
+        if requested_feat:
+            try:
+                # Many catalogue entries store the feat only in artistName;
+                # structured search with a plain title may find them.
+                lines = lookup_search(clean_song, clean_artist)
+                if lines:
+                    return lines
+            except Exception as e:
+                if service_health.classify_exception(e): observed["connection_errors"] += 1
+                elif isinstance(e, requests.exceptions.RetryError): observed["server_errors"] += 1
+                logging.warning("Structured feature fallback failed (lrclib): %s", e)
+
+        if requested_feat:
+            # LRCLIB may credit featuring performers in artistName rather than
+            # trackName. Try original artist/title and principal+feature title.
+            for lookup_artist, lookup_title in ((artist, song), (artist, clean_song)):
+                if not lookup_artist or not lookup_title:
+                    continue
+                try:
+                    lines = lookup_search(lookup_title, lookup_artist)
+                    if lines:
+                        return lines
+                except Exception as e:
+                    if service_health.classify_exception(e): observed["connection_errors"] += 1
+                    elif isinstance(e, requests.exceptions.RetryError): observed["server_errors"] += 1
+                    logging.warning("Feature artist search failed (lrclib): %s", e)
+
+        # 3) Broad search, preserving the featured artist in the query.
         try:
-            lines = lookup_search(track, who, f"{track} {who}".strip())
+            featured_query = f"{clean_song} {clean_artist} {' '.join(sorted(requested_feat))}".strip()
+            lines = lookup_search(song, clean_artist, featured_query)
             if lines:
                 return lines
         except Exception as e:
@@ -193,7 +313,7 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
             elif isinstance(e, requests.exceptions.RetryError): observed["server_errors"] += 1
             logging.warning(f"Broad search failed (lrclib): {e}")
 
-        # 3) Title-only search as a last resort.
+        # 4) Title-only search as a last resort.
         if who:
             try:
                 lines = lookup_search(track, who, track)
@@ -204,6 +324,7 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
                 elif isinstance(e, requests.exceptions.RetryError): observed["server_errors"] += 1
                 logging.warning(f"Title-only search failed (lrclib): {e}")
     finally:
+        # At most one health observation per song lookup, regardless of retries.
         if observed["ok"]:
             service_health.record_attempt("ok")
         elif observed["server_errors"]:
