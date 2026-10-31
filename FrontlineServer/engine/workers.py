@@ -15,12 +15,14 @@ import engine.cover_art as cover_art
 import engine.lyrics as lyrics
 import engine.tuning as tuning
 from engine.recognition import live_fingerprint_drift
+from engine import service_health
 from engine.smtc_policy import sane_media_position
 
 
 async def background_verification_worker(manager):
     """Continuously captures audio and tries to identify what's playing."""
     loop = asyncio.get_event_loop()
+    shazam_no_match_count = 0
     while manager.server_running:
         if (not manager.is_listening or manager.search_completed
                 or manager.manual_mode or manager._media_busy):
@@ -68,7 +70,18 @@ async def background_verification_worker(manager):
                 or manager.manual_mode or manager.search_completed or manager._media_busy):
             continue
 
+        if not new_song and getattr(manager.recognizer, "last_connection_error", False):
+            service_health.debug("Shazam network failure, returning to menu")
+            continue
+
         if not new_song:
+            shazam_no_match_count += 1
+            if shazam_no_match_count >= 2:
+                shazam_no_match_count = 0
+                reachable = await loop.run_in_executor(None, service_health.connectivity_after_failed_recognition)
+                if not reachable:
+                    service_health.debug("Shazam gave no match and network check failed; returning to menu")
+                    continue
             manager.pending_candidate = None
             manager.pending_candidate_count = 0
             if manager._listen_use_shazam and manager._fallback_listen_to_smtc("sem match"):
@@ -80,6 +93,7 @@ async def background_verification_worker(manager):
                 await asyncio.sleep(2)
             continue
 
+        shazam_no_match_count = 0
         candidate = (new_song, new_artist)
 
         if manager.auto_mode and not manager._listen_use_shazam:
@@ -280,6 +294,4 @@ async def run_manual_search(manager, artist: str, song: str, current_session: fl
             )
 
         if manager.festival_mode:
-            # Item 7: reflect what this manual search actually found (or didn't)
-            # back onto the festival playlist entry.
             manager.festival_update_song_lyrics(song, artist, found_lyrics)

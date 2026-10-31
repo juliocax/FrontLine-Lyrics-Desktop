@@ -11,6 +11,7 @@ import re
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
+from engine import service_health
 
 _LRC_LINE = re.compile(r"\[(\d{2,}):(\d{2}(?:\.\d{1,3})?)\](.*)")
 _PAREN_OR_BRACKET = re.compile(r"\([^)]*\)|\[[^\]]*\]")
@@ -120,6 +121,7 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
     from urllib3.util.retry import Retry
 
     session = requests.Session()
+    observed = {"ok": False, "server_errors": 0, "connection_errors": 0}
     retries = Retry(
         total=1,
         backoff_factor=0.2,
@@ -134,6 +136,11 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
             headers=headers,
             timeout=5,
         )
+        service_health.debug("LRCLIB response HTTP %s for %s", r.status_code, r.url if hasattr(r, "url") else "api")
+        if r.status_code in (200, 404):
+            observed["ok"] = True
+        elif r.status_code in (500, 502, 503, 504, 520, 521, 522, 523, 524):
+            observed["server_errors"] += 1
         if r.status_code == 200:
             payload = r.json()
             if payload.get("syncedLyrics"):
@@ -149,6 +156,11 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
             headers=headers,
             timeout=6,
         )
+        service_health.debug("LRCLIB response HTTP %s for %s", r.status_code, r.url if hasattr(r, "url") else "api")
+        if r.status_code in (200, 404):
+            observed["ok"] = True
+        elif r.status_code in (500, 502, 503, 504, 520, 521, 522, 523, 524):
+            observed["server_errors"] += 1
         if r.status_code != 200:
             return None
         hit = pick_lrclib_search_hit(r.json(), who, track)
@@ -166,6 +178,8 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
                 if lines:
                     return lines
             except Exception as e:
+                if service_health.classify_exception(e): observed["connection_errors"] += 1
+                elif isinstance(e, requests.exceptions.RetryError): observed["server_errors"] += 1
                 logging.warning(f"Exact match search failed (lrclib): {e}")
 
         # 2) Broad search with "title artist".
@@ -175,6 +189,8 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
             if lines:
                 return lines
         except Exception as e:
+            if service_health.classify_exception(e): observed["connection_errors"] += 1
+            elif isinstance(e, requests.exceptions.RetryError): observed["server_errors"] += 1
             logging.warning(f"Broad search failed (lrclib): {e}")
 
         # 3) Title-only search as a last resort.
@@ -184,8 +200,16 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
                 if lines:
                     return lines
             except Exception as e:
+                if service_health.classify_exception(e): observed["connection_errors"] += 1
+                elif isinstance(e, requests.exceptions.RetryError): observed["server_errors"] += 1
                 logging.warning(f"Title-only search failed (lrclib): {e}")
     finally:
+        if observed["ok"]:
+            service_health.record_attempt("ok")
+        elif observed["server_errors"]:
+            service_health.record_attempt("service_offline", immediate=observed["server_errors"] >= 3)
+        elif observed["connection_errors"]:
+            service_health.record_attempt("connection_error", immediate=True)
         try:
             session.close()
         except Exception:
