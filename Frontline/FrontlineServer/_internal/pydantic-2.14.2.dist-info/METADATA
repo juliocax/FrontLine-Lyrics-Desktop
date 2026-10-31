@@ -1,6 +1,6 @@
 Metadata-Version: 2.5
 Name: pydantic
-Version: 2.14.1
+Version: 2.14.2
 Summary: Data validation using Python type hints
 Project-URL: Homepage, https://github.com/pydantic/pydantic
 Project-URL: Documentation, https://pydantic.dev/docs/validation/latest/get-started/
@@ -31,7 +31,7 @@ Classifier: Topic :: Internet
 Classifier: Topic :: Software Development :: Libraries :: Python Modules
 Requires-Python: >=3.10
 Requires-Dist: annotated-types>=0.6.0
-Requires-Dist: pydantic-core==2.50.1
+Requires-Dist: pydantic-core==2.50.2
 Requires-Dist: typing-extensions>=4.16.0
 Requires-Dist: typing-inspection>=0.4.4
 Provides-Extra: email
@@ -116,6 +116,65 @@ See our [security policy](https://github.com/pydantic/pydantic/security/policy).
 <!-- markdownlint-disable no-bare-urls -->
 <!-- markdownlint-disable descriptive-link-text -->
 <!-- markdownlint-disable-next-line first-line-heading -->
+
+## v2.14.2 (2026-10-29)
+
+[GitHub release](https://github.com/pydantic/pydantic/releases/tag/v2.14.2)
+
+### What's Changed
+
+#### Packaging
+
+* Bump PyO3 to 0.30.1, jiter to 0.18.0, use `PyFrozenDict` by [@Viicos](https://github.com/Viicos) in [#14003](https://github.com/pydantic/pydantic/pull/14003)
+* Bump speedate to v0.18.0 by [@Viicos](https://github.com/Viicos) in [#14007](https://github.com/pydantic/pydantic/pull/14007)
+* Publish `pydantic-core` wheels for PyPy 8.0 (`pp80` ABI) by [@Viicos](https://github.com/Viicos) in [#14083](https://github.com/pydantic/pydantic/pull/14083)
+
+#### Performance
+
+* Avoid Python tuple allocation during model fields validation by [@Viicos](https://github.com/Viicos) in [#13955](https://github.com/pydantic/pydantic/pull/13955)
+* Lazily call repr of values during nested union serialization by [@Viicos](https://github.com/Viicos) in [#14082](https://github.com/pydantic/pydantic/pull/14082)
+* Skip decorator field checks when no field decorators exist by [@alexmojaki](https://github.com/alexmojaki) in [#14111](https://github.com/pydantic/pydantic/pull/14111)
+* Avoid heap allocation for small JSON model field buffers by [@alexmojaki](https://github.com/alexmojaki) in [#14113](https://github.com/pydantic/pydantic/pull/14113)
+
+#### Fixes
+
+* Make JSON validation by iteration consistent with Python approach by [@davidhewitt](https://github.com/davidhewitt) in [#13275](https://github.com/pydantic/pydantic/pull/13275).
+
+  JSON validation now handles field lookup and extra data the same way as Python validation. In particular, keys that only match an
+  unused alias or field name are now treated as extra data, instead of being silently dropped:
+
+    ```python
+    from pydantic import BaseModel, ConfigDict
+    from pydantic.alias_generators import to_camel
+
+
+    class Page(BaseModel):
+        model_config = ConfigDict(extra='forbid', alias_generator=to_camel)
+
+        page_size: int = 10
+
+
+    Page.model_validate_json('{"page_size": 50}')
+    # Before: Page(page_size=10)
+    # After: ValidationError (extra_forbidden)
+    ```
+
+  See the [pull request](https://github.com/pydantic/pydantic/pull/13275) for the full list of behavior changes.
+
+* Fix unpickling of generic classes defined in separate module by [@Viicos](https://github.com/Viicos) in [#13994](https://github.com/pydantic/pydantic/pull/13994)
+* Support explicit `by_alias` overriding `validate_by_alias` in validation JSON schemas by [@Viicos](https://github.com/Viicos) in [#13997](https://github.com/pydantic/pydantic/pull/13997)
+* Fix mypy plugin crash on deferred empty model by [@ilevkivskyi](https://github.com/ilevkivskyi) in [#14027](https://github.com/pydantic/pydantic/pull/14027)
+* Fix infinite recursion when validating an invalid default with `PydanticUseDefault` by [@Viicos](https://github.com/Viicos) in [#14028](https://github.com/pydantic/pydantic/pull/14028)
+* Implement recursion guard for `validate_strings()` by [@Viicos](https://github.com/Viicos) in [#14029](https://github.com/pydantic/pydantic/pull/14029)
+* Support named tuples in `Sequence` serialization by [@Viicos](https://github.com/Viicos) in [#14033](https://github.com/pydantic/pydantic/pull/14033)
+* Take `preserve_empty_path` into account in URL types equality by [@Viicos](https://github.com/Viicos) in [#14035](https://github.com/pydantic/pydantic/pull/14035)
+* Fix pickling of `PydanticCustomError` and `ValidationError`s containing custom errors by [@Viicos](https://github.com/Viicos) in [#14051](https://github.com/pydantic/pydantic/pull/14051)
+* Do not extract attribute docstrings from nested classes and functions by [@Viicos](https://github.com/Viicos) in [#14052](https://github.com/pydantic/pydantic/pull/14052)
+* Fix forward annotations evaluation and type variables substitution when rebuilding parametrized generic models by [@Viicos](https://github.com/Viicos) in [#14054](https://github.com/pydantic/pydantic/pull/14054)
+* Fix `Self` resolution in parametrized generics by [@Viicos](https://github.com/Viicos) in [#14065](https://github.com/pydantic/pydantic/pull/14065)
+* Ignore extra data matching a field name in `TypedDict` and dataclasses with `extra=allow` by [@Viicos](https://github.com/Viicos) in [#14090](https://github.com/pydantic/pydantic/pull/14090)
+* Check mapping `max_length` constraint during validation by [@Viicos](https://github.com/Viicos) in [#14092](https://github.com/pydantic/pydantic/pull/14092)
+* Fix deep copy of self-referential models by [@Viicos](https://github.com/Viicos) in [#14116](https://github.com/pydantic/pydantic/pull/14116)
 
 ## v2.14.1 (2026-10-11)
 

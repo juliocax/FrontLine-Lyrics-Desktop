@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import engine.cover_art as cover_art
 import engine.lyrics as lyrics_mod
+from engine import service_health
 import engine.tuning as tuning
 from engine.audio_capture import AudioCapture
 from engine.recognition import ShazamRecognizer
@@ -716,7 +717,21 @@ class MusicManager:
         return True
 
     def _follow_metadata(self, info):
-        """Instant switch driven by the player's own metadata (no Shazam). Streaming apps only."""
+        """Queue a lyric lookup without blocking the 1 Hz Windows SMTC watcher."""
+        if self._media_busy:
+            return
+        if self._listen_use_shazam or not self._session_trusts_song_clock(info):
+            return
+        if self._in_previous_track_cooldown(info.titulo, info.artista):
+            return
+        if time.monotonic() < self._lrclib_fail_until.get(info.chave, 0.0):
+            return
+        self._media_busy = True
+        threading.Thread(target=self._follow_metadata_lookup, args=(info,),
+                         daemon=True, name="lyrics-smtc-lookup").start()
+
+    def _follow_metadata_lookup(self, info):
+        """Network work happens off the media-watcher thread."""
         if self._listen_use_shazam:
             return
         if not self._session_trusts_song_clock(info):
@@ -730,6 +745,10 @@ class MusicManager:
         try:
             letra = lyrics_mod.fetch_lyrics_lrclib(info.artista, info.titulo)
             if letra:
+                latest = self.watcher.ultima_info
+                if latest is None or latest.chave != info.chave:
+                    logging.info("Ignora busca SMTC atrasada: %s", info.titulo)
+                    return
                 if self._listen_use_shazam:
                     logging.info("OUVIR em curso: ignora lock-in SMTC tardio")
                     return
@@ -757,6 +776,9 @@ class MusicManager:
                 )
                 self.media_baseline = info.chave
             else:
+                latest = self.watcher.ultima_info
+                if latest is None or latest.chave != info.chave:
+                    return
                 self._lrclib_fail_until[info.chave] = time.monotonic() + 15.0
                 if self.search_completed and self.synced_lyrics:
                     logging.info(f"Sem letra no LRCLib para {info.titulo} - {info.artista}")
@@ -915,6 +937,11 @@ class MusicManager:
 
     def get_current_state(self) -> Dict[str, Any]:
         """Calculates the current line based on playback time and returns the full app state."""
+        if service_health.status() != "ok" and self.is_listening and not self.synced_lyrics:
+            service_health.debug("aborting listening; status=%s", service_health.status())
+            self.auto_mode = False
+            self.reset_state()
+
         current_line, previous_line, next_line = "", "", ""
         current_line_original = ""
         overlay_msg, status = "", ""
@@ -991,6 +1018,7 @@ class MusicManager:
         full = [{"timestamp": i["timestamp"], "text": i["text"]} for i in self.synced_lyrics] if self.synced_lyrics else []
         payload = {
             "status": status,
+            "lyrics_service_status": service_health.status(),
             "auto_mode": self.auto_mode,
             "is_translating": self.is_translating,
             "current_lyrics": current_line,
