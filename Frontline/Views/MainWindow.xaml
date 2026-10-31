@@ -5,7 +5,7 @@
         Title="FrontLine Lyrics" Height="300" Width="700" MinWidth="450" MinHeight="200"
         WindowStartupLocation="CenterScreen"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
-        Topmost="True" ShowInTaskbar="True" MouseLeftButtonDown="Window_MouseLeftButtonDown">
+        Topmost="True" ShowInTaskbar="True" MouseLeftButtonDown="Window_MouseLeftButtonDown" PreviewKeyDown="ServicePreview_PreviewKeyDown">
 
     <Window.Resources>
         <ResourceDictionary>
@@ -290,8 +290,10 @@
                         </StackPanel>
                     </Grid>
 
-                    <Viewbox x:Name="HomeControls" Grid.RowSpan="2" Visibility="Visible" StretchDirection="DownOnly" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,10,0">
+                    <StackPanel Grid.RowSpan="2" VerticalAlignment="Center" HorizontalAlignment="Center" Visibility="{Binding Visibility, ElementName=HomeControls}" Panel.ZIndex="12">
+                    <Viewbox x:Name="HomeControls" Visibility="Visible" StretchDirection="DownOnly" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="10,0,10,0">
                         <Border x:Name="HomeDock" Background="#FA0A0A0A" BorderBrush="#50FFFFFF" BorderThickness="1" CornerRadius="25" Padding="15,8">
+                            <StackPanel>
                             <Grid>
                                 <StackPanel Orientation="Horizontal">
                                 <Button x:Name="BtnReleaseNotes" Margin="5,0,16,0" Click="BtnReleaseNotes_Click" ToolTip="See what's new in this version"
@@ -300,7 +302,7 @@
                                         <ControlTemplate TargetType="Button">
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock x:Name="TxtAppName" Text="FRONTLINE LYRICS" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
-                                                <TextBlock x:Name="TxtAppVersion" Text="v1.5.0" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center" Margin="0,1,0,0"/>
+                                                <TextBlock x:Name="TxtAppVersion" Text="v1.5.1" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center" Margin="0,1,0,0"/>
                                             </StackPanel>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
@@ -354,8 +356,28 @@
                                 </StackPanel>
                                 <ContentControl x:Name="UserThemeDockAdorn" IsHitTestVisible="False" Visibility="Collapsed" Panel.ZIndex="5"/>
                             </Grid>
+                            </StackPanel>
                         </Border>
                     </Viewbox>
+                <Border x:Name="LyricsServiceNotice" 
+                        Visibility="Collapsed" VerticalAlignment="Center" HorizontalAlignment="Center"
+                        Margin="0,10,0,0" Width="460" MaxWidth="460" Padding="13,9"
+                        Background="#F522202A" BorderBrush="#887A657D" BorderThickness="1" CornerRadius="10">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Image x:Name="LyricsServiceIcon" Width="20" Height="20" Margin="0,1,10,0"
+                               VerticalAlignment="Top" Stretch="Uniform"/>
+                        <StackPanel Width="390" HorizontalAlignment="Center">
+                            <TextBlock x:Name="LyricsServiceMessage" Foreground="#FFF0EAF2" FontSize="12"
+                                       TextWrapping="Wrap" TextAlignment="Center" HorizontalAlignment="Stretch"/>
+                            <Button x:Name="BtnLyricsServiceSupport" Content="Apoie ♡" Click="BtnDonate_Click"
+                                    HorizontalAlignment="Center" Margin="0,6,0,0" Padding="0" BorderThickness="0"
+                                    Background="Transparent" Foreground="#FFEABBE8" FontWeight="SemiBold"
+                                    Cursor="Hand" Visibility="Collapsed"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+
+                    </StackPanel>
                 </Grid>
 
                 <StackPanel x:Name="SupportBar" Grid.ColumnSpan="2" Panel.ZIndex="50"
