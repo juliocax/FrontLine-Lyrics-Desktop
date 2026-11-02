@@ -1,0 +1,42 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="FrontLine_Linux.MainWindow"
+        Title="FrontLine Lyrics" Width="650" Height="520"
+        MinWidth="450" MinHeight="360"
+        Background="#12131B">
+  <Grid Margin="24" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="18">
+    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
+      <StackPanel Spacing="5">
+        <TextBlock Text="FrontLine Lyrics" FontSize="26" FontWeight="Bold" Foreground="#F4F0FF" />
+        <TextBlock Text="LINUX • AVALONIA" FontSize="11" Foreground="#AAA0D7" />
+      </StackPanel>
+      <TextBlock x:Name="ConnectionText" Grid.Column="1" VerticalAlignment="Center"
+                 Text="Conectando..." Foreground="#E9B667"/>
+    </Grid>
+    <StackPanel Grid.Row="1" Spacing="5">
+      <TextBlock x:Name="StatusText" Text="IDLE" Foreground="#A8A9BD" FontSize="13"/>
+      <TextBlock x:Name="SongText" Text="Nenhuma música identificada"
+                 FontSize="20" FontWeight="SemiBold" Foreground="White" TextWrapping="Wrap"/>
+      <TextBlock x:Name="ArtistText" Text="" Foreground="#B4B5CA" TextWrapping="Wrap"/>
+    </StackPanel>
+    <Border Grid.Row="2" Background="#202130" CornerRadius="16" Padding="22">
+      <StackPanel VerticalAlignment="Center" Spacing="16">
+        <TextBlock x:Name="PreviousText" Text="♪" TextAlignment="Center"
+                   FontSize="17" Foreground="#989AB0" TextWrapping="Wrap"/>
+        <TextBlock x:Name="CurrentText" Text="Sua letra sincronizada aparecerá aqui"
+                   TextAlignment="Center" FontSize="25" FontWeight="Bold"
+                   Foreground="White" TextWrapping="Wrap"/>
+        <TextBlock x:Name="NextText" Text="♪" TextAlignment="Center"
+                   FontSize="17" Foreground="#989AB0" TextWrapping="Wrap"/>
+      </StackPanel>
+    </Border>
+    <Grid Grid.Row="3" ColumnDefinitions="*,*" ColumnSpacing="12">
+      <Button x:Name="ListenButton" Grid.Column="0" Content="LISTEN" IsEnabled="False"
+              HorizontalContentAlignment="Center" Padding="16,12"
+              Background="#7461C6" Foreground="White" Click="Listen_Click"/>
+      <Button x:Name="ClearButton" Grid.Column="1" Content="CLEAR" IsEnabled="False"
+              HorizontalContentAlignment="Center" Padding="16,12"
+              Background="#303143" Foreground="White" Click="Clear_Click"/>
+    </Grid>
+  </Grid>
+</Window>
