@@ -1,4 +1,4 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Interop;
 using System;
@@ -14,7 +14,6 @@ namespace FrontLineOverlay
 {
     public partial class ReleaseNotesWindow : Window
     {
-        // Prefere cantos arredondados nativos no Windows 11, sem usar janela em camadas.
         [DllImport("dwmapi.dll", PreserveSig = true)]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
@@ -42,17 +41,27 @@ namespace FrontLineOverlay
             catch (EntryPointNotFoundException) { }
         }
 
-        // Usa a mesma versão enviada pela telemetria. Altere o número de versão
-        // no projeto a cada release; a chave salva permite exibir uma vez por versão.
         public static string CurrentVersion =>
             typeof(ReleaseNotesWindow).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
 
         private string _language;
 
-        // Edite este catálogo ao preparar cada versão. O fallback nunca inventa novidades.
-        // Exemplo para a PRÓXIMA versão: substitua pela versão real ao publicar.
         private static readonly Dictionary<string, Dictionary<string, string[]>> Notes = new()
         {
+            ["1.5.3"] = new()
+            {
+                ["en"] = new[] { "Improved handling of missing lyrics and temporary service errors." },
+                ["pt"] = new[] { "Melhorias nos avisos de letras não encontradas e falhas temporárias do serviço." },
+                ["es"] = new[] { "Mejoras en los avisos de letras no encontradas y errores temporales del servicio." },
+                ["id"] = new[] { "Peningkatan penanganan lirik yang tidak ditemukan dan gangguan layanan sementara." }
+            },
+            ["1.5.2"] = new()
+            {
+                ["en"] = new[] { "Minor adjustments." },
+                ["pt"] = new[] { "Pequenos ajustes." },
+                ["es"] = new[] { "Pequeños ajustes." },
+                ["id"] = new[] { "Penyesuaian kecil." }
+            },
             ["1.5.1"] = new()
             {
                 ["en"] = new[] {
@@ -156,10 +165,10 @@ namespace FrontLineOverlay
             TxtDescription.Text = labels[1];
             TxtChangesTitle.Text = labels[2];
             BtnDone.Content = labels[3];
-            TxtFullRelease.Visibility = (CurrentVersion == "1.5.0" || CurrentVersion == "1.5.1")
+            TxtFullRelease.Visibility = (CurrentVersion == "1.5.0" || CurrentVersion == "1.5.1" || CurrentVersion == "1.5.2" || CurrentVersion == "1.5.3")
                 ? Visibility.Visible : Visibility.Collapsed;
             LinkFullRelease.Inlines.Clear();
-            if ((CurrentVersion == "1.5.0" || CurrentVersion == "1.5.1"))
+            if ((CurrentVersion == "1.5.0" || CurrentVersion == "1.5.1" || CurrentVersion == "1.5.2" || CurrentVersion == "1.5.3"))
                 LinkFullRelease.Inlines.Add(FullReleaseLabels[language]);
             PanelChanges.Children.Clear();
             var changes = Notes.TryGetValue(CurrentVersion, out var translations)

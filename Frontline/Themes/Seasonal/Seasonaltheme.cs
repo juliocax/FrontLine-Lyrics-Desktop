@@ -46,13 +46,11 @@ namespace Frontline.Themes.Seasonal
             "EG", "MA", "PK", "IQ", "SA", "TR", "BD", "KW", "DZ", "JO"
         };
 
-        // Calendario sazonal: Halloween 15/10-01/11; Natal 02/11-25/12;
-        // Ano-Novo 26/12-02/01. Dia 26/12 pertence ao Ano-Novo.
         private static bool InHalloweenWindow(DateTime d) =>
             (d.Month == 10 && d.Day >= 15) || (d.Month == 11 && d.Day == 1);
 
         private static bool InChristmasWindow(DateTime d) =>
-            (d.Month == 11 && d.Day >= 2) || (d.Month == 12 && d.Day <= 25);
+            (d.Month == 11 && d.Day >= 10) || (d.Month == 12 && d.Day <= 25);
 
         private static bool InNewYearWindow(DateTime d) =>
             (d.Month == 12 && d.Day >= 26) || (d.Month == 1 && d.Day <= 2);
