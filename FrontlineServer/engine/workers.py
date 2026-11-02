@@ -131,8 +131,8 @@ async def background_verification_worker(manager):
             else:
                 queries.append(smtc_pair)
 
-        found_lyrics = await loop.run_in_executor(
-            None, lyrics.fetch_lyrics_from_candidates, queries
+        found_lyrics, lookup_result = await loop.run_in_executor(
+            None, lyrics.fetch_candidates_with_result, queries
         )
 
         if manager.session_id == current_session and not manager.search_completed:
@@ -162,8 +162,11 @@ async def background_verification_worker(manager):
                     lock_shazam_clock=use_shazam_clock,
                 )
             else:
-                manager.search_completed = True
-                manager.not_found_since = time.time()
+                if lookup_result in ("service_offline", "connection_error"):
+                    manager.finish_failed_lyrics_lookup(expected_session=current_session, reason=lookup_result)
+                else:
+                    manager._set_track(new_song, new_artist, reference_time=time.time(),
+                        lyrics=None, cover=new_cover, source="shazam")
                 manager._listen_use_shazam = False
                 logging.info(
                     f"LRCLib sem letra após Shazam: {new_song} - {new_artist}"
@@ -273,11 +276,24 @@ async def run_manual_search(manager, artist: str, song: str, current_session: fl
     """Runs a manual text search for lyrics and album cover art."""
     loop = asyncio.get_event_loop()
 
-    found_lyrics = await loop.run_in_executor(None, lyrics.fetch_lyrics_lrclib, artist, song)
-    found_cover = await loop.run_in_executor(None, cover_art.fetch_cover_art, artist, song)
+    # The cover service is independent. Never let a slow cover request hold the
+    # lyrics result (or a LRCLIB failure notice) hostage.
+    lyrics_future = loop.run_in_executor(None, lyrics.fetch_lyrics_with_result, artist, song)
+    cover_future = loop.run_in_executor(None, cover_art.fetch_cover_art, artist, song)
+    found_lyrics, lookup_result = await lyrics_future
+    found_cover = cover_future.result() if cover_future.done() else None
 
     if manager.session_id == current_session:
         manager.search_completed = True
+        if not found_lyrics and not manager.festival_mode:
+            if lookup_result in ("service_offline", "connection_error"):
+                manager.finish_failed_lyrics_lookup(expected_session=current_session, reason=lookup_result)
+                return
+            manager._set_track(song, artist, reference_time=time.time(),
+                lyrics=None, cover=found_cover or "", source="manual")
+            return
+        if not found_lyrics:
+            manager.not_found_since = time.time()
 
         if found_cover:
             manager.current_cover = found_cover
