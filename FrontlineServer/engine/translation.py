@@ -25,11 +25,20 @@ import os
 os.environ.setdefault("translators_default_region", "EN")
 import translators as ts
 
-# One executor per line (fans a whole song out in parallel) and one for the
-# 3 racing sources within a single line.
+
 LINE_DISPATCH_EXECUTOR = ThreadPoolExecutor(max_workers=8, thread_name_prefix="translate-line")
 TRANSLATION_EXECUTOR = ThreadPoolExecutor(max_workers=24, thread_name_prefix="translate-src")
 LINE_TRANSLATE_TIMEOUT = 8.0
+
+
+MYMEMORY_TARGET_LANGUAGES = {"pt": "pt-BR"}
+MYMEMORY_SOURCE_LANGUAGE = "en-GB"
+
+
+def _short_provider_error(error: Exception) -> str:
+    """Avoid logging MyMemory's entire language catalog on every failed line."""
+    message = str(error).strip().splitlines()
+    return (message[0][:240] if message else type(error).__name__)
 
 _HTTP_ERROR_CODE_STRINGS = {"400", "401", "403", "404", "408", "409", "429", "500", "502", "503", "504"}
 _ERROR_PAGE_MARKERS = (
@@ -76,7 +85,8 @@ def translate_line_raced(text: str, target_language: str) -> Tuple[Optional[str]
         return GoogleTranslator(source='auto', target=target_language).translate(text)
 
     def _mymemory():
-        return MyMemoryTranslator(source='auto', target=target_language).translate(text)
+        my_target = MYMEMORY_TARGET_LANGUAGES.get(target_language.lower(), target_language)
+        return MyMemoryTranslator(source=MYMEMORY_SOURCE_LANGUAGE, target=my_target).translate(text)
 
     def _translators_pkg():
         return ts.translate_text(
@@ -103,7 +113,7 @@ def translate_line_raced(text: str, target_language: str) -> Tuple[Optional[str]
             try:
                 result = fut.result()
             except Exception as e:
-                logging.warning(f"Fonte de tradução '{source_name}' falhou: {e}")
+                logging.warning("Fonte de tradução '%s' falhou: %s", source_name, _short_provider_error(e))
                 continue
             if result and str(result).strip():
                 candidate = str(result).strip()
