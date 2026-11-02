@@ -23,9 +23,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import engine.cover_art as cover_art
 import engine.lyrics as lyrics_mod
 import engine.tuning as tuning
-from engine.audio_capture import AudioCapture
 from engine.recognition import ShazamRecognizer
-from engine.media_session import MediaSessionWatcher
+from engine.media_provider import MediaSessionWatcher
 from engine.smtc_policy import sane_media_position, should_trust_smtc_clock
 from engine.translation import (
     apply_translation_in_background,
@@ -88,8 +87,13 @@ class MusicManager:
     headless server.
     """
 
-    def __init__(self):
-        self.audio = AudioCapture()
+    def __init__(self, *, enable_audio: bool = True):
+
+        if enable_audio:
+            from engine.audio_provider import AudioCapture
+            self.audio = AudioCapture()
+        else:
+            self.audio = None
         self.recognizer = ShazamRecognizer()
         self.server_running = True
         self.overlay_font_size = 26
