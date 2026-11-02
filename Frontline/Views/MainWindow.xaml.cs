@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -90,6 +90,11 @@ namespace FrontLineOverlay
         private string currentCoverUrl = "";
         private ClientWebSocket? _webSocket;
         private bool _listenReady;
+        private string _lyricsServiceStatus = "ok";
+        private DateTime _lyricsWaitStartUtc = DateTime.MinValue;
+        private string _lyricsWaitTrackKey = "";
+        private bool _lyricsWaitActive;
+
         private double bgOpacity = 0.8;
         private bool _playerClock;
         private bool _syncingLangPicker;
@@ -1063,6 +1068,99 @@ namespace FrontLineOverlay
             BtnListenSide.ToolTip = tooltip;
         }
 
+        // Visual-only debug (not a network simulation): Ctrl+Shift+F8 cycles the
+        // notices. Enable with FRONTLINE_SERVICE_PREVIEW=1 in launchSettings.json.
+        private int _servicePreviewStep;
+        private bool ServicePreviewEnabled =>
+            Environment.GetEnvironmentVariable("FRONTLINE_SERVICE_PREVIEW") == "1";
+
+        private void ServicePreview_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            if (!ServicePreviewEnabled || e.Key != Key.F8 ||
+                (Keyboard.Modifiers & (ModifierKeys.Control | ModifierKeys.Shift)) !=
+                (ModifierKeys.Control | ModifierKeys.Shift)) return;
+            _servicePreviewStep = (_servicePreviewStep + 1) % 3;
+            ApplyLyricsServiceStatus(_servicePreviewStep == 1 ? "service_offline" :
+                _servicePreviewStep == 2 ? "connection_error" : "ok");
+            e.Handled = true;
+        }
+
+        private void UpdateLyricsWaitHint(string status, string artist, string song, bool festivalMode)
+        {
+            // LISTENING only counts as a lyrics lookup if SMTC already provided
+            // a song. Pure audio recognition should not falsely blame LRCLIB.
+            bool searching = status == "SEARCHING";
+            bool identifiedListening = status == "LISTENING"
+                && !string.IsNullOrWhiteSpace(song)
+                && !string.IsNullOrWhiteSpace(artist);
+            bool pending = !festivalMode && (searching || identifiedListening);
+            string key = (artist ?? "").Trim().ToLowerInvariant() + "|" +
+                         (song ?? "").Trim().ToLowerInvariant();
+
+            if (!pending)
+            {
+                _lyricsWaitStartUtc = DateTime.MinValue;
+                _lyricsWaitTrackKey = "";
+                _lyricsWaitActive = false;
+                LblLyricsWaitHint.Visibility = Visibility.Collapsed;
+                return;
+            }
+            if (!_lyricsWaitActive || key != _lyricsWaitTrackKey)
+            {
+                _lyricsWaitActive = true;
+                _lyricsWaitTrackKey = key;
+                _lyricsWaitStartUtc = DateTime.UtcNow;
+            }
+            bool show = DateTime.UtcNow - _lyricsWaitStartUtc >= TimeSpan.FromSeconds(10);
+            LblLyricsWaitHint.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            if (show)
+                LblLyricsWaitHint.Text = currentAppLanguage switch
+                {
+                    "pt" => "O servidor de letras pode estar instável. Ainda estamos tentando…",
+                    "es" => "El servidor de letras podría estar fallando. Seguimos intentando…",
+                    "id" => "Server lirik mungkin sedang bermasalah. Masih mencoba…",
+                    _ => "The lyrics server may be having issues. Still trying…"
+                };
+        }
+
+        private void ApplyLyricsServiceStatus(string status)
+        {
+            if (ServicePreviewEnabled && _servicePreviewStep != 0)
+                status = _servicePreviewStep == 1 ? "service_offline" : "connection_error";
+            if (status != "service_offline" && status != "connection_error") status = "ok";
+            bool changed = status != _lyricsServiceStatus;
+            _lyricsServiceStatus = status;
+            bool available = status == "ok";
+            LyricsServiceNotice.Visibility = available ? Visibility.Collapsed : Visibility.Visible;
+            if (available) return;
+
+            string language = currentAppLanguage;
+            bool service = status == "service_offline";
+            string message = service
+                ? language switch
+                {
+                    "pt" => "Fonte de letras temporariamente indisponível: Estamos planejando a criação de um servidor próprio para oferecer mais estabilidade e independência ao projeto.",
+                    "es" => "Fuente de letras temporalmente no disponible: Estamos planeando crear un servidor propio para ofrecer mayor estabilidad e independencia al proyecto.",
+                    "id" => "Sumber lirik sementara tidak tersedia: Kami berencana membuat server sendiri agar layanan lebih stabil dan mandiri.",
+                    _ => "Lyrics source temporarily unavailable: We're planning our own server to make the project more stable and independent."
+                }
+                : language switch
+                {
+                    "pt" => "Verifique sua conexão com a internet.",
+                    "es" => "Comprueba tu conexión a Internet.",
+                    "id" => "Periksa koneksi internet Anda.",
+                    _ => "Check your internet connection."
+                };
+            LyricsServiceMessage.Text = message;
+            BtnLyricsServiceSupport.Visibility = service ? Visibility.Visible : Visibility.Collapsed;
+            BtnLyricsServiceSupport.Content = language switch
+            {
+                "pt" => "Apoie <3", "es" => "Apoya <3", "id" => "Dukung <3", _ => "Support <3"
+            };
+            LyricsServiceIcon.Source = LoadSkipIcon(service ? "cloud_off" : "wifi_off");
+            if (changed) CrashReporter.LogBreadcrumb("lyrics.service", status);
+        }
+
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
             string[] args = Environment.GetCommandLineArgs();
@@ -1227,6 +1325,7 @@ namespace FrontLineOverlay
         {
             if (!uiStrings.TryGetValue(lang, out var t)) return;
             currentAppLanguage = lang;
+            ApplyLyricsServiceStatus(_lyricsServiceStatus);
 
             TxtListenBig.Text = t["Listen"];
             TxtListenLoadingBig.Text = t["ListenStarting"];
@@ -1268,6 +1367,8 @@ namespace FrontLineOverlay
             if (currentAppStatus == "IDLE") LblArtistName.Text = t["Ready"];
             else if (currentAppStatus == "LISTENING") LblLoadingText.Text = t["Listening"];
             else if (currentAppStatus == "SEARCHING") LblLoadingText.Text = t["Searching"];
+            if (LblLyricsWaitHint.Visibility == Visibility.Visible)
+                UpdateLyricsWaitHint(currentAppStatus, LblArtistName.Text, LblSongTitle.Text, false);
             if (!_loadingSettings)
                 AppSettings.SetString("AppLanguage", lang);
         }
@@ -1615,6 +1716,8 @@ namespace FrontLineOverlay
                 string? coverUrl = root.TryGetProperty("cover_art", out var c) ? c.GetString() : null;
                 bool festivalMode = root.TryGetProperty("festival_mode", out var fme) && fme.ValueKind == JsonValueKind.True;
                 bool playerClock = root.TryGetProperty("player_clock", out var pcl) && pcl.ValueKind == JsonValueKind.True;
+                string lyricsServiceStatus = root.TryGetProperty("lyrics_service_status", out var lss) ? lss.GetString() ?? "ok" : "ok";
+                string lookupNotice = root.TryGetProperty("lyrics_lookup_notice", out var ln) && ln.ValueKind == JsonValueKind.String ? ln.GetString() ?? "" : "";
                 string? festivalAdvanceSong = null;
                 string? festivalAdvanceArtist = null;
                 if (root.TryGetProperty("festival_advance", out var fa) && fa.ValueKind == JsonValueKind.Object)
@@ -1639,7 +1742,15 @@ namespace FrontLineOverlay
                         fullLyricsRaw = null;
                     }
 
+                    UpdateLyricsWaitHint(status, artist, song, festivalMode);
                     currentAppStatus = status;
+                    // A catalog miss belongs in the lyrics area, never in the service banner.
+                    // Global service health may reflect another request (e.g. an earlier 503).
+                    // On the home menu, use the failure reason of THIS lookup if available.
+                    string serviceNotice = status == "NOT_FOUND" ? "ok"
+                        : status == "IDLE" && !string.IsNullOrEmpty(lookupNotice) ? lookupNotice
+                        : lyricsServiceStatus;
+                    ApplyLyricsServiceStatus(serviceNotice);
                     _playerClock = playerClock;
                     LblTranslating.Visibility = isTranslating ? Visibility.Visible : Visibility.Collapsed;
                     ApplyAutoModeFromServer(autoMode);
@@ -1689,9 +1800,16 @@ namespace FrontLineOverlay
                         }
                     }
 
-                    if (status == "NOT_FOUND" && festivalMode)
+                    if (status == "NOT_FOUND")
                     {
-                        currentLyrics = uiStrings[currentAppLanguage]["FestivalNoLyrics"];
+                        currentLyrics = festivalMode ? uiStrings[currentAppLanguage]["FestivalNoLyrics"]
+                            : currentAppLanguage switch
+                            {
+                                "pt" => "Letra não encontrada.",
+                                "es" => "Letra no encontrada.",
+                                "id" => "Lirik tidak ditemukan.",
+                                _ => "Lyrics not found."
+                            };
                         previousLyrics = "";
                         nextLyrics = "";
                     }

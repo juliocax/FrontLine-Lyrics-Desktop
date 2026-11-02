@@ -104,7 +104,7 @@
         <Viewbox Width="115" Height="96" HorizontalAlignment="Right" VerticalAlignment="Bottom"
                  Margin="0,0,66,77" Stretch="Uniform" IsHitTestVisible="False">
             <Canvas Width="180" Height="230">
-                <Rectangle Canvas.Left="81" Canvas.Top="198" Width="18" Height="26" Fill="{StaticResource Xmas.TrunkBrush}"/>
+                <Rectangle Canvas.Left="81" Canvas.Top="198" Width="18" Height="120" Fill="{StaticResource Xmas.TrunkBrush}" HorizontalAlignment="Center" VerticalAlignment="Top"/>
                 <Path Data="M90,134 L152,200 L28,200 Z" Fill="{StaticResource Xmas.PineDarkBrush}"/>
                 <Path Data="M90,134 L114.8,160.4 L103,157 L90,166 L77,157 L65.2,160.4 Z" Fill="{StaticResource Xmas.SnowBrush}"/>
                 <Path Data="M90,96 L140,156 L40,156 Z" Fill="{StaticResource Xmas.PineBrush}"/>

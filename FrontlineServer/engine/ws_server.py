@@ -17,6 +17,7 @@ import time
 import websockets
 
 from engine.setlistfm_client import fetch_latest_setlist
+from engine import service_health
 from engine.smtc_policy import MAX_MEDIA_POSITION_S
 from engine.task_utils import spawn_task
 from engine.translation import apply_translation_in_background
@@ -62,6 +63,7 @@ async def ws_handler(websocket):
                 action = command.get("action")
 
                 if action == "LISTEN":
+                    service_health.begin_user_attempt()
                     manager._release_auto_hold()
                     manager.reset_state()
                     manager.is_listening = True
@@ -116,6 +118,7 @@ async def ws_handler(websocket):
                         manager.preferred_language = lang
                         spawn_task(apply_translation_in_background(manager, lang))
                 elif action == "MANUAL_SEARCH":
+                    service_health.begin_user_attempt()
                     artist = command.get("artist", "")
                     song = command.get("song", "")
                     if artist and song:
@@ -125,11 +128,10 @@ async def ws_handler(websocket):
                         manager.current_song, manager.current_artist = song, artist
                         manager.is_listening = True
                         if manager.festival_mode:
-                            # Item 7: a manual search during a festival is treated as
-                            # the user correcting a missing/wrong setlist entry.
                             manager.festival_add_song(artist, song, make_current=True)
                         spawn_task(run_manual_search(manager, artist, song, manager.session_id))
                 elif action == "FESTIVAL_ENTER":
+                    service_health.begin_user_attempt()
                     name = command.get("name", "") or command.get("artist", "") or "Festival"
                     artist = command.get("artist", "")
                     api_key = command.get("api_key", "")

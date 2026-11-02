@@ -14,7 +14,6 @@ namespace FrontLineOverlay
 {
     public partial class ReleaseNotesWindow : Window
     {
-        // Prefere cantos arredondados nativos no Windows 11, sem usar janela em camadas.
         [DllImport("dwmapi.dll", PreserveSig = true)]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
@@ -42,17 +41,54 @@ namespace FrontLineOverlay
             catch (EntryPointNotFoundException) { }
         }
 
-        // Usa a mesma versão enviada pela telemetria. Altere o número de versão
-        // no projeto a cada release; a chave salva permite exibir uma vez por versão.
         public static string CurrentVersion =>
             typeof(ReleaseNotesWindow).Assembly.GetName().Version?.ToString(3) ?? "0.0.0";
 
         private string _language;
 
-        // Edite este catálogo ao preparar cada versão. O fallback nunca inventa novidades.
-        // Exemplo para a PRÓXIMA versão: substitua pela versão real ao publicar.
         private static readonly Dictionary<string, Dictionary<string, string[]>> Notes = new()
         {
+            ["1.5.3"] = new()
+            {
+                ["en"] = new[] { "Improved handling of missing lyrics and temporary service errors." },
+                ["pt"] = new[] { "Melhorias nos avisos de letras não encontradas e falhas temporárias do serviço." },
+                ["es"] = new[] { "Mejoras en los avisos de letras no encontradas y errores temporales del servicio." },
+                ["id"] = new[] { "Peningkatan penanganan lirik yang tidak ditemukan dan gangguan layanan sementara." }
+            },
+            ["1.5.2"] = new()
+            {
+                ["en"] = new[] { "Minor adjustments." },
+                ["pt"] = new[] { "Pequenos ajustes." },
+                ["es"] = new[] { "Pequeños ajustes." },
+                ["id"] = new[] { "Penyesuaian kecil." }
+            },
+            ["1.5.1"] = new()
+            {
+                ["en"] = new[] {
+                    "Added clear notices when the lyrics service is unavailable or an internet connection fails.",
+                    "Improved Spotify track-change detection and playback synchronization during slow lyrics requests.",
+                    "Fixed incorrect lyrics matches and improved searches for covers, remasters and featured artists.",
+                    "Improved recovery from failed recognition and lyrics lookups."
+                },
+                ["pt"] = new[] {
+                    "Novos avisos quando a fonte de letras estiver indisponível ou houver problemas de conexão.",
+                    "Melhorias na detecção de troca de faixa do Spotify e na sincronização durante buscas lentas.",
+                    "Correções de letras incorretas e buscas aprimoradas para covers, remasters e participações.",
+                    "Melhor recuperação de falhas no reconhecimento e na busca de letras."
+                },
+                ["es"] = new[] {
+                    "Nuevos avisos cuando la fuente de letras no esté disponible o haya problemas de conexión.",
+                    "Mejor detección de cambios de pista en Spotify y sincronización durante búsquedas lentas.",
+                    "Correcciones de letras incorrectas y búsquedas mejoradas para versiones, remasterizaciones y colaboraciones.",
+                    "Mejor recuperación ante fallos de reconocimiento y búsqueda de letras."
+                },
+                ["id"] = new[] {
+                    "Notifikasi baru saat sumber lirik tidak tersedia atau koneksi internet bermasalah.",
+                    "Peningkatan deteksi pergantian lagu Spotify dan sinkronisasi saat pencarian lirik lambat.",
+                    "Perbaikan hasil lirik yang keliru serta pencarian versi cover, remaster, dan kolaborasi.",
+                    "Pemulihan yang lebih baik saat pengenalan lagu atau pencarian lirik gagal."
+                }
+            },
             ["1.5.0"] = new()
             {
                 ["en"] = new[] {
@@ -129,10 +165,10 @@ namespace FrontLineOverlay
             TxtDescription.Text = labels[1];
             TxtChangesTitle.Text = labels[2];
             BtnDone.Content = labels[3];
-            TxtFullRelease.Visibility = CurrentVersion == "1.5.0"
+            TxtFullRelease.Visibility = (CurrentVersion == "1.5.0" || CurrentVersion == "1.5.1" || CurrentVersion == "1.5.2" || CurrentVersion == "1.5.3")
                 ? Visibility.Visible : Visibility.Collapsed;
             LinkFullRelease.Inlines.Clear();
-            if (CurrentVersion == "1.5.0")
+            if ((CurrentVersion == "1.5.0" || CurrentVersion == "1.5.1" || CurrentVersion == "1.5.2" || CurrentVersion == "1.5.3"))
                 LinkFullRelease.Inlines.Add(FullReleaseLabels[language]);
             PanelChanges.Children.Clear();
             var changes = Notes.TryGetValue(CurrentVersion, out var translations)
