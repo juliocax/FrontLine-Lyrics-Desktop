@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -91,6 +91,10 @@ namespace FrontLineOverlay
         private ClientWebSocket? _webSocket;
         private bool _listenReady;
         private string _lyricsServiceStatus = "ok";
+        private DateTime _lyricsWaitStartUtc = DateTime.MinValue;
+        private string _lyricsWaitTrackKey = "";
+        private bool _lyricsWaitActive;
+
         private double bgOpacity = 0.8;
         private bool _playerClock;
         private bool _syncingLangPicker;
@@ -879,6 +883,44 @@ namespace FrontLineOverlay
             e.Handled = true;
         }
 
+        private void UpdateLyricsWaitHint(string status, string artist, string song, bool festivalMode)
+        {
+            // LISTENING only counts as a lyrics lookup if SMTC already provided
+            // a song. Pure audio recognition should not falsely blame LRCLIB.
+            bool searching = status == "SEARCHING";
+            bool identifiedListening = status == "LISTENING"
+                && !string.IsNullOrWhiteSpace(song)
+                && !string.IsNullOrWhiteSpace(artist);
+            bool pending = !festivalMode && (searching || identifiedListening);
+            string key = (artist ?? "").Trim().ToLowerInvariant() + "|" +
+                         (song ?? "").Trim().ToLowerInvariant();
+
+            if (!pending)
+            {
+                _lyricsWaitStartUtc = DateTime.MinValue;
+                _lyricsWaitTrackKey = "";
+                _lyricsWaitActive = false;
+                LblLyricsWaitHint.Visibility = Visibility.Collapsed;
+                return;
+            }
+            if (!_lyricsWaitActive || key != _lyricsWaitTrackKey)
+            {
+                _lyricsWaitActive = true;
+                _lyricsWaitTrackKey = key;
+                _lyricsWaitStartUtc = DateTime.UtcNow;
+            }
+            bool show = DateTime.UtcNow - _lyricsWaitStartUtc >= TimeSpan.FromSeconds(10);
+            LblLyricsWaitHint.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
+            if (show)
+                LblLyricsWaitHint.Text = currentAppLanguage switch
+                {
+                    "pt" => "O servidor de letras pode estar instável. Ainda estamos tentando…",
+                    "es" => "El servidor de letras podría estar fallando. Seguimos intentando…",
+                    "id" => "Server lirik mungkin sedang bermasalah. Masih mencoba…",
+                    _ => "The lyrics server may be having issues. Still trying…"
+                };
+        }
+
         private void ApplyLyricsServiceStatus(string status)
         {
             if (ServicePreviewEnabled && _servicePreviewStep != 0)
@@ -1122,6 +1164,8 @@ namespace FrontLineOverlay
             if (currentAppStatus == "IDLE") LblArtistName.Text = t["Ready"];
             else if (currentAppStatus == "LISTENING") LblLoadingText.Text = t["Listening"];
             else if (currentAppStatus == "SEARCHING") LblLoadingText.Text = t["Searching"];
+            if (LblLyricsWaitHint.Visibility == Visibility.Visible)
+                UpdateLyricsWaitHint(currentAppStatus, LblArtistName.Text, LblSongTitle.Text, false);
             if (!_loadingSettings)
                 AppSettings.SetString("AppLanguage", lang);
         }
@@ -1468,6 +1512,7 @@ namespace FrontLineOverlay
                 bool festivalMode = root.TryGetProperty("festival_mode", out var fme) && fme.ValueKind == JsonValueKind.True;
                 bool playerClock = root.TryGetProperty("player_clock", out var pcl) && pcl.ValueKind == JsonValueKind.True;
                 string lyricsServiceStatus = root.TryGetProperty("lyrics_service_status", out var lss) ? lss.GetString() ?? "ok" : "ok";
+                string lookupNotice = root.TryGetProperty("lyrics_lookup_notice", out var ln) && ln.ValueKind == JsonValueKind.String ? ln.GetString() ?? "" : "";
                 string? festivalAdvanceSong = null;
                 string? festivalAdvanceArtist = null;
                 if (root.TryGetProperty("festival_advance", out var fa) && fa.ValueKind == JsonValueKind.Object)
@@ -1492,8 +1537,15 @@ namespace FrontLineOverlay
                         fullLyricsRaw = null;
                     }
 
+                    UpdateLyricsWaitHint(status, artist, song, festivalMode);
                     currentAppStatus = status;
-                    ApplyLyricsServiceStatus(lyricsServiceStatus);
+                    // A catalog miss belongs in the lyrics area, never in the service banner.
+                    // Global service health may reflect another request (e.g. an earlier 503).
+                    // On the home menu, use the failure reason of THIS lookup if available.
+                    string serviceNotice = status == "NOT_FOUND" ? "ok"
+                        : status == "IDLE" && !string.IsNullOrEmpty(lookupNotice) ? lookupNotice
+                        : lyricsServiceStatus;
+                    ApplyLyricsServiceStatus(serviceNotice);
                     _playerClock = playerClock;
                     LblTranslating.Visibility = isTranslating ? Visibility.Visible : Visibility.Collapsed;
                     ApplyAutoModeFromServer(autoMode);
@@ -1537,9 +1589,16 @@ namespace FrontLineOverlay
                         }
                     }
 
-                    if (status == "NOT_FOUND" && festivalMode)
+                    if (status == "NOT_FOUND")
                     {
-                        currentLyrics = uiStrings[currentAppLanguage]["FestivalNoLyrics"];
+                        currentLyrics = festivalMode ? uiStrings[currentAppLanguage]["FestivalNoLyrics"]
+                            : currentAppLanguage switch
+                            {
+                                "pt" => "Letra não encontrada.",
+                                "es" => "Letra no encontrada.",
+                                "id" => "Lirik tidak ditemukan.",
+                                _ => "Lyrics not found."
+                            };
                         previousLyrics = "";
                         nextLyrics = "";
                     }

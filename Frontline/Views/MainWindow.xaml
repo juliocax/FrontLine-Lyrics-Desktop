@@ -216,6 +216,12 @@
                                         </EventTrigger>
                                     </TextBlock.Triggers>
                                 </TextBlock>
+                                <TextBlock x:Name="LblLyricsWaitHint"
+                                           Text="The lyrics server may be having issues. Still trying…"
+                                           Foreground="#BBDDE3EB" FontSize="10"
+                                           TextWrapping="Wrap" MaxWidth="230"
+                                           TextAlignment="Center" HorizontalAlignment="Center"
+                                           Margin="0,7,0,0" Visibility="Collapsed" />
                             </StackPanel>
                         </Grid>
 
@@ -302,7 +308,7 @@
                                         <ControlTemplate TargetType="Button">
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock x:Name="TxtAppName" Text="FRONTLINE LYRICS" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
-                                                <TextBlock x:Name="TxtAppVersion" Text="v1.5.1" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center" Margin="0,1,0,0"/>
+                                                <TextBlock x:Name="TxtAppVersion" Text="v1.5.3" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center" Margin="0,1,0,0"/>
                                             </StackPanel>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">

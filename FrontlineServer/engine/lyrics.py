@@ -7,11 +7,28 @@ test and easy to swap for another lyrics provider later.
 """
 
 import logging
+import time
 import re
+import time
 import unicodedata
 from typing import Any, Dict, List, Optional, Tuple
 
 import requests
+import threading
+
+_lookup_local = threading.local()
+
+def fetch_lyrics_with_result(artist, song):
+    """Fetch and classify this specific lookup (never rely on global health state)."""
+    _lookup_local.result = "not_found"
+    lines = fetch_lyrics_lrclib(artist, song)
+    return lines, ("found" if lines else getattr(_lookup_local, "result", "not_found"))
+
+def fetch_candidates_with_result(pairs):
+    """Candidate list shares its deadline and distinguishes outage from catalog miss."""
+    _lookup_local.result = "not_found"
+    lines = fetch_lyrics_from_candidates(pairs)
+    return lines, ("found" if lines else getattr(_lookup_local, "result", "not_found"))
 from engine import service_health
 
 _LRC_LINE = re.compile(r"\[(\d{2,}):(\d{2}(?:\.\d{1,3})?)\](.*)")
@@ -159,7 +176,7 @@ def pick_lrclib_search_hit(results: Any, artist: str, song: str) -> Optional[Dic
     return ranked[0][1] if ranked else None
 
 
-def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]]:
+def fetch_lyrics_lrclib(artist: str, song: str, *, deadline: Optional[float] = None) -> Optional[List[Dict[str, Any]]]:
     """Fetch synced lyrics from the LRCLIB API.
 
     Tries the exact /api/get first (fast when the name already matches
@@ -167,7 +184,7 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
     name. Timeouts are kept short: a long 429 retry used to let the track end
     while we were still stuck in SEARCHING.
     """
-    headers = {"User-Agent": "FrontLineLyricsApp/1.3.0"}
+    headers = {"User-Agent": "FrontLineLyricsApp/1.5.3"}
     clean_artist, clean_song = clean_lrclib_query(artist, song)
     requested_main, requested_feat = _performers(artist, song)
     attempts: List[Tuple[str, str]] = []
@@ -186,6 +203,8 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
     from urllib3.util.retry import Retry
 
     session = requests.Session()
+    _lookup_local.result = "not_found"
+    deadline = min(deadline, time.monotonic() + 14.0) if deadline is not None else time.monotonic() + 14.0
     observed = {"ok": False, "server_errors": 0, "connection_errors": 0}
     retries = Retry(
         total=1,
@@ -194,12 +213,18 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
     )
     session.mount("https://", HTTPAdapter(max_retries=retries))
 
+    def remaining_timeout(default: float) -> float:
+        remaining = deadline - time.monotonic()
+        if remaining < 0.5:
+            raise TimeoutError("LRCLIB lookup budget exhausted")
+        return min(default, remaining)
+
     def lookup_get(track: str, who: str) -> Optional[List[Dict[str, Any]]]:
         r = session.get(
             "https://lrclib.net/api/get",
             params={"track_name": track, "artist_name": who},
             headers=headers,
-            timeout=5,
+            timeout=remaining_timeout(4.0),
         )
         service_health.debug("LRCLIB response HTTP %s for %s", r.status_code, r.url if hasattr(r, "url") else "api")
         if r.status_code in (200, 404):
@@ -224,7 +249,7 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
             "https://lrclib.net/api/search",
             params={"q": query} if query is not None else {"track_name": track, "artist_name": who},
             headers=headers,
-            timeout=6,
+            timeout=remaining_timeout(4.0),
         )
         service_health.debug("LRCLIB response HTTP %s for %s", r.status_code, r.url if hasattr(r, "url") else "api")
         if r.status_code in (200, 404):
@@ -252,6 +277,7 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
     try:
         # 1) Exact get for every (artist, title) candidate we have.
         for who, track in attempts:
+            if time.monotonic() >= deadline: break
             try:
                 lines = lookup_get(track, who)
                 if lines:
@@ -265,7 +291,7 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
         # filter artist/title separately. This is especially important for
         # covers, whose results may be buried in the 20-result q limit.
         who, track = attempts[0]
-        if who:
+        if who and time.monotonic() < deadline:
             try:
                 lines = lookup_search(track, who)
                 if lines:
@@ -275,7 +301,7 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
                 elif isinstance(e, requests.exceptions.RetryError): observed["server_errors"] += 1
                 logging.warning("Structured search failed (lrclib): %s", e)
 
-        if requested_feat:
+        if requested_feat and time.monotonic() < deadline:
             try:
                 # Many catalogue entries store the feat only in artistName;
                 # structured search with a plain title may find them.
@@ -287,10 +313,11 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
                 elif isinstance(e, requests.exceptions.RetryError): observed["server_errors"] += 1
                 logging.warning("Structured feature fallback failed (lrclib): %s", e)
 
-        if requested_feat:
+        if requested_feat and time.monotonic() < deadline:
             # LRCLIB may credit featuring performers in artistName rather than
             # trackName. Try original artist/title and principal+feature title.
             for lookup_artist, lookup_title in ((artist, song), (artist, clean_song)):
+                if time.monotonic() >= deadline: break
                 if not lookup_artist or not lookup_title:
                     continue
                 try:
@@ -304,6 +331,7 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
 
         # 3) Broad search, preserving the featured artist in the query.
         try:
+            if time.monotonic() >= deadline: raise TimeoutError("LRCLIB lookup budget exhausted")
             featured_query = f"{clean_song} {clean_artist} {' '.join(sorted(requested_feat))}".strip()
             lines = lookup_search(song, clean_artist, featured_query)
             if lines:
@@ -314,7 +342,7 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
             logging.warning(f"Broad search failed (lrclib): {e}")
 
         # 4) Title-only search as a last resort.
-        if who:
+        if who and time.monotonic() < deadline:
             try:
                 lines = lookup_search(track, who, track)
                 if lines:
@@ -326,11 +354,16 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
     finally:
         # At most one health observation per song lookup, regardless of retries.
         if observed["ok"]:
+            _lookup_local.result = "not_found"
             service_health.record_attempt("ok")
         elif observed["server_errors"]:
-            service_health.record_attempt("service_offline", immediate=observed["server_errors"] >= 3)
+            _lookup_local.result = "service_offline"
+            service_health.record_attempt("service_offline", immediate=True)
         elif observed["connection_errors"]:
+            _lookup_local.result = "connection_error"
             service_health.record_attempt("connection_error", immediate=True)
+        else:
+            _lookup_local.result = "service_offline"  # no valid response before deadline
         try:
             session.close()
         except Exception:
@@ -342,12 +375,23 @@ def fetch_lyrics_lrclib(artist: str, song: str) -> Optional[List[Dict[str, Any]]
 def fetch_lyrics_from_candidates(pairs: List[Tuple[str, str]]) -> Optional[List[Dict[str, Any]]]:
     """Try several (artist, title) pairs until LRCLIB returns synced lyrics."""
     seen = set()
+    # All candidate identities share one clock. Do not multiply the 14s budget.
+    deadline = time.monotonic() + 14.0
+    failure = None
+    got_valid_response = False
     for artist, song in pairs:
+        if time.monotonic() >= deadline:
+            break
         key = ((artist or "").lower().strip(), (song or "").lower().strip())
         if not key[1] or key in seen:
             continue
         seen.add(key)
-        lines = fetch_lyrics_lrclib(artist, song)
+        lines = fetch_lyrics_lrclib(artist, song, deadline=deadline)
         if lines:
             return lines
+        if getattr(_lookup_local, "result", None) == "not_found":
+            got_valid_response = True
+        if getattr(_lookup_local, "result", None) in ("service_offline", "connection_error"):
+            failure = getattr(_lookup_local, "result")
+    _lookup_local.result = "not_found" if got_valid_response else (failure or "not_found")
     return None

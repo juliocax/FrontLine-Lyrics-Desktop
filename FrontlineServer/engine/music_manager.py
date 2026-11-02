@@ -174,10 +174,30 @@ class MusicManager:
         self._listen_use_shazam = False
         self._clock_from_shazam = False
         self._media_busy = False
+        self._lyrics_lookup_failed_at = None
+        self.lyrics_lookup_notice = None
         self._next_live_fingerprint = 0.0
         self._live_fp_busy = False
         self._live_fp_drift_hits = 0
         self._cover_tried: set = set()
+
+    def finish_failed_lyrics_lookup(self, *, expected_session=None, track_key=None, reason="service_offline"):
+        """Return to the home menu; preserve an independent non-lyric notice.
+
+        In Auto mode, hold only the failed track until it changes (manual LISTEN
+        releases the hold). Late results from other sessions must not reset UI.
+        """
+        with self._lock:
+            if expected_session is not None and expected_session != self.session_id:
+                return
+            if track_key is not None:
+                latest = getattr(self.watcher, "ultima_info", None)
+                if latest is None or latest.chave != track_key:
+                    return
+            if self.auto_mode:
+                self._hold_current_track()
+            self.reset_state()
+            self.lyrics_lookup_notice = reason
 
     # -- Track identity / cooldown helpers --
 
@@ -283,6 +303,7 @@ class MusicManager:
             self.listen_start_time = time.time()
             self.is_listening = True if was_auto else False
             self._listen_use_shazam = False
+            self._lyrics_lookup_failed_at = None
             self._cover_tried = set()
             self._clock_from_shazam = False
             self._next_live_fingerprint = 0.0
@@ -733,17 +754,21 @@ class MusicManager:
     def _follow_metadata_lookup(self, info):
         """Network work happens off the media-watcher thread."""
         if self._listen_use_shazam:
+            self._media_busy = False
             return
         if not self._session_trusts_song_clock(info):
             logging.info("Ignora lock-in SMTC em vídeo/ao vivo (%s)", getattr(info, "app", ""))
+            self._media_busy = False
             return
         if self._in_previous_track_cooldown(info.titulo, info.artista):
+            self._media_busy = False
             return
         if time.monotonic() < self._lrclib_fail_until.get(info.chave, 0.0):
+            self._media_busy = False
             return
         self._media_busy = True
         try:
-            letra = lyrics_mod.fetch_lyrics_lrclib(info.artista, info.titulo)
+            letra, result = lyrics_mod.fetch_lyrics_with_result(info.artista, info.titulo)
             if letra:
                 latest = self.watcher.ultima_info
                 if latest is None or latest.chave != info.chave:
@@ -752,6 +777,7 @@ class MusicManager:
                 if self._listen_use_shazam:
                     logging.info("OUVIR em curso: ignora lock-in SMTC tardio")
                     return
+                self._lyrics_lookup_failed_at = None
                 self._lrclib_fail_until.pop(info.chave, None)
                 # The lookup takes ~1-2s; the player may have emitted a
                 # newer position in that window. Anchor with the fresh read.
@@ -780,14 +806,24 @@ class MusicManager:
                 if latest is None or latest.chave != info.chave:
                     return
                 self._lrclib_fail_until[info.chave] = time.monotonic() + 15.0
+                self._lyrics_lookup_failed_at = time.time()
                 if self.search_completed and self.synced_lyrics:
                     logging.info(f"Sem letra no LRCLib para {info.titulo} - {info.artista}")
                     self._start_transition("metadados mudaram sem letra")
                 else:
-                    logging.info(
-                        f"LRCLib miss via metadados ({info.titulo} - {info.artista}); "
-                        "Shazam pode tentar com outro nome"
-                    )
+                    logging.info("LRCLIB miss via SMTC: %s - %s", info.titulo, info.artista)
+                    if result in ("service_offline", "connection_error"):
+                        self.finish_failed_lyrics_lookup(track_key=info.chave, reason=result)
+                    else:
+                        self._set_track(info.titulo, info.artista,
+                            reference_time=self._anchor_reference(info.chave, time.time()),
+                            lyrics=None, source="media")
+        except Exception:
+            logging.exception("LRCLIB: falha inesperada na busca SMTC")
+            self._lyrics_lookup_failed_at = time.time()
+            self._lrclib_fail_until[info.chave] = time.monotonic() + 15.0
+            if not (self.search_completed and self.synced_lyrics):
+                self.finish_failed_lyrics_lookup(track_key=info.chave, reason="service_offline")
         finally:
             self._media_busy = False
 
@@ -937,10 +973,9 @@ class MusicManager:
 
     def get_current_state(self) -> Dict[str, Any]:
         """Calculates the current line based on playback time and returns the full app state."""
-        if service_health.status() != "ok" and self.is_listening and not self.synced_lyrics:
-            service_health.debug("aborting listening; status=%s", service_health.status())
-            self.auto_mode = False
-            self.reset_state()
+        # An LRCLIB outage must not disable Auto mode or discard playback state.
+        # Let the UI display the existing service-health notice and continue
+        # following track changes when the provider recovers.
 
         current_line, previous_line, next_line = "", "", ""
         current_line_original = ""
@@ -949,7 +984,15 @@ class MusicManager:
         if not self.is_listening:
             status = "IDLE"
         elif self.is_listening and not self.current_song:
-            status = "LISTENING"
+            # Spotify/SMTC already identified the track, but LRCLIB may be
+            # unavailable. Avoid showing LISTENING forever after a failed lookup.
+            failed = self._lyrics_lookup_failed_at
+            if (failed is not None and not self._listen_use_shazam
+                    and time.time() - self.listen_start_time >= 8.0):
+                status = "NOT_FOUND"
+                overlay_msg = ""
+            else:
+                status = "LISTENING"
         elif self.current_song and not self.search_completed:
             status = "SEARCHING"
         elif self.search_completed and not self.synced_lyrics:
@@ -963,16 +1006,9 @@ class MusicManager:
                 status = "SEARCHING"
             else:
                 status = "NOT_FOUND"
-                overlay_msg = "Lyrics not found."
-                # In Auto mode, don't get stuck here: the track was identified but
-                # we found no synced lyrics. After a while, give up and go back
-                # to listening for the next one.
-                if (self.auto_mode and not self.festival_mode and self.not_found_since
-                        and (time.time() - self.not_found_since) > tuning.NOT_FOUND_GIVEUP_SECONDS):
-                    self.reset_state()
-                    self.is_listening = True
-                    status = "LISTENING"
-                    overlay_msg = ""
+                overlay_msg = ""
+                # Catalog miss is not an outage. Keep the no-lyrics message
+                # visible until the player changes track or user starts again.
         elif self.synced_lyrics:
             status = "SYNCED"
             elapsed_time = self._elapsed_now()
@@ -1018,7 +1054,8 @@ class MusicManager:
         full = [{"timestamp": i["timestamp"], "text": i["text"]} for i in self.synced_lyrics] if self.synced_lyrics else []
         payload = {
             "status": status,
-            "lyrics_service_status": service_health.status(),
+            "lyrics_service_status": ("ok" if status == "NOT_FOUND" else service_health.status()),
+            "lyrics_lookup_notice": self.lyrics_lookup_notice,
             "auto_mode": self.auto_mode,
             "is_translating": self.is_translating,
             "current_lyrics": current_line,
