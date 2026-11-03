@@ -25,13 +25,17 @@ import os
 os.environ.setdefault("translators_default_region", "EN")
 import translators as ts
 
-
+# One executor per line (fans a whole song out in parallel) and one for the
+# 3 racing sources within a single line.
 LINE_DISPATCH_EXECUTOR = ThreadPoolExecutor(max_workers=8, thread_name_prefix="translate-line")
 TRANSLATION_EXECUTOR = ThreadPoolExecutor(max_workers=24, thread_name_prefix="translate-src")
 LINE_TRANSLATE_TIMEOUT = 8.0
 
-
-MYMEMORY_TARGET_LANGUAGES = {"pt": "pt-BR"}
+# The WebSocket and MusicManager continue to use short language codes.
+# MyMemory requires a locale-specific code for Brazilian Portuguese.
+MYMEMORY_TARGET_LANGUAGES = {"pt": "pt-BR", "es": "es-ES", "fr": "fr-FR", "en": "en-GB"}
+# MyMemory does not support source="auto"; lyrics in English use en-GB.
+# A future language-detection step is needed for non-English songs.
 MYMEMORY_SOURCE_LANGUAGE = "en-GB"
 
 
