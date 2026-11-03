@@ -368,6 +368,7 @@ _site/
 
 # local telemetry key
 TelemetryKey.Local.cs
+LinuxTelemetryKey.local.cs
 
 # Visual Studio Code settings
 launchSettings.json
