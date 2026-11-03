@@ -1,0 +1,10 @@
+// Copy this to LinuxTelemetryKey.local.cs (do not commit the .local.cs file).
+namespace FrontLine_Linux;
+
+internal static partial class LinuxTelemetryKey
+{
+    static partial void Load(ref string key)
+    {
+        key = "A-EU-YOUR_APTABASE_APP_KEY_HERE";
+    }
+}
