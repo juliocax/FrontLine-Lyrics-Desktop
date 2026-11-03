@@ -14,6 +14,8 @@
       <IncludeAssets Condition="'$(Configuration)' != 'Debug'">None</IncludeAssets>
       <PrivateAssets Condition="'$(Configuration)' != 'Debug'">All</PrivateAssets>
     </PackageReference>
+    <PackageReference Include="Svg.Controls.Skia.Avalonia" Version="12.0.0.17" />
+    <AvaloniaResource Include="assets/**/*.svg" />
     <AvaloniaResource Include="assets/**/*.png" />
     <AvaloniaResource Include="assets/**/*.jpg" />
   </ItemGroup>
