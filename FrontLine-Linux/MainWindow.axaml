@@ -1,42 +1,104 @@
-<Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        x:Class="FrontLine_Linux.MainWindow"
-        Title="FrontLine Lyrics" Width="650" Height="520"
-        MinWidth="450" MinHeight="360"
-        Background="#12131B">
-  <Grid Margin="24" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="18">
-    <Grid Grid.Row="0" ColumnDefinitions="*,Auto">
-      <StackPanel Spacing="5">
-        <TextBlock Text="FrontLine Lyrics" FontSize="26" FontWeight="Bold" Foreground="#F4F0FF" />
-        <TextBlock Text="LINUX • AVALONIA" FontSize="11" Foreground="#AAA0D7" />
-      </StackPanel>
-      <TextBlock x:Name="ConnectionText" Grid.Column="1" VerticalAlignment="Center"
-                 Text="Conectando..." Foreground="#E9B667"/>
-    </Grid>
-    <StackPanel Grid.Row="1" Spacing="5">
-      <TextBlock x:Name="StatusText" Text="IDLE" Foreground="#A8A9BD" FontSize="13"/>
-      <TextBlock x:Name="SongText" Text="Nenhuma música identificada"
-                 FontSize="20" FontWeight="SemiBold" Foreground="White" TextWrapping="Wrap"/>
-      <TextBlock x:Name="ArtistText" Text="" Foreground="#B4B5CA" TextWrapping="Wrap"/>
-    </StackPanel>
-    <Border Grid.Row="2" Background="#202130" CornerRadius="16" Padding="22">
-      <StackPanel VerticalAlignment="Center" Spacing="16">
-        <TextBlock x:Name="PreviousText" Text="♪" TextAlignment="Center"
-                   FontSize="17" Foreground="#989AB0" TextWrapping="Wrap"/>
-        <TextBlock x:Name="CurrentText" Text="Sua letra sincronizada aparecerá aqui"
-                   TextAlignment="Center" FontSize="25" FontWeight="Bold"
-                   Foreground="White" TextWrapping="Wrap"/>
-        <TextBlock x:Name="NextText" Text="♪" TextAlignment="Center"
-                   FontSize="17" Foreground="#989AB0" TextWrapping="Wrap"/>
-      </StackPanel>
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ x:Class="FrontLine_Linux.MainWindow" Title="FrontLine Lyrics 0.1.0"
+ Width="1100" Height="570" MinWidth="720" MinHeight="390"
+ CanResize="True" Topmost="True" WindowDecorations="None"
+ TransparencyLevelHint="Transparent" Background="Transparent" KeyDown="Window_KeyDown">
+ <Window.Styles>
+  <Style Selector="Button">
+   <Setter Property="Background" Value="#202020"/><Setter Property="Foreground" Value="White"/>
+   <Setter Property="BorderBrush" Value="#434343"/><Setter Property="BorderThickness" Value="1"/>
+   <Setter Property="CornerRadius" Value="10"/><Setter Property="Padding" Value="14,9"/>
+  </Style>
+ </Window.Styles>
+ <Grid x:Name="Root" Background="Transparent" PointerEntered="Root_PointerEntered" PointerExited="Root_PointerExited">
+  <Border x:Name="WindowBackground" Background="#090909" CornerRadius="18" BorderThickness="0"/>
+  <Grid x:Name="MenuPanel" Margin="45" ColumnDefinitions="0.95*,1.35*">
+   <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20">
+    <Border Width="260" Height="250" Background="#181818" CornerRadius="22" BorderBrush="#393939" BorderThickness="2">
+     <Image Source="avares://FrontLine-Linux/assets/logo.png" Stretch="Uniform" Margin="12"/>
     </Border>
-    <Grid Grid.Row="3" ColumnDefinitions="*,*" ColumnSpacing="12">
-      <Button x:Name="ListenButton" Grid.Column="0" Content="LISTEN" IsEnabled="False"
-              HorizontalContentAlignment="Center" Padding="16,12"
-              Background="#7461C6" Foreground="White" Click="Listen_Click"/>
-      <Button x:Name="ClearButton" Grid.Column="1" Content="CLEAR" IsEnabled="False"
-              HorizontalContentAlignment="Center" Padding="16,12"
-              Background="#303143" Foreground="White" Click="Clear_Click"/>
-    </Grid>
+    <TextBlock Text="Ready." Foreground="#999999" HorizontalAlignment="Center"/>
+   </StackPanel>
+   <Border Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" BorderBrush="#454545" BorderThickness="1" CornerRadius="40" Padding="18">
+    <StackPanel Orientation="Horizontal" Spacing="12">
+     <StackPanel VerticalAlignment="Center" Margin="4,0,8,0"><TextBlock Text="FRONTLINE LYRICS" FontWeight="Bold" FontSize="13"/><TextBlock Text="v0.1.0" Foreground="#9E9E9E" FontSize="11"/></StackPanel>
+     <Button x:Name="MenuListenButton" Content="♫  LISTEN" Click="Listen_Click"/>
+     <Button Content="⌕  SEARCH" Click="OpenSearch_Click"/>
+    </StackPanel>
+   </Border>
   </Grid>
+  <Grid x:Name="LoadingPanel" IsVisible="False" Margin="30" ColumnDefinitions="0.8*,1.5*" RowDefinitions="*,Auto">
+   <Border Width="270" Height="270" CornerRadius="22" Background="#181818" BorderBrush="#353535" BorderThickness="2" HorizontalAlignment="Center" VerticalAlignment="Center">
+    <Image Source="avares://FrontLine-Linux/assets/logo.png" Stretch="Uniform" Margin="12"/>
+   </Border>
+   <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="18">
+    <ProgressBar Width="150" Height="6" IsIndeterminate="True" Foreground="#A182FB"/>
+    <TextBlock x:Name="LoadingText" Text="Listening..." FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+   </StackPanel>
+   <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10" Margin="0,0,16,10">
+    <Button Content="◀" Click="PreviousTrack_Click"/><Button Content="♫  LISTEN" Click="Listen_Click"/><TextBlock Text="AUTO" VerticalAlignment="Center"/>
+    <ToggleSwitch x:Name="LoadingAutoSwitch" Click="AutoSwitch_Changed"/><Button Content="CLEAR" Click="Clear_Click"/>
+    <Button Content="⌕" Click="OpenSearch_Click"/><Button Content="▶" Click="NextTrack_Click"/>
+   </StackPanel>
+  </Grid>
+  <Grid x:Name="LyricsPanel" IsVisible="False" ColumnDefinitions="0.82*,1.6*" Margin="28" ColumnSpacing="24">
+   <StackPanel x:Name="CoverPanel" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+    <Border Width="235" Height="235" CornerRadius="10" Background="#151515" BorderThickness="0" ClipToBounds="True">
+     <Grid>
+      <TextBlock x:Name="CoverFallback" Text="♪" FontSize="88" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#8E70D9"/>
+      <Image x:Name="CoverImage" Stretch="UniformToFill" IsVisible="False"/>
+     </Grid>
+    </Border>
+    <TextBlock x:Name="SongText" Text="Música" HorizontalAlignment="Center" TextWrapping="Wrap" FontSize="18" FontWeight="Bold"/>
+    <TextBlock x:Name="ArtistText" Text="Artista" HorizontalAlignment="Center" TextWrapping="Wrap" Foreground="#A0A0A0"/>
+   </StackPanel>
+   <Grid Grid.Column="1" RowDefinitions="*,Auto">
+    <Border x:Name="LyricsBackdrop" Background="Transparent" CornerRadius="12" Padding="16" PointerPressed="LyricsBackdrop_PointerPressed">
+     <StackPanel VerticalAlignment="Center" Spacing="18">
+      <TextBlock x:Name="PreviousText" Text="♪" TextAlignment="Center" FontSize="17" Foreground="#8C8C8C" TextWrapping="Wrap"/>
+      <TextBlock x:Name="CurrentText" Text="♪" TextAlignment="Center" FontSize="29" FontWeight="Bold" Foreground="#FFD132" TextWrapping="Wrap"/>
+      <TextBlock x:Name="NextText" Text="♪" TextAlignment="Center" FontSize="17" Foreground="#8C8C8C" TextWrapping="Wrap"/>
+     </StackPanel>
+    </Border>
+    <StackPanel x:Name="LyricsControls" Grid.Row="1" Orientation="Horizontal" Spacing="8" HorizontalAlignment="Center" Margin="0,8,0,0">
+     <Button Content="◀" Click="PreviousTrack_Click"/><Button x:Name="ListenButton" Content="♫  LISTEN" Click="Listen_Click"/>
+     <TextBlock Text="AUTO" VerticalAlignment="Center" FontSize="11"/>
+     <ToggleSwitch x:Name="AutoSwitch" Click="AutoSwitch_Changed"/><Button x:Name="ClearButton" Content="CLEAR" Click="Clear_Click"/>
+     <Button Content="⌕" Click="OpenSearch_Click"/><Button Content="▶" Click="NextTrack_Click"/>
+    </StackPanel>
+   </Grid>
+  </Grid>
+  <Border x:Name="ResizeGrip" Width="30" Height="30" Background="Transparent"
+          HorizontalAlignment="Right" VerticalAlignment="Bottom"
+          PointerPressed="ResizeGrip_PointerPressed" ToolTip.Tip="Arraste para redimensionar"/>
+  <TextBlock x:Name="ResizeHint" Text="◢" FontSize="20" FontWeight="Bold" Foreground="#888888"
+             HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,6"
+             IsHitTestVisible="False"/>
+  <Border x:Name="SearchPanel" IsVisible="False" Background="#F3090909" CornerRadius="18">
+   <StackPanel Width="400" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+    <TextBlock Text="MANUAL SEARCH" FontWeight="Bold" FontSize="25"/><TextBox x:Name="SearchArtist" PlaceholderText="Artista"/>
+    <TextBox x:Name="SearchSong" PlaceholderText="Música"/>
+    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Spacing="10"><Button Content="BUSCAR" Click="DoSearch_Click"/><Button Content="VOLTAR" Click="CloseSearch_Click"/></StackPanel>
+   </StackPanel>
+  </Border>
+  <Border x:Name="SettingsPanel" IsVisible="False" Background="#F3090909" CornerRadius="18">
+   <StackPanel Width="420" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="16">
+    <TextBlock Text="CONFIGURAÇÕES" FontWeight="Bold" FontSize="24"/>
+    <TextBlock Text="Opacidade do fundo com o mouse fora da janela" TextWrapping="Wrap"/>
+    <Slider x:Name="OpacitySlider" Minimum="0" Maximum="1" Value="0.4" ValueChanged="OpacitySlider_Changed"/>
+    <TextBlock Text="A letra permanece totalmente opaca. F10 recupera a moldura do sistema se o arraste falhar." FontSize="12" Foreground="#ADADAD" TextWrapping="Wrap"/>
+    <Button Content="FECHAR" HorizontalAlignment="Center" Click="CloseSettings_Click"/>
+   </StackPanel>
+  </Border>
+  <Grid x:Name="TopControls" Height="45" VerticalAlignment="Top" ColumnDefinitions="*,Auto" Margin="15,8,14,0">
+   <Border Background="Transparent" PointerPressed="DragHandle_PointerPressed">
+    <TextBlock Text="FRONTLINE LYRICS  •  0.1.0" Foreground="#777777" FontSize="11" VerticalAlignment="Center"/>
+   </Border>
+   <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
+    <Button Content="⋮" Click="Settings_Click" Padding="10,6" ToolTip.Tip="Configurações"/>
+    <Button Content="—" Click="Minimize_Click" Padding="10,6" ToolTip.Tip="Minimizar"/>
+    <Button Content="×" Click="Close_Click" Padding="10,6" ToolTip.Tip="Fechar"/>
+   </StackPanel>
+  </Grid>
+ </Grid>
 </Window>
