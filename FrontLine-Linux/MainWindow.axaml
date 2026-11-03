@@ -14,7 +14,7 @@
  <Grid x:Name="Root" Background="Transparent" PointerPressed="Root_PointerPressed"
        PointerEntered="Root_PointerEntered" PointerExited="Root_PointerExited">
   <Border x:Name="WindowBackground" Background="#090909" CornerRadius="18" BorderThickness="0"/>
-  <Grid x:Name="MenuPanel" Margin="20" ColumnDefinitions="0.9*,1.5*">
+  <Grid x:Name="MenuPanel" Margin="20" ColumnDefinitions="0.9*,1.5*" RowDefinitions="*,Auto">
    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20">
     <Image x:Name="MenuLogo" Width="260" Height="250" Source="avares://FrontLine-Linux/assets/logo.png" Stretch="Uniform"/>
     <TextBlock Text="Ready." Foreground="#999999" HorizontalAlignment="Center"/>
@@ -29,6 +29,34 @@
      <Button Click="Help_Click" ToolTip.Tip="help" Tag="tip:help"><svg:Svg Path="/assets/icon_help.svg" Width="17" Height="17" IsHitTestVisible="False"/></Button>
     </StackPanel>
    </Border></Viewbox>
+   <!-- Rodapé da tela inicial: seção de apoio, avaliação e feedback. -->
+   <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8"
+               HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,14,5,2">
+    <TextBlock x:Name="EnjoyingAppLabel" Text="Enjoying the app?" Foreground="#8F8F98"
+               FontSize="12" VerticalAlignment="Center" Margin="0,0,9,0"/>
+    <Border Width="1" Height="21" Background="#47434D" Margin="0,0,5,0" VerticalAlignment="Center"/>
+    <Button x:Name="SupportButton" Click="Support_Click" ToolTip.Tip="Support development"
+            Background="Transparent" BorderThickness="0" Padding="7,6" Tag="tip:support">
+     <StackPanel Orientation="Horizontal" Spacing="6">
+      <TextBlock Text="☕" FontSize="16" VerticalAlignment="Center"/>
+      <TextBlock x:Name="SupportLabel" Text="Support" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+     </StackPanel>
+    </Button>
+    <Button x:Name="RateButton" IsEnabled="False" ToolTip.Tip="Available after publication in the Ubuntu store"
+            Background="Transparent" BorderThickness="0" Padding="7,6">
+     <StackPanel Orientation="Horizontal" Spacing="6">
+      <TextBlock Text="☆" FontSize="19" VerticalAlignment="Center"/>
+      <TextBlock x:Name="RateLabel" Text="Rate" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+     </StackPanel>
+    </Button>
+    <Button x:Name="FeedbackButton" IsEnabled="False" ToolTip.Tip="Feedback form link not yet configured"
+            Background="Transparent" BorderThickness="0" Padding="7,6">
+     <StackPanel Orientation="Horizontal" Spacing="6">
+      <TextBlock Text="▤" FontSize="17" VerticalAlignment="Center"/>
+      <TextBlock x:Name="FeedbackLabel" Text="Feedback" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+     </StackPanel>
+    </Button>
+   </StackPanel>
   </Grid>
   <Grid x:Name="LoadingPanel" IsVisible="False" Margin="16" ColumnDefinitions="0.8*,1.5*" RowDefinitions="*,Auto">
    <Image x:Name="LoadingLogo" Width="220" Height="220" Source="avares://FrontLine-Linux/assets/logo.png" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -99,6 +127,7 @@
     </StackPanel></Viewbox>
    </Grid>
   </Grid>
+  <!-- Busca à esquerda e histórico de pesquisas manuais à direita -->
   <Border x:Name="SearchPanel" IsVisible="False" Background="#FA07070A" CornerRadius="18" Padding="30,58,30,30">
    <Viewbox Stretch="Uniform" StretchDirection="DownOnly" VerticalAlignment="Center" HorizontalAlignment="Center">
     <Grid Width="850" Height="345" ColumnDefinitions="*,1.05*" ColumnSpacing="22">
@@ -213,12 +242,14 @@
     </Border>
    </Grid>
   </Border>
+  <!-- Área de redimensionamento própria: funciona sem mostrar a moldura do sistema, se o compositor aceitar. -->
   <Border x:Name="ResizeGrip" Width="30" Height="30" Background="Transparent"
           HorizontalAlignment="Right" VerticalAlignment="Bottom"
           PointerPressed="ResizeGrip_PointerPressed" ToolTip.Tip="Arraste para redimensionar"/>
   <TextBlock x:Name="ResizeHint" Text="◢" FontSize="20" FontWeight="Bold" Foreground="#888888"
              HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,6"
              IsHitTestVisible="False"/>
+  <!-- Controles em qualquer tela; ocultos quando somente a letra está visível -->
   <Grid x:Name="TopControls" Height="45" VerticalAlignment="Top" ColumnDefinitions="*,Auto" Margin="15,8,14,0">
    <Border Background="Transparent" PointerPressed="DragHandle_PointerPressed"/>
    <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">

@@ -178,7 +178,7 @@ public partial class MainWindow : Window
                 await ReceiveAsync(socket, token);
             }
             catch (OperationCanceledException) when (token.IsCancellationRequested) { break; }
-            catch (Exception) { /*  */ }
+            catch (Exception) { /* reconecta sem expor detalhes internos */ }
             finally
             {
                 if (ReferenceEquals(_socket, socket)) _socket = null;
@@ -508,7 +508,7 @@ public partial class MainWindow : Window
                 // Backend pode devolver JPEG/PNG diretamente em base64, sem data:image/.
                 var raw = value.Trim();
                 try { bytes = Convert.FromBase64String(raw); }
-                catch (FormatException) { /* */ }
+                catch (FormatException) { /* formato de capa ainda não reconhecido */ }
             }
             if (bytes is { Length: > 0 and < 5_000_000 })
             {
@@ -574,7 +574,7 @@ public partial class MainWindow : Window
             using var process = Process.Start(new ProcessStartInfo("playerctl", operation) { UseShellExecute = false, CreateNoWindow = true });
             if (process is not null) await process.WaitForExitAsync();
         }
-        catch (Exception) { /* */ }
+        catch (Exception) { /* ausência de playerctl ou player compatível */ }
     }
     private void OpenSearch_Click(object? sender, RoutedEventArgs e) { _searchOpen = true; UpdatePanels(); }
     private void CloseSearch_Click(object? sender, RoutedEventArgs e) { _searchOpen = false; UpdatePanels(); }
@@ -819,6 +819,13 @@ public partial class MainWindow : Window
             "id" => "Tampilkan lirik asli di bawah terjemahan",
             _ => "Show original below translation"
         };
+        EnjoyingAppLabel.Text = pt ? "Gostando do app?" : es ? "¿Te gusta la app?" : id ? "Suka aplikasi ini?" : "Enjoying the app?";
+        SupportLabel.Text = pt ? "Apoiar" : es ? "Apoyar" : id ? "Dukung" : "Support";
+        RateLabel.Text = pt ? "Avaliar" : es ? "Calificar" : id ? "Nilai" : "Rate";
+        FeedbackLabel.Text = pt ? "Opinião" : es ? "Opinión" : id ? "Masukan" : "Feedback";
+        Avalonia.Controls.ToolTip.SetTip(SupportButton, pt ? "Apoiar o desenvolvimento no Buy Me a Coffee" : es ? "Apoyar el desarrollo en Buy Me a Coffee" : id ? "Dukung pengembangan di Buy Me a Coffee" : "Support development on Buy Me a Coffee");
+        Avalonia.Controls.ToolTip.SetTip(RateButton, pt ? "Disponível após a publicação na loja Ubuntu" : es ? "Disponible después del lanzamiento en Ubuntu" : id ? "Tersedia setelah rilis di toko Ubuntu" : "Available after publication in the Ubuntu store");
+        Avalonia.Controls.ToolTip.SetTip(FeedbackButton, pt ? "Aguardando endereço do formulário" : es ? "Esperando enlace al formulario" : id ? "Menunggu tautan formulir" : "Waiting for feedback form link");
         ApplyTooltips();
         UpdateLoadingLabel();
         UpdateTranslationFeedback();
@@ -842,6 +849,7 @@ public partial class MainWindow : Window
     }
     private void ReleaseNotes_Click(object? sender, RoutedEventArgs e) => OpenLink(ReleaseNotesUrl);
     private void Help_Click(object? sender, RoutedEventArgs e) => OpenLink(HelpUrl);
+    private void Support_Click(object? sender, RoutedEventArgs e) => OpenLink("https://buymeacoffee.com/juliocax");
 
     private void Minimize_Click(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
     private void Close_Click(object? sender, RoutedEventArgs e) => Close();
