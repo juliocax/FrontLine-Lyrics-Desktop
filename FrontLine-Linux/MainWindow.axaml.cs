@@ -30,7 +30,6 @@ public partial class MainWindow : Window
         public override string ToString() => $"{Song}  —  {Artist}";
     }
     private readonly ObservableCollection<ManualSearchEntry> _searchHistory = new();
-    private bool _handlingHistorySelection;
     private bool _loadingPreferences;
     private sealed class UserPreferences
     {
@@ -39,8 +38,12 @@ public partial class MainWindow : Window
         public double FontSize { get; set; } = 29;
         public int VisibleLines { get; set; } = 3;
         public string LyricColor { get; set; } = "#FFD132";
+        public string LyricFont { get; set; } = "Default";
+        public bool Bold { get; set; } = true;
+        public bool Italic { get; set; }
         public bool ShowOriginal { get; set; }
         public string Language { get; set; } = "en";
+        public string Translation { get; set; } = "original";
     }
     private static string PreferencesFile => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -57,7 +60,11 @@ public partial class MainWindow : Window
                 VisibleLines = _visibleLineCount,
                 LyricColor = (LyricColorCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "#FFD132",
                 ShowOriginal = _showOriginal,
-                Language = _appLanguage
+                Language = _appLanguage,
+                Translation = _preferredTranslation,
+                LyricFont = _lyricFont,
+                Bold = _lyricBold,
+                Italic = _lyricItalic
             };
             Directory.CreateDirectory(Path.GetDirectoryName(PreferencesFile)!);
             var temporary = PreferencesFile + ".tmp";
@@ -84,10 +91,20 @@ public partial class MainWindow : Window
                 if (item.Tag?.ToString() == settings.LyricColor) { LyricColorCombo.SelectedItem = item; break; }
             _showOriginal = settings.ShowOriginal;
             ShowOriginalToggle.IsChecked = _showOriginal;
+            _lyricFont = string.IsNullOrWhiteSpace(settings.LyricFont) ? "Default" : settings.LyricFont;
+            _lyricBold = settings.Bold;
+            _lyricItalic = settings.Italic;
+            LyricBoldToggle.IsChecked = _lyricBold;
+            LyricItalicToggle.IsChecked = _lyricItalic;
+            SetFontSelection(_lyricFont);
+            ApplyLyricTypography();
             _appLanguage = settings.Language is "en" or "pt" or "es" or "id" ? settings.Language : "en";
             _updatingSettings = true;
             foreach (var item in AppLanguageCombo.Items.OfType<ComboBoxItem>())
                 if (item.Tag?.ToString() == _appLanguage) { AppLanguageCombo.SelectedItem = item; break; }
+            _preferredTranslation = settings.Translation is "original" or "romanized" or "en" or "es" or "fr" or "pt"
+                ? settings.Translation : "original";
+            SelectComboTag(TranslationCombo, _preferredTranslation);
             _updatingSettings = false;
             _loadingPreferences = false;
             FontSizeSlider_Changed(this, null!);
@@ -113,6 +130,8 @@ public partial class MainWindow : Window
     private string _settingsTab = "lyrics";
     private string _appLanguage = "en";
     private string _currentTranslation = "original";
+    private string _preferredTranslation = "original";
+    private string _autoTranslationKey = "";
     private bool _updatingSettings;
     private string? _pendingTranslation;
     private bool _translationStarted;
@@ -129,6 +148,9 @@ public partial class MainWindow : Window
     private int _currentIndex = -1;
     private int _visibleLineCount = 3;
     private bool _showOriginal;
+    private string _lyricFont = "Default";
+    private bool _lyricBold = true;
+    private bool _lyricItalic;
     private bool _translatedActive;
     private bool _playerClock;
     private string _originalCurrent = "";
@@ -137,20 +159,23 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         SearchHistoryList.ItemsSource = _searchHistory;
+        _loadingPreferences = true;
+        PopulateFontChoices();
+        _loadingPreferences = false;
         LoadSearchHistory();
         LoadPreferences();
-        Opened += (_, _) => _ = ConnectionLoopAsync(_stop.Token);
+        Opened += (_, _) => { _ = ConnectionLoopAsync(_stop.Token); _ = RunStartupDialogsAsync(); };
         Closed += async (_, _) => await ShutdownConnectionAsync();
         UpdatePanels();
         ShowSettingsTab("lyrics");
         ApplyLanguage();
+        RefreshSegmentSelections();
         SizeChanged += (_, _) => UpdateResponsiveLayout();
         UpdateResponsiveLayout();
     }
 
     private async Task ShutdownConnectionAsync()
     {
-        // Normal close handshake (avoid abrupt Abort causing noisy backend logs).
         try
         {
             var socket = _socket;
@@ -249,6 +274,11 @@ public partial class MainWindow : Window
                 }
                 _status = status;
                 _currentTranslation = currentLang;
+                if (status != "SYNCED")
+                {
+                    _pendingTranslation = null;
+                    _translationStarted = false;
+                }
                 if (_pendingTranslation is not null)
                 {
                     if (isTranslating) _translationStarted = true;
@@ -263,14 +293,27 @@ public partial class MainWindow : Window
                         _translationStarted = false;
                     }
                 }
-                // Nunca forçar o seletor ao idioma antigo durante uma tradução em andamento.
-                if (_pendingTranslation is null && TranslationCombo is not null &&
-                    TranslationCombo.SelectedItem is ComboBoxItem sel && sel.Tag?.ToString() != currentLang)
+                if (TranslationCombo?.SelectedItem is ComboBoxItem selected &&
+                    selected.Tag?.ToString() != _preferredTranslation)
                 {
                     _updatingSettings = true;
-                    foreach (var entry in TranslationCombo.Items.OfType<ComboBoxItem>())
-                        if (entry.Tag?.ToString() == currentLang) { TranslationCombo.SelectedItem = entry; break; }
+                    SelectComboTag(TranslationCombo, _preferredTranslation);
                     _updatingSettings = false;
+                }
+                bool hasLyrics = status == "SYNCED" &&
+                    (!string.IsNullOrWhiteSpace(current) || lines is { Count: > 0 });
+                if (hasLyrics && _pendingTranslation is null && _preferredTranslation != currentLang)
+                {
+                    var key = $"{artist.Trim()}|{title.Trim()}|{_preferredTranslation}";
+                    if (_autoTranslationKey != key)
+                    {
+                        _autoTranslationKey = key;
+                        _translationUiError = null;
+                        _pendingTranslation = _preferredTranslation;
+                        _translationStarted = false;
+                        _translationRequestedUtc = DateTime.UtcNow;
+                        _ = SendAsync(new { action = "TRANSLATE", lang = _preferredTranslation });
+                    }
                 }
                 UpdateTranslationFeedback();
                 _autoMode = auto;
@@ -316,11 +359,11 @@ public partial class MainWindow : Window
         MenuLogo.Height = 250 * factor;
         LoadingLogo.Width = 220 * factor;
         LoadingLogo.Height = 220 * factor;
-        // Amplia a capa quando há espaço, mas mantém distância dos controles.
         CoverPanel.MaxWidth = Math.Min(320, Math.Max(155, w * 0.29));
-        CoverPanel.MaxHeight = Math.Min(360, Math.Max(125, h - 142));
-        // A tipografia das letras NÃO é escalada com a janela.
-        double contentHeight = Math.Max(75, h - 170);
+        CoverPanel.MaxHeight = Math.Min(360, Math.Max(105, h - 180));
+        SettingsPanel.MaxHeight = 535;
+        SettingsPanel.Width = 360;
+        double contentHeight = 340;
         LyricsSettingsScroll.MaxHeight = contentHeight;
         TranslateSettingsScroll.MaxHeight = contentHeight;
         GeneralSettingsScroll.MaxHeight = contentHeight;
@@ -335,33 +378,32 @@ public partial class MainWindow : Window
         LoadingPanel.IsVisible = loading;
         LyricsPanel.IsVisible = lyrics;
         if (LyricsTranslationBanner is not null)
-            LyricsTranslationBanner.IsVisible = lyrics && _pendingTranslation is not null;
+            LyricsTranslationBanner.IsVisible = lyrics && _pendingTranslation is not null && _hover;
         SearchPanel.IsVisible = _searchOpen;
-        SettingsPanel.IsVisible = _settingsOpen;
-        // Em modo somente letra: imagem e botões somem, mas texto nunca recebe Opacity.
+        SettingsPopup.IsOpen = _settingsOpen;
         var showingControls = _hover || _searchOpen || _settingsOpen || !lyrics;
         ShazamSyncTools.IsVisible = lyrics && showingControls && !_playerClock && _lyricTimes.Count > 0;
         CoverPanel.IsVisible = showingControls;
         LyricsControls.IsVisible = showingControls;
-        // Sem mouse: ocupa toda a largura, sem reservar coluna para a capa.
         LyricsPanel.ColumnDefinitions[0].Width = showingControls
             ? new GridLength(Math.Clamp(Bounds.Width * 0.24, 125, 250)) : new GridLength(0);
         LyricsPanel.ColumnDefinitions[1].Width = showingControls
             ? new GridLength(1, GridUnitType.Star) : new GridLength(1, GridUnitType.Star);
         LyricsPanel.ColumnSpacing = showingControls ? (Bounds.Width < 750 ? 8 : 24) : 0;
-        LyricsPanel.Margin = showingControls ? new Thickness(Bounds.Width < 750 ? 14 : 28, 52, Bounds.Width < 750 ? 14 : 28, 18) : new Thickness(12);
+        var rightPadding = Bounds.Width < 750 ? 14 : 28;
+        LyricsPanel.Margin = showingControls
+            ? new Thickness(Bounds.Width < 750 ? 14 : 28, 52, rightPadding, 18)
+            : new Thickness(12);
         ResizeGrip.IsVisible = showingControls || _settingsOpen || _searchOpen;
         ResizeHint.IsVisible = showingControls || _settingsOpen || _searchOpen;
         TopControls.IsVisible = showingControls && !_settingsOpen;
         WindowBackground.Background = new SolidColorBrush(Color.FromArgb(
             (byte)(255 * (showingControls ? 1.0 : 0.0)), 9, 9, 9));
-        // O contorno nunca aparece sobre o vídeo no modo somente letras.
         WindowBackground.BorderThickness = new Thickness(0);
         LyricsBackdrop.Background = new SolidColorBrush(Color.FromArgb(
             (byte)(255 * (showingControls ? 0.0 : _backgroundOpacity)), 0, 0, 0));
     }
 
-    // Arraste em qualquer área não interativa: menu, listening e letras.
     private void RefreshLyricView()
     {
         if (CurrentText is null) return;
@@ -375,12 +417,49 @@ public partial class MainWindow : Window
         OriginalText.IsVisible = _showOriginal && _translatedActive && !string.IsNullOrWhiteSpace(_originalCurrent);
     }
 
+    private void RefreshSegmentSelections()
+    {
+        if (LinesSegment is null) return;
+        HighlightSegment(LinesSegment, _visibleLineCount.ToString());
+        HighlightSegment(TranslationSegment, _preferredTranslation);
+        HighlightSegment(LanguageSegment, _appLanguage);
+    }
+    private static void HighlightSegment(Panel panel, string chosen)
+    {
+        foreach (var button in panel.Children.OfType<Button>())
+        {
+            var active = button.Tag?.ToString() == chosen;
+            button.Background = new SolidColorBrush(Color.Parse(active ? "#59418B" : "#18141E"));
+            button.BorderBrush = new SolidColorBrush(Color.Parse(active ? "#B49BFF" : "#34303C"));
+            button.BorderThickness = new Thickness(active ? 2 : 1);
+        }
+    }
+    private static void SelectComboTag(ComboBox combo, string tag)
+    {
+        foreach (var choice in combo.Items.OfType<ComboBoxItem>())
+            if (choice.Tag?.ToString() == tag) { combo.SelectedItem = choice; return; }
+    }
+    private void LineChoice_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button button) SelectComboTag(LinesCombo, button.Tag?.ToString() ?? "3");
+    }
+    private void TranslationChoice_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button button) SelectComboTag(TranslationCombo, button.Tag?.ToString() ?? "original");
+        RefreshSegmentSelections();
+    }
+    private void LanguageChoice_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button button) SelectComboTag(AppLanguageCombo, button.Tag?.ToString() ?? "en");
+    }
+
     private void LinesCombo_Changed(object? sender, SelectionChangedEventArgs e)
     {
         if (LinesCombo?.SelectedItem is ComboBoxItem item && int.TryParse(item.Tag?.ToString(), out var count))
         {
             _visibleLineCount = count;
             RefreshLyricView();
+            RefreshSegmentSelections();
             SavePreferences();
         }
     }
@@ -404,6 +483,11 @@ public partial class MainWindow : Window
     private void Root_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
         if (!e.GetCurrentPoint(this).Properties.IsLeftButtonPressed || _searchOpen) return;
+        if (_settingsOpen && e.Source is Visual settingsSource)
+        {
+            for (Visual? element = settingsSource; element is not null; element = element.GetVisualParent())
+                if (ReferenceEquals(element, SettingsPanel)) return;
+        }
         var visual = e.Source as Visual;
         while (visual is not null && !ReferenceEquals(visual, Root))
         {
@@ -424,8 +508,6 @@ public partial class MainWindow : Window
     {
         if (_movingWindow) return;
         _hoverExitDelay?.Cancel();
-        // Cada evento de saída cria seu próprio cancelamento. O evento de
-        // entrada pode cancelar o atraso, mas somente o dono o descarta.
         var delay = new CancellationTokenSource();
         _hoverExitDelay = delay;
         try
@@ -448,7 +530,6 @@ public partial class MainWindow : Window
 
     private void LyricsBackdrop_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        // Arrastar pelo texto / centro não interfere nos botões, que ficam fora deste Border.
         if (_settingsOpen || _searchOpen || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
             return;
         MoveWindow(e);
@@ -538,7 +619,6 @@ public partial class MainWindow : Window
     {
         if (e.Key == Key.F10)
         {
-            // Recuperação para GNOME/Wayland caso não seja possível arrastar sem moldura.
             WindowDecorations = WindowDecorations == Avalonia.Controls.WindowDecorations.None ? Avalonia.Controls.WindowDecorations.Full : Avalonia.Controls.WindowDecorations.None;
             e.Handled = true;
         }
@@ -634,12 +714,9 @@ public partial class MainWindow : Window
         while (_searchHistory.Count > 50) _searchHistory.RemoveAt(_searchHistory.Count - 1);
         SaveSearchHistory();
     }
-    private void SearchHistory_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private void OpenHistoryEntry_Click(object? sender, RoutedEventArgs e)
     {
-        if (_handlingHistorySelection || SearchHistoryList.SelectedItem is not ManualSearchEntry row) return;
-        _handlingHistorySelection = true;
-        SearchHistoryList.SelectedItem = null;
-        _handlingHistorySelection = false;
+        if (sender is not Button { Tag: ManualSearchEntry row }) return;
         SearchArtist.Text = row.Artist;
         SearchSong.Text = row.Song;
         _ = ExecuteManualSearchAsync(row.Artist, row.Song);
@@ -648,6 +725,16 @@ public partial class MainWindow : Window
     {
         _searchHistory.Clear();
         SaveSearchHistory();
+    }
+
+    private void DeleteHistoryEntry_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: ManualSearchEntry entry })
+        {
+            _searchHistory.Remove(entry);
+            SaveSearchHistory();
+            e.Handled = true;
+        }
     }
 
     private void Settings_Click(object? sender, RoutedEventArgs e) { _settingsOpen = true; UpdatePanels(); UpdateTranslationFeedback(); }
@@ -666,9 +753,9 @@ public partial class MainWindow : Window
         LyricsSettingsContent.IsVisible = tab == "lyrics";
         TranslateSettingsScroll.IsVisible = tab == "translate";
         GeneralSettingsScroll.IsVisible = tab == "general";
-        SettingsLyricsTab.Background = new SolidColorBrush(Color.Parse(tab == "lyrics" ? "#51427B" : "#202020"));
-        SettingsTranslateTab.Background = new SolidColorBrush(Color.Parse(tab == "translate" ? "#51427B" : "#202020"));
-        SettingsGeneralTab.Background = new SolidColorBrush(Color.Parse(tab == "general" ? "#51427B" : "#202020"));
+        SettingsLyricsTab.Background = new SolidColorBrush(Color.Parse(tab == "lyrics" ? "#353535" : "#171717"));
+        SettingsTranslateTab.Background = new SolidColorBrush(Color.Parse(tab == "translate" ? "#353535" : "#171717"));
+        SettingsGeneralTab.Background = new SolidColorBrush(Color.Parse(tab == "general" ? "#353535" : "#171717"));
     }
     private void SettingsLyricsTab_Click(object? sender, RoutedEventArgs e) => ShowSettingsTab("lyrics");
     private void SettingsTranslateTab_Click(object? sender, RoutedEventArgs e) => ShowSettingsTab("translate");
@@ -685,20 +772,106 @@ public partial class MainWindow : Window
     {
         if (CurrentText is null || LyricColorCombo?.SelectedItem is not ComboBoxItem item) return;
         var hex = item.Tag?.ToString() ?? "#FFD132";
-        CurrentText.Foreground = new SolidColorBrush(Color.Parse(hex));
+        if (hex.StartsWith("grad:", StringComparison.Ordinal))
+        {
+            var stops = hex switch
+            {
+                "grad:sunset" => new[] { "#FFCC65", "#FE6387", "#B25DFF" },
+                "grad:ocean" => new[] { "#6DE6FF", "#2874FF", "#A080FF" },
+                "grad:aurora" => new[] { "#7AFBC5", "#60C9FF", "#D9A5FF" },
+                _ => new[] { "#FE62BD", "#FFE78A", "#80FEF7" }
+            };
+            var brush = new LinearGradientBrush { StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative), EndPoint = new RelativePoint(1, 0, RelativeUnit.Relative) };
+            for (int i = 0; i < stops.Length; i++) brush.GradientStops.Add(new GradientStop(Color.Parse(stops[i]), (double)i / (stops.Length - 1)));
+            CurrentText.Foreground = brush;
+        }
+        else CurrentText.Foreground = new SolidColorBrush(Color.Parse(hex));
         SavePreferences();
     }
-    private async void TranslationCombo_Changed(object? sender, SelectionChangedEventArgs e)
+    private sealed class FontItem
+    {
+        public string Name { get; set; } = "";
+        public string Family { get; set; } = "";
+        public override string ToString() => Name;
+    }
+    private void PopulateFontChoices()
+    {
+        if (LyricFontCombo is null) return;
+        LyricFontCombo.Items.Add(new FontItem { Name = "Default (Inter)", Family = "Default" });
+        try
+        {
+            var uri = new Uri("avares://FrontLine-Linux/assets/fonts/font-manifest.json");
+            using var stream = Avalonia.Platform.AssetLoader.Open(uri);
+            var fonts = JsonSerializer.Deserialize<List<FontItem>>(stream);
+            if (fonts is not null)
+                foreach (var font in fonts.Where(x => !string.IsNullOrWhiteSpace(x.Family)))
+                    LyricFontCombo.Items.Add(font);
+        }
+        catch (Exception ex) { Debug.WriteLine($"Font manifest not yet bundled: {ex.Message}"); }
+        LyricFontCombo.SelectedIndex = 0;
+    }
+    private void SetFontSelection(string family)
+    {
+        for (int i = 0; i < LyricFontCombo.Items.Count; i++)
+            if (LyricFontCombo.Items[i] is FontItem font && font.Family == family)
+            {
+                LyricFontCombo.SelectedIndex = i;
+                return;
+            }
+        LyricFontCombo.SelectedIndex = 0;
+    }
+    private void ApplyLyricTypography()
+    {
+        if (CurrentText is null) return;
+        var font = _lyricFont == "Default" ? new FontFamily("Inter") : new FontFamily($"avares://FrontLine-Linux/assets/fonts/#{_lyricFont}");
+        foreach (var text in new[] { Previous2Text, PreviousText, CurrentText, OriginalText, NextText, Next2Text })
+        {
+            text.FontFamily = font;
+            text.FontStyle = _lyricItalic ? FontStyle.Italic : FontStyle.Normal;
+        }
+        CurrentText.FontWeight = _lyricBold ? FontWeight.Bold : FontWeight.Normal;
+    }
+    private void LyricFontCombo_Changed(object? sender, SelectionChangedEventArgs e)
+    {
+        if (LyricFontCombo?.SelectedItem is not FontItem item) return;
+        _lyricFont = item.Family;
+        ApplyLyricTypography();
+        SavePreferences();
+    }
+    private void LyricTypography_Changed(object? sender, RoutedEventArgs e)
+    {
+        _lyricBold = LyricBoldToggle.IsChecked == true;
+        _lyricItalic = LyricItalicToggle.IsChecked == true;
+        ApplyLyricTypography();
+        SavePreferences();
+    }
+
+    private void TranslationCombo_Changed(object? sender, SelectionChangedEventArgs e)
     {
         if (_updatingSettings || TranslationCombo?.SelectedItem is not ComboBoxItem item) return;
         var lang = item.Tag?.ToString() ?? "original";
-        if (_pendingTranslation == lang) return;
+        if (_preferredTranslation == lang && _pendingTranslation == lang) return;
+        _preferredTranslation = lang;
+        _autoTranslationKey = "";
         _translationUiError = null;
-        _pendingTranslation = lang;
+        _pendingTranslation = null;
         _translationStarted = false;
-        _translationRequestedUtc = DateTime.UtcNow;
+        SavePreferences();
+        RefreshSegmentSelections();
+        if (_status != "SYNCED" ||
+            (_lyricTexts.Count == 0 && string.IsNullOrWhiteSpace(CurrentText.Text)))
+        {
+            UpdateTranslationFeedback();
+            return;
+        }
+        _autoTranslationKey = $"{ArtistText.Text?.Trim()}|{SongText.Text?.Trim()}|{lang}";
+        if (_currentTranslation != lang)
+        {
+            _pendingTranslation = lang;
+            _translationRequestedUtc = DateTime.UtcNow;
+            _ = SendAsync(new { action = "TRANSLATE", lang });
+        }
         UpdateTranslationFeedback();
-        await SendAsync(new { action = "TRANSLATE", lang });
     }
     private string LocalizedTranslationProgress()
     {
@@ -732,7 +905,7 @@ public partial class MainWindow : Window
         LyricsTranslationText.Text = pending ? message : "";
         TranslationNoticeCard.IsVisible = pending || _translationUiError is not null;
         SettingsTranslationProgress.IsVisible = pending;
-        LyricsTranslationBanner.IsVisible = pending && _status == "SYNCED" && !_settingsOpen;
+        LyricsTranslationBanner.IsVisible = pending && _status == "SYNCED" && _hover;
     }
 
     private void AppLanguageCombo_Changed(object? sender, SelectionChangedEventArgs e)
@@ -740,6 +913,7 @@ public partial class MainWindow : Window
         if (_updatingSettings || AppLanguageCombo?.SelectedItem is not ComboBoxItem item) return;
         _appLanguage = item.Tag?.ToString() ?? "en";
         ApplyLanguage();
+        RefreshSegmentSelections();
         SavePreferences();
     }
     private void ApplyTooltips()
@@ -754,6 +928,17 @@ public partial class MainWindow : Window
         }
     }
 
+    private void ApplySettingsChoiceTooltips()
+    {
+        // Os botões segmentados usam Tag para o valor (não para a chave tip:).
+        foreach (var button in LinesSegment.Children.OfType<Button>())
+            ToolTip.SetTip(button, LocalizedTip("lines", _appLanguage) + ": " + button.Content);
+        foreach (var button in TranslationSegment.Children.OfType<Button>())
+            ToolTip.SetTip(button, LocalizedTip("translation", _appLanguage) + ": " + button.Content);
+        foreach (var button in LanguageSegment.Children.OfType<Button>())
+            ToolTip.SetTip(button, LocalizedTip("app_language", _appLanguage) + ": " + button.Content);
+    }
+
     private static string LocalizedTip(string key, string lang)
     {
         string[] values = key switch
@@ -766,7 +951,7 @@ public partial class MainWindow : Window
             "settings" => new[] { "Open settings", "Abrir configurações", "Abrir ajustes", "Buka pengaturan" },
             "close_settings" => new[] { "Close settings", "Fechar configurações", "Cerrar ajustes", "Tutup pengaturan" },
             "help" => new[] { "Open the tutorial", "Abrir o tutorial", "Abrir el tutorial", "Buka panduan" },
-            "release" => new[] { "Read version 0.1.0 release notes", "Ler novidades da versão 0.1.0", "Leer novedades de la versión 0.1.0", "Baca catatan rilis versi 0.1.0" },
+            "release" => new[] { "Read release notes", "Ler notas da versão", "Leer notas de la versión", "Baca catatan rilis" },
             "prev_track" => new[] { "Previous track", "Faixa anterior", "Pista anterior", "Lagu sebelumnya" },
             "next_track" => new[] { "Next track", "Próxima faixa", "Pista siguiente", "Lagu berikutnya" },
             "tab_lyrics" => new[] { "Lyric display settings", "Configurações das letras", "Ajustes de letras", "Pengaturan lirik" },
@@ -778,7 +963,21 @@ public partial class MainWindow : Window
             "close" => new[] { "Close the application", "Fechar o aplicativo", "Cerrar la aplicación", "Tutup aplikasi" },
             "auto" => new[] { "Automatically follow player", "Acompanhar player automaticamente", "Seguir el reproductor automáticamente", "Ikuti pemutar otomatis" },
             "clear_history" => new[] { "Clear manual search history", "Limpar histórico de buscas manuais", "Borrar historial de búsquedas manuales", "Hapus riwayat pencarian manual" },
+            "remove_history" => new[] { "Remove this search", "Remover esta pesquisa", "Eliminar esta búsqueda", "Hapus pencarian ini" },
+            "open_history" => new[] { "Search this song", "Pesquisar esta música", "Buscar esta canción", "Cari lagu ini" },
             "show_original" => new[] { "Also show original lyric below translation", "Também mostrar a letra original abaixo da tradução", "Mostrar también la letra original debajo de la traducción", "Tampilkan juga lirik asli di bawah terjemahan" },
+            "opacity" => new[] { "Adjust overlay background opacity", "Ajustar a opacidade do fundo", "Ajustar la opacidad del fondo", "Atur opasitas latar" },
+            "font_size" => new[] { "Adjust lyric text size", "Ajustar o tamanho da letra", "Ajustar el tamaño de la letra", "Atur ukuran teks lirik" },
+            "lines" => new[] { "Choose how many lyric lines appear", "Escolher quantas linhas aparecem", "Elegir cuántas líneas aparecen", "Pilih jumlah baris lirik" },
+            "color" => new[] { "Choose text color or gradient", "Escolher a cor ou o degradê da letra", "Elegir el color o degradado de la letra", "Pilih warna atau gradasi lirik" },
+            "font" => new[] { "Choose a custom lyric font", "Escolher uma fonte para a letra", "Elegir una fuente para la letra", "Pilih font khusus untuk lirik" },
+            "translation" => new[] { "Choose translation or romanization", "Escolher tradução ou romanização", "Elegir traducción o romanización", "Pilih terjemahan atau romanisasi" },
+            "app_language" => new[] { "Choose the interface language", "Escolher o idioma da interface", "Elegir el idioma de la interfaz", "Pilih bahasa antarmuka" },
+            "bold" => new[] { "Display current lyrics in bold", "Exibir letra atual em negrito", "Mostrar la letra actual en negrita", "Tampilkan lirik dalam huruf tebal" },
+            "italic" => new[] { "Display current lyrics in italics", "Exibir letra atual em itálico", "Mostrar la letra actual en cursiva", "Tampilkan lirik dalam huruf miring" },
+            "telemetry" => new[] { "Toggle optional anonymous telemetry", "Ativar ou desativar telemetria anônima", "Activar o desactivar telemetría anónima", "Aktifkan atau nonaktifkan telemetri anonim" },
+            "whatsnew" => new[] { "View version changes", "Ver novidades desta versão", "Ver novedades de esta versión", "Lihat perubahan versi ini" },
+            "resize" => new[] { "Drag to resize the window", "Arraste para redimensionar a janela", "Arrastra para cambiar el tamaño", "Seret untuk mengubah ukuran jendela" },
             _ => Array.Empty<string>()
         };
         if (values.Length == 0) return "";
@@ -795,10 +994,12 @@ public partial class MainWindow : Window
         SettingsHeader.Text = pt ? "CONFIGURAÇÕES" : es ? "AJUSTES" : id ? "PENGATURAN" : "SETTINGS";
         SettingsLyricsTab.Content = pt ? "LETRAS" : es ? "LETRAS" : id ? "LIRIK" : "LYRICS";
         SettingsTranslateTab.Content = pt ? "TRADUÇÃO" : es ? "TRADUCCIÓN" : id ? "TERJEMAH" : "TRANSLATION";
-        SettingsSubtitle.Text = pt ? "Deixe as letras com a sua cara" : es ? "Personaliza tu experiencia" : id ? "Sesuaikan pengalaman Anda" : "Make the lyrics yours";
         SettingsGeneralTab.Content = pt ? "GERAL" : es ? "GENERAL" : id ? "UMUM" : "GENERAL";
         OpacityLabel.Text = pt ? "OPACIDADE DO FUNDO" : es ? "OPACIDAD DEL FONDO" : id ? "OPASITAS LATAR" : "BACKGROUND OPACITY";
         FontSizeLabel.Text = pt ? "TAMANHO DA LETRA" : es ? "TAMAÑO DE LETRA" : id ? "UKURAN HURUF" : "LYRIC FONT SIZE";
+        FontFamilyLabel.Text = pt ? "FONTE DA LETRA" : es ? "FUENTE DE LETRA" : id ? "FONT LIRIK" : "LYRIC FONT";
+        LyricBoldToggle.Content = pt ? "Negrito" : es ? "Negrita" : id ? "Tebal" : "Bold";
+        LyricItalicToggle.Content = pt ? "Itálico" : es ? "Cursiva" : id ? "Miring" : "Italic";
         ColorLabel.Text = pt ? "COR DA LETRA ATUAL" : es ? "COLOR DE LA LETRA" : id ? "WARNA LIRIK" : "CURRENT LYRIC COLOR";
         TranslateLabel.Text = pt ? "TRADUÇÃO E ROMANIZAÇÃO" : es ? "TRADUCCIÓN Y ROMANIZACIÓN" : id ? "TERJEMAHAN DAN ROMANISASI" : "TRANSLATION AND ROMANIZATION";
         SearchTitle.Text = pt ? "BUSCA MANUAL" : es ? "BÚSQUEDA MANUAL" : id ? "PENCARIAN MANUAL" : "MANUAL SEARCH";
@@ -825,10 +1026,20 @@ public partial class MainWindow : Window
         FeedbackLabel.Text = pt ? "Opinião" : es ? "Opinión" : id ? "Masukan" : "Feedback";
         Avalonia.Controls.ToolTip.SetTip(SupportButton, pt ? "Apoiar o desenvolvimento no Buy Me a Coffee" : es ? "Apoyar el desarrollo en Buy Me a Coffee" : id ? "Dukung pengembangan di Buy Me a Coffee" : "Support development on Buy Me a Coffee");
         Avalonia.Controls.ToolTip.SetTip(RateButton, pt ? "Disponível após a publicação na loja Ubuntu" : es ? "Disponible después del lanzamiento en Ubuntu" : id ? "Tersedia setelah rilis di toko Ubuntu" : "Available after publication in the Ubuntu store");
-        Avalonia.Controls.ToolTip.SetTip(FeedbackButton, pt ? "Aguardando endereço do formulário" : es ? "Esperando enlace al formulario" : id ? "Menunggu tautan formulir" : "Waiting for feedback form link");
+        Avalonia.Controls.ToolTip.SetTip(FeedbackButton, pt ? "Enviar opiniões pelo formulário" : es ? "Enviar comentarios mediante el formulario" : id ? "Kirim masukan melalui formulir" : "Send feedback through the form");
         ApplyTooltips();
+        ApplySettingsChoiceTooltips();
+        OpacityDescription.Text = pt ? "Veja o vídeo através do fundo" : es ? "Permite ver el video detrás" : id ? "Lihat video di balik lirik" : "See video through the background";
+        FontSizeDescription.Text = pt ? "Ajuste a letra enquanto a observa" : es ? "Ajusta el texto mientras lo ves" : id ? "Atur ukuran sambil melihat lirik" : "Adjust the size while viewing the lyrics";
+        RefreshSegmentSelections();
         UpdateLoadingLabel();
         UpdateTranslationFeedback();
+        TelemetryHeading.Text = pt ? "ESTATÍSTICAS ANÔNIMAS" : es ? "ESTADÍSTICAS ANÓNIMAS" : id ? "STATISTIK ANONIM" : "ANONYMOUS SETTINGS STATISTICS";
+        TelemetryDescription.Text = pt ? "Opcional. Envia preferências, versão e idioma do sistema ao Aptabase no máximo uma vez por dia. Nunca envia músicas, letras ou pesquisas."
+            : es ? "Opcional. Envía ajustes, versión e idioma del sistema a Aptabase como máximo una vez al día. Nunca envía canciones, letras ni búsquedas."
+            : id ? "Opsional. Mengirim pengaturan, versi dan bahasa sistem ke Aptabase paling banyak sekali sehari. Tidak mengirim lagu, lirik, atau pencarian."
+            : "Optional. Sends settings, app version and system language to Aptabase at most once daily. Never sends songs, lyrics or searches.";
+        TelemetryToggle.Content = pt ? "Enviar estatísticas anônimas" : es ? "Enviar estadísticas anónimas" : id ? "Kirim statistik anonim" : "Share anonymous statistics";
     }
     private void UpdateLoadingLabel()
     {
@@ -850,6 +1061,7 @@ public partial class MainWindow : Window
     private void ReleaseNotes_Click(object? sender, RoutedEventArgs e) => OpenLink(ReleaseNotesUrl);
     private void Help_Click(object? sender, RoutedEventArgs e) => OpenLink(HelpUrl);
     private void Support_Click(object? sender, RoutedEventArgs e) => OpenLink("https://buymeacoffee.com/juliocax");
+    private void Feedback_Click(object? sender, RoutedEventArgs e) => OpenLink("https://forms.gle/VZnno2gPw5F1H5os5");
 
     private void Minimize_Click(object? sender, RoutedEventArgs e) => WindowState = WindowState.Minimized;
     private void Close_Click(object? sender, RoutedEventArgs e) => Close();
