@@ -67,6 +67,7 @@ FrontLine Lyrics has two parts: a **Python backend** that handles recognition, l
 
 Install the official Windows version from the [Microsoft Store](https://apps.microsoft.com/detail/9P6LNJCL8ZCC).
 
+
 ### Linux
 
 The Linux version is being prepared for distribution. Until it is published, you can [build a `.deb` or `.snap` locally](#building-from-source).
@@ -81,11 +82,20 @@ The Linux version is being prepared for distribution. Until it is published, you
 
 ## Screenshots
 
-<p align="center">
-  <img src="Frontline/assets/help1.png" alt="FrontLine Lyrics home screen" width="260" />
-  <img src="Frontline/assets/help3.png" alt="FrontLine Lyrics listening" width="260" />
-  <img src="Frontline/assets/help7.png" alt="FrontLine Lyrics synchronized lyrics" width="260" />
-</p>
+<table align="center">
+  <tr>
+    <td align="center"><img src="docs/img/menu.png" alt="Home screen" width="320"/><br/><b>Home screen</b><br/>The initial screen when you open the overlay</td>
+    <td align="center"><img src="docs/img/imagem5.png" alt="Listening to a song" width="320"/><br/><b>Listening</b><br/>Recognizing what's currently playing</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/img/imagem3.png" alt="Synced lyrics" width="320"/><br/><b>Synced lyrics</b><br/>Lyrics scrolling in sync with the music</td>
+    <td align="center"><img src="docs/img/festival_mode.png" alt="Festival mode" width="320"/><br/><b>Festival Mode</b><br/>Stepping through a show's setlist with manual line sync</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/img/quadro4.png" alt="Live translation" width="320"/><br/><b>Live translation</b><br/>Lyrics translated on the fly into another language</td>
+    <td align="center"><img src="docs/img/imagem2.png" alt="Manual sync adjustment" width="320"/><br/><b>Manual sync</b><br/>Nudging the lyrics into sync line by line</td>
+  </tr>
+</table>
 
 ## Project Structure
 
@@ -102,59 +112,94 @@ Both desktop applications share the recognition and lyrics engine, with platform
 
 ## Building From Source
 
-These instructions are for **local Linux builds**, not for publishing to a store. The build scripts create a `.deb` or `.snap` that you can install on your own computer.
-
-### Requirements
-
-- An **Ubuntu/Debian-based Linux system**; the current Snap configuration targets **Ubuntu 26.04 (`core26`)**.
-- An **amd64 (x86-64)** machine for the current Snap build.
-- Git, Python and its required build dependencies, and the **.NET 10 SDK**.
-- For `.deb` builds: `dpkg-deb` and any tools required by `packaging-deb/build-deb.sh`.
-- For `.snap` builds: Snapcraft and a working Snapcraft build environment (plus the `.deb` prerequisites, since the Snap script builds the `.deb` first).
-
-The packaging scripts are the source of truth for additional build tools and dependencies. If a prerequisite is missing, install it before running the build.
-
-### Clone the repository
+Both frontends use the shared `FrontlineServer/` Python backend. Clone the project once:
 
 ```bash
 git clone https://github.com/juliocax/FrontLine-Lyrics-Desktop.git
-cd FrontLine-Lyrics-Desktop/FrontLine-Linux
+cd FrontLine-Lyrics-Desktop
 ```
 
-### Option A — Build and install a `.deb`
+### Windows — Visual Studio
+
+Requires **Visual Studio 2022** with the **.NET desktop development** workload and the .NET 8 SDK.
+
+1. Open `Frontline.sln` in Visual Studio.
+2. Set `Frontline` (WPF) as the startup project and press **F5**.
+3. The Windows frontend starts its bundled Python backend automatically.
+
+If you modify Python backend code, rebuild its Windows PyInstaller executable and replace the bundled `Frontline/FrontlineServer/` output before testing the change from Visual Studio. The existing Windows packaging configuration is separate from the Linux build.
+
+### Linux — Ubuntu / VS Code
+
+Requires **.NET 10 SDK**, **Python**, **Git**, `pulseaudio-utils`, and `playerctl`. Current packages target **amd64**; Snap uses **core26**.
+
+**First-time setup** (from the repository root):
 
 ```bash
-chmod +x packaging-deb/build-deb.sh
-FRONTLINE_PACKAGE_VERSION=1.0.0-1 ./packaging-deb/build-deb.sh
-sudo apt install ./dist-linux/frontline-lyrics_1.0.0-1_amd64.deb
+sudo apt install -y pulseaudio-utils playerctl
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r FrontlineServer/requirements-linux.txt
+dotnet restore FrontLine-Linux/FrontLine-Linux.csproj
 ```
 
-### Option B — Build and install a `.snap`
-
-The Snap build script also runs the `.deb` build and regenerates its payload, including the launcher and bundled backend.
+Open the repository in VS Code. In **terminal 1**, start the Python backend:
 
 ```bash
-cd packaging-snap
-chmod +x build-snap.sh prepare-snap.sh frontline-lyrics-snap.sh
-./build-snap.sh 1.0.0
-sudo snap install ./frontline-lyrics_1.0.0_amd64.snap --dangerous
+source .venv/bin/activate
+python FrontlineServer/FrontlineServer.py
+```
+
+In **terminal 2**, run the Avalonia frontend:
+
+```bash
+dotnet run --project FrontLine-Linux/FrontLine-Linux.csproj -c Debug
+```
+
+The backend uses `127.0.0.1:8765`; do not start a second instance. Check the Release compilation with:
+
+```bash
+dotnet build FrontLine-Linux/FrontLine-Linux.csproj -c Release
+```
+
+**Build a `.deb`** (from the repository root, with `.venv` activated):
+
+```bash
+chmod +x FrontLine-Linux/packaging-deb/*.sh
+./FrontLine-Linux/packaging-deb/build-deb.sh
+sudo apt install ./FrontLine-Linux/dist-linux/frontline-lyrics_1.0.0-1_amd64.deb
+frontline-lyrics
+```
+
+**Build a `.snap`** (also builds the intermediate `.deb`):
+
+```bash
+chmod +x FrontLine-Linux/packaging-deb/*.sh FrontLine-Linux/packaging-snap/*.sh
+./FrontLine-Linux/packaging-snap/build-snap.sh 1.0.0
+sudo snap install ./FrontLine-Linux/packaging-snap/frontline-lyrics_1.0.0_amd64.snap --dangerous
 snap run frontline-lyrics
 ```
 
-The `--dangerous` flag is required for a **locally built, unsigned** Snap. It does **not** disable the snap's `strict` confinement. The current Snap includes its own runtime dependencies, including the Fontconfig setup used by the launcher.
+`--dangerous` permits installation of a locally built, unsigned Snap; it **does not** disable strict confinement. Some media integrations require user-approved connections:
 
-> **Note:** The Linux packaging scripts and their source files must be committed to this repository for these instructions to work on a fresh clone. Builds and integration with media players/audio devices can vary by desktop environment and permissions.
+```bash
+snap connections frontline-lyrics
+sudo snap connect frontline-lyrics:audio-record
+sudo snap connect frontline-lyrics:mpris spotify:spotify-mpris
+```
+
+The MPRIS command applies only if your Spotify snap exposes `spotify-mpris`. Other players need their own connections. See `FrontLine-Linux/packaging-snap/` for build and maintainer publishing scripts.
 
 ## Running Tests
 
-The Python backend includes a test suite. From the repository root, after setting up the Python environment and development requirements:
+From the repository root, activate the Python environment, install the optional development requirements (when present), and run:
 
 ```bash
-cd FrontlineServer
-python -m pip install -r requirements.txt
-python -m pip install -r requirements-dev.txt
-python -m pytest
+python -m pip install -r FrontlineServer/requirements-dev.txt
+python -m pytest FrontlineServer/tests/
 ```
+
+For Windows, use the platform-specific Python environment and dependencies from `FrontlineServer/requirements.txt`; for Linux use `requirements-linux.txt`. Tests may need updates if you change translation providers or platform integrations.
 
 ## Contributing
 
