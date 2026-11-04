@@ -80,6 +80,9 @@ public partial class MainWindow
                 _onboarding.LastSeenVersion = LinuxAppVersion;
                 SaveOnboarding();
             }
+            if (_onboarding.WelcomeShown && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SNAP"))
+                && await SnapPermissionsDialog.AnyRequiredMissingAsync())
+                await new SnapPermissionsDialog(_appLanguage).ShowDialog(this);
             if (_onboarding.WelcomeShown) _ = LinuxTelemetry.SendIfDueAsync(_onboarding.TelemetryEnabled,
                 _onboarding.LastTelemetryUtc, _appLanguage, _lyricFont,
                 (LyricColorCombo.SelectedItem as Avalonia.Controls.ComboBoxItem)?.Tag?.ToString() ?? "default",
@@ -90,6 +93,36 @@ public partial class MainWindow
                 });
         }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Startup UI: " + ex); }
+    }
+
+    private async void OpenSnapPermissions_Click(object? sender, RoutedEventArgs e)
+    {
+        await new SnapPermissionsDialog(_appLanguage).ShowDialog(this);
+        await RefreshSnapPermissionsStatusAsync();
+    }
+
+    private async Task RefreshSnapPermissionsStatusAsync()
+    {
+        if (SnapPermissionsSection is null) return;
+        bool inSnap = !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SNAP"));
+        SnapPermissionsSection.IsVisible = inSnap;
+        if (!inSnap) return;
+        bool mpris = await SnapPermissionsDialog.IsConnectedAsync("mpris");
+        bool audio = await SnapPermissionsDialog.IsConnectedAsync("audio-record");
+        SnapMusicPermissionStatus.Text = DialogUi.L(_appLanguage,
+            mpris ? "Music player: allowed" : "Music player: permission needed",
+            mpris ? "Reprodutor: permitido" : "Reprodutor: precisa de autorização",
+            mpris ? "Reproductor: permitido" : "Reproductor: requiere permiso",
+            mpris ? "Pemutar musik: diizinkan" : "Pemutar musik: perlu izin");
+        SnapAudioPermissionStatus.Text = DialogUi.L(_appLanguage,
+            audio ? "Music recognition: allowed" : "Music recognition: permission needed",
+            audio ? "Reconhecimento de áudio: permitido" : "Reconhecimento de áudio: precisa de autorização",
+            audio ? "Reconocimiento de audio: permitido" : "Reconocimiento de audio: requiere permiso",
+            audio ? "Pengenalan audio: diizinkan" : "Pengenalan audio: perlu izin");
+        var good = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#8DDDA6"));
+        var warn = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#F5C779"));
+        SnapMusicPermissionStatus.Foreground = mpris ? good : warn;
+        SnapAudioPermissionStatus.Foreground = audio ? good : warn;
     }
 
     private void TelemetryToggle_Click(object? sender, RoutedEventArgs e)

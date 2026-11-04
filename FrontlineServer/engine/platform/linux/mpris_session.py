@@ -12,6 +12,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import math
+import os
 import threading
 from typing import Optional
 
@@ -26,7 +27,7 @@ PROPS_IFACE = "org.freedesktop.DBus.Properties"
 DBUS_NAME = "org.freedesktop.DBus"
 DBUS_PATH = "/org/freedesktop/DBus"
 IGNORED_SERVICES = {"org.mpris.MediaPlayer2.playerctld"}
-MEDIA_SESSION_DISPONIVEL = True  # Availability is checked at runtime in start().
+MEDIA_SESSION_DISPONIVEL = True 
 
 
 class MediaInfo:
@@ -82,7 +83,6 @@ class MediaSessionWatcher:
         return self._rodando and self._thread is not None and self._thread.is_alive()
 
     def start(self):
-        # Do not overlap two D-Bus polling threads when stop/start happens quickly.
         if self._thread is not None and self._thread.is_alive():
             if self._rodando:
                 return
@@ -161,8 +161,11 @@ class MediaSessionWatcher:
                 bus.disconnect()
 
     async def _coletar(self, bus):
-        names = (await _call(bus, DBUS_NAME, DBUS_PATH, DBUS_NAME, "ListNames"))[0]
-        players = sorted(name for name in names if name.startswith(PREFIX) and name not in IGNORED_SERVICES)
+        if os.environ.get("SNAP"):
+            players = ["org.mpris.MediaPlayer2.spotify"]
+        else:
+            names = (await _call(bus, DBUS_NAME, DBUS_PATH, DBUS_NAME, "ListNames"))[0]
+            players = sorted(name for name in names if name.startswith(PREFIX) and name not in IGNORED_SERVICES)
         candidatos = []
         for name in players:
             try:
@@ -175,7 +178,6 @@ class MediaSessionWatcher:
                 raw_artists = md.get("xesam:artist") or []
                 artista = ", ".join(str(a) for a in raw_artists) if isinstance(raw_artists, (tuple, list)) else str(raw_artists)
                 tocando = values.get("PlaybackStatus") == "Playing"
-                # Some implementations omit Position from GetAll; query it explicitly.
                 try:
                     position = (await _call(bus, name, PATH, PROPS_IFACE, "Get", "ss", [PLAYER_IFACE, "Position"]))[0].value
                 except Exception:

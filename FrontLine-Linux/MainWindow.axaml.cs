@@ -37,8 +37,9 @@ public partial class MainWindow : Window
         public double Opacity { get; set; } = 0.4;
         public double FontSize { get; set; } = 29;
         public int VisibleLines { get; set; } = 3;
+        public string Alignment { get; set; } = "center";
         public string LyricColor { get; set; } = "#FFD132";
-        public string LyricFont { get; set; } = "Default";
+        public string LyricFont { get; set; } = "Poppins";
         public bool Bold { get; set; } = true;
         public bool Italic { get; set; }
         public bool ShowOriginal { get; set; }
@@ -58,6 +59,7 @@ public partial class MainWindow : Window
                 Opacity = _backgroundOpacity,
                 FontSize = FontSizeSlider.Value,
                 VisibleLines = _visibleLineCount,
+                Alignment = _lyricAlignment,
                 LyricColor = (LyricColorCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "#FFD132",
                 ShowOriginal = _showOriginal,
                 Language = _appLanguage,
@@ -89,9 +91,11 @@ public partial class MainWindow : Window
                 if (item.Tag?.ToString() == _visibleLineCount.ToString()) { LinesCombo.SelectedItem = item; break; }
             foreach (var item in LyricColorCombo.Items.OfType<ComboBoxItem>())
                 if (item.Tag?.ToString() == settings.LyricColor) { LyricColorCombo.SelectedItem = item; break; }
+            _lyricAlignment = settings.Alignment is "left" or "center" or "right" ? settings.Alignment : "center";
+            ApplyLyricAlignment();
             _showOriginal = settings.ShowOriginal;
             ShowOriginalToggle.IsChecked = _showOriginal;
-            _lyricFont = string.IsNullOrWhiteSpace(settings.LyricFont) ? "Default" : settings.LyricFont;
+            _lyricFont = string.IsNullOrWhiteSpace(settings.LyricFont) ? "Poppins" : settings.LyricFont;
             _lyricBold = settings.Bold;
             _lyricItalic = settings.Italic;
             LyricBoldToggle.IsChecked = _lyricBold;
@@ -147,8 +151,9 @@ public partial class MainWindow : Window
     private readonly List<string> _lyricTexts = new();
     private int _currentIndex = -1;
     private int _visibleLineCount = 3;
+    private string _lyricAlignment = "center";
     private bool _showOriginal;
-    private string _lyricFont = "Default";
+    private string _lyricFont = "Poppins";
     private bool _lyricBold = true;
     private bool _lyricItalic;
     private bool _translatedActive;
@@ -170,6 +175,7 @@ public partial class MainWindow : Window
         ShowSettingsTab("lyrics");
         ApplyLanguage();
         RefreshSegmentSelections();
+        ApplyLyricAlignment();
         SizeChanged += (_, _) => UpdateResponsiveLayout();
         UpdateResponsiveLayout();
     }
@@ -359,8 +365,8 @@ public partial class MainWindow : Window
         MenuLogo.Height = 250 * factor;
         LoadingLogo.Width = 220 * factor;
         LoadingLogo.Height = 220 * factor;
-        CoverPanel.MaxWidth = Math.Min(320, Math.Max(155, w * 0.29));
-        CoverPanel.MaxHeight = Math.Min(360, Math.Max(105, h - 180));
+        CoverPanel.MaxWidth = Math.Min(365, Math.Max(180, w * 0.33));
+        CoverPanel.MaxHeight = Math.Min(405, Math.Max(145, h - 115));
         SettingsPanel.MaxHeight = 535;
         SettingsPanel.Width = 360;
         double contentHeight = 340;
@@ -377,16 +383,20 @@ public partial class MainWindow : Window
         MenuPanel.IsVisible = !lyrics && !loading;
         LoadingPanel.IsVisible = loading;
         LyricsPanel.IsVisible = lyrics;
-        if (LyricsTranslationBanner is not null)
-            LyricsTranslationBanner.IsVisible = lyrics && _pendingTranslation is not null && _hover;
         SearchPanel.IsVisible = _searchOpen;
         SettingsPopup.IsOpen = _settingsOpen;
-        var showingControls = _hover || _searchOpen || _settingsOpen || !lyrics;
-        ShazamSyncTools.IsVisible = lyrics && showingControls && !_playerClock && _lyricTimes.Count > 0;
+        var showingControls = _hover || _searchOpen || _settingsOpen || (!lyrics && !loading);
+        ShazamSyncTools.IsVisible = lyrics && showingControls && _lyricTimes.Count > 0;
+        // Em LISTENING/SEARCHING: somente indicador e texto na tela sem hover.
+        LoadingLogo.IsVisible = showingControls;
+        LoadingControls.IsVisible = showingControls;
+        LoadingPanel.ColumnDefinitions[0].Width = showingControls
+            ? new GridLength(0.8, GridUnitType.Star) : new GridLength(0);
+        LoadingPanel.ColumnDefinitions[1].Width = new GridLength(1, GridUnitType.Star);
         CoverPanel.IsVisible = showingControls;
         LyricsControls.IsVisible = showingControls;
         LyricsPanel.ColumnDefinitions[0].Width = showingControls
-            ? new GridLength(Math.Clamp(Bounds.Width * 0.24, 125, 250)) : new GridLength(0);
+            ? new GridLength(Math.Clamp(Bounds.Width * 0.27, 145, 290)) : new GridLength(0);
         LyricsPanel.ColumnDefinitions[1].Width = showingControls
             ? new GridLength(1, GridUnitType.Star) : new GridLength(1, GridUnitType.Star);
         LyricsPanel.ColumnSpacing = showingControls ? (Bounds.Width < 750 ? 8 : 24) : 0;
@@ -421,6 +431,7 @@ public partial class MainWindow : Window
     {
         if (LinesSegment is null) return;
         HighlightSegment(LinesSegment, _visibleLineCount.ToString());
+        HighlightSegment(AlignmentSegment, _lyricAlignment);
         HighlightSegment(TranslationSegment, _preferredTranslation);
         HighlightSegment(LanguageSegment, _appLanguage);
     }
@@ -443,6 +454,28 @@ public partial class MainWindow : Window
     {
         if (sender is Button button) SelectComboTag(LinesCombo, button.Tag?.ToString() ?? "3");
     }
+    private void AlignmentChoice_Click(object? sender, RoutedEventArgs e)
+    {
+        if (sender is not Button button) return;
+        var selected = button.Tag?.ToString() ?? "center";
+        if (selected is not ("left" or "center" or "right")) return;
+        _lyricAlignment = selected;
+        ApplyLyricAlignment();
+        RefreshSegmentSelections();
+        SavePreferences();
+    }
+    private void ApplyLyricAlignment()
+    {
+        var alignment = _lyricAlignment switch
+        {
+            "left" => TextAlignment.Left,
+            "right" => TextAlignment.Right,
+            _ => TextAlignment.Center
+        };
+        foreach (var item in new[] { Previous2Text, PreviousText, CurrentText, OriginalText, NextText, Next2Text })
+            item.TextAlignment = alignment;
+    }
+
     private void TranslationChoice_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Button button) SelectComboTag(TranslationCombo, button.Tag?.ToString() ?? "original");
@@ -471,7 +504,7 @@ public partial class MainWindow : Window
     }
     private async Task ShiftSyncAsync(int delta)
     {
-        if (_playerClock || _currentIndex < 0 || _lyricTimes.Count == 0) return;
+        if (_currentIndex < 0 || _lyricTimes.Count == 0) return;
         var target = Math.Clamp(_currentIndex + delta, 0, _lyricTimes.Count - 1);
         if (target == _currentIndex) return;
         // Ajusta referência temporal via protocolo existente, sem controlar o player de vídeo.
@@ -649,12 +682,74 @@ public partial class MainWindow : Window
     private async void NextTrack_Click(object? sender, RoutedEventArgs e) => await PlayerctlAsync("next");
     private static async Task PlayerctlAsync(string operation)
     {
+        var errors = new List<string>();
+        if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SNAP")))
+        {
+            try
+            {
+                var method = operation == "next" ? "Next" : "Previous";
+                var info = new ProcessStartInfo("dbus-send")
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true
+                };
+                foreach (var arg in new[] {
+                    "--session", "--print-reply", "--dest=org.mpris.MediaPlayer2.spotify",
+                    "/org/mpris/MediaPlayer2", "org.mpris.MediaPlayer2.Player." + method })
+                    info.ArgumentList.Add(arg);
+                using var process = Process.Start(info);
+                if (process != null)
+                {
+                    using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(6));
+                    var stderr = process.StandardError.ReadToEndAsync();
+                    var stdout = process.StandardOutput.ReadToEndAsync();
+                    await process.WaitForExitAsync(timeout.Token);
+                    await stdout;
+                    if (process.ExitCode == 0) return;
+                    errors.Add($"dbus-send {method}: exit={process.ExitCode}: {await stderr}");
+                }
+            }
+            catch (Exception ex) { errors.Add("dbus-send: " + ex.Message); }
+            // Don't call playerctl inside the snap: ListNames is blocked by AppArmor.
+            WritePlayerCommandErrors(errors);
+            return;
+        }
+        foreach (var args in new[] { $"--player=spotify {operation}", operation })
+        {
+            try
+            {
+                var info = new ProcessStartInfo("playerctl", args)
+                {
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                    RedirectStandardError = true,
+                    RedirectStandardOutput = true
+                };
+                using var process = Process.Start(info);
+                if (process is null) { errors.Add("playerctl não iniciou"); continue; }
+                var stderr = process.StandardError.ReadToEndAsync();
+                var stdout = process.StandardOutput.ReadToEndAsync();
+                await process.WaitForExitAsync();
+                await stdout;
+                if (process.ExitCode == 0) return;
+                errors.Add($"playerctl {args}: exit={process.ExitCode}: {await stderr}");
+            }
+            catch (Exception ex) { errors.Add($"playerctl {args}: {ex.Message}"); }
+        }
+        WritePlayerCommandErrors(errors);
+    }
+    private static void WritePlayerCommandErrors(List<string> errors)
+    {
         try
         {
-            using var process = Process.Start(new ProcessStartInfo("playerctl", operation) { UseShellExecute = false, CreateNoWindow = true });
-            if (process is not null) await process.WaitForExitAsync();
+            var folder = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "FrontLineLyrics");
+            Directory.CreateDirectory(folder);
+            File.AppendAllText(Path.Combine(folder, "playerctl.log"),
+                $"{DateTimeOffset.Now:O} {string.Join(" | ", errors)}{Environment.NewLine}");
         }
-        catch (Exception) { /* ausência de playerctl ou player compatível */ }
+        catch { /*  */ }
     }
     private void OpenSearch_Click(object? sender, RoutedEventArgs e) { _searchOpen = true; UpdatePanels(); }
     private void CloseSearch_Click(object? sender, RoutedEventArgs e) { _searchOpen = false; UpdatePanels(); }
@@ -737,7 +832,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void Settings_Click(object? sender, RoutedEventArgs e) { _settingsOpen = true; UpdatePanels(); UpdateTranslationFeedback(); }
+    private void Settings_Click(object? sender, RoutedEventArgs e) { _settingsOpen = true; UpdatePanels(); UpdateTranslationFeedback(); _ = RefreshSnapPermissionsStatusAsync(); }
     private void CloseSettings_Click(object? sender, RoutedEventArgs e) { _settingsOpen = false; UpdatePanels(); UpdateTranslationFeedback(); }
     private void OpacitySlider_Changed(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
     {
@@ -759,7 +854,7 @@ public partial class MainWindow : Window
     }
     private void SettingsLyricsTab_Click(object? sender, RoutedEventArgs e) => ShowSettingsTab("lyrics");
     private void SettingsTranslateTab_Click(object? sender, RoutedEventArgs e) => ShowSettingsTab("translate");
-    private void SettingsGeneralTab_Click(object? sender, RoutedEventArgs e) => ShowSettingsTab("general");
+    private void SettingsGeneralTab_Click(object? sender, RoutedEventArgs e) { ShowSettingsTab("general"); _ = RefreshSnapPermissionsStatusAsync(); }
     private void FontSizeSlider_Changed(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
     {
         if (CurrentText is null || FontSizeSlider is null) return;
@@ -797,7 +892,7 @@ public partial class MainWindow : Window
     private void PopulateFontChoices()
     {
         if (LyricFontCombo is null) return;
-        LyricFontCombo.Items.Add(new FontItem { Name = "Default (Inter)", Family = "Default" });
+        LyricFontCombo.Items.Add(new FontItem { Name = "Default (Poppins)", Family = "Poppins" });
         try
         {
             var uri = new Uri("avares://FrontLine-Linux/assets/fonts/font-manifest.json");
@@ -823,7 +918,7 @@ public partial class MainWindow : Window
     private void ApplyLyricTypography()
     {
         if (CurrentText is null) return;
-        var font = _lyricFont == "Default" ? new FontFamily("Inter") : new FontFamily($"avares://FrontLine-Linux/assets/fonts/#{_lyricFont}");
+        var font = _lyricFont == "Default" ? new FontFamily("Poppins") : new FontFamily($"avares://FrontLine-Linux/assets/fonts/#{_lyricFont}");
         foreach (var text in new[] { Previous2Text, PreviousText, CurrentText, OriginalText, NextText, Next2Text })
         {
             text.FontFamily = font;
@@ -891,7 +986,7 @@ public partial class MainWindow : Window
 
     private void UpdateTranslationFeedback()
     {
-        if (TranslationNotice is null || LyricsTranslationBanner is null) return;
+        if (TranslationNotice is null) return;
         var pending = _pendingTranslation is not null;
         var message = pending ? LocalizedTranslationProgress() : _translationUiError is null ? "" :
             _appLanguage switch
@@ -902,10 +997,9 @@ public partial class MainWindow : Window
                 _ => "Translation failed. Previous lyrics were kept."
             };
         TranslationNotice.Text = message;
-        LyricsTranslationText.Text = pending ? message : "";
         TranslationNoticeCard.IsVisible = pending || _translationUiError is not null;
+        TranslationNotice.IsVisible = !pending && _translationUiError is not null;
         SettingsTranslationProgress.IsVisible = pending;
-        LyricsTranslationBanner.IsVisible = pending && _status == "SYNCED" && _hover;
     }
 
     private void AppLanguageCombo_Changed(object? sender, SelectionChangedEventArgs e)
@@ -930,7 +1024,16 @@ public partial class MainWindow : Window
 
     private void ApplySettingsChoiceTooltips()
     {
-        // Os botões segmentados usam Tag para o valor (não para a chave tip:).
+        foreach (var button in AlignmentSegment.Children.OfType<Button>())
+        {
+            var description = button.Tag?.ToString() switch
+            {
+                "left" => _appLanguage switch { "pt" => "Esquerda", "es" => "Izquierda", "id" => "Kiri", _ => "Left" },
+                "right" => _appLanguage switch { "pt" => "Direita", "es" => "Derecha", "id" => "Kanan", _ => "Right" },
+                _ => _appLanguage switch { "pt" => "Centralizado", "es" => "Centrado", "id" => "Tengah", _ => "Center" }
+            };
+            ToolTip.SetTip(button, description);
+        }
         foreach (var button in LinesSegment.Children.OfType<Button>())
             ToolTip.SetTip(button, LocalizedTip("lines", _appLanguage) + ": " + button.Content);
         foreach (var button in TranslationSegment.Children.OfType<Button>())
@@ -1012,6 +1115,17 @@ public partial class MainWindow : Window
         SearchArtist.PlaceholderText = pt ? "Artista" : es ? "Artista" : id ? "Artis" : "Artist";
         SearchSong.PlaceholderText = pt ? "Música" : es ? "Canción" : id ? "Lagu" : "Song";
         LinesLabel.Text = pt ? "LINHAS VISÍVEIS" : es ? "LÍNEAS VISIBLES" : id ? "BARIS LIRIK" : "VISIBLE LYRIC LINES";
+        AlignmentLabel.Text = pt ? "ALINHAMENTO" : es ? "ALINEACIÓN" : id ? "PERATAAN LIRIK" : "LYRIC ALIGNMENT";
+        var listen = pt ? "OUVIR" : es ? "ESCUCHAR" : id ? "DENGARKAN" : "LISTEN";
+        var search = pt ? "BUSCAR" : es ? "BUSCAR" : id ? "CARI" : "SEARCH";
+        var clear = pt ? "LIMPAR" : es ? "BORRAR" : id ? "HAPUS" : "CLEAR";
+        MenuListenLabel.Text = listen;
+        LoadingListenLabel.Text = listen;
+        LyricsListenLabel.Text = listen;
+        MenuSearchLabel.Text = search;
+        LoadingClearButton.Content = clear;
+        ClearButton.Content = clear;
+        LoadingAutoLabel.Text = LyricsAutoLabel.Text = "AUTO";
         LanguageLabel.Text = pt ? "IDIOMA DO APLICATIVO" : es ? "IDIOMA DE LA APLICACIÓN" : id ? "BAHASA APLIKASI" : "APP LANGUAGE";
         ShowOriginalToggle.Content = _appLanguage switch
         {
@@ -1039,6 +1153,13 @@ public partial class MainWindow : Window
             : es ? "Opcional. Envía ajustes, versión e idioma del sistema a Aptabase como máximo una vez al día. Nunca envía canciones, letras ni búsquedas."
             : id ? "Opsional. Mengirim pengaturan, versi dan bahasa sistem ke Aptabase paling banyak sekali sehari. Tidak mengirim lagu, lirik, atau pencarian."
             : "Optional. Sends settings, app version and system language to Aptabase at most once daily. Never sends songs, lyrics or searches.";
+        SnapPermissionsHeader.Text = pt ? "PERMISSÕES DE MÚSICA E ÁUDIO" : es ? "PERMISOS DE MÚSICA Y AUDIO" : id ? "IZIN MUSIK DAN AUDIO" : "MUSIC AND AUDIO PERMISSIONS";
+        SnapPermissionsDescription.Text = pt ? "Para reconhecer o som do computador e controlar o Spotify, o FrontLine precisa da sua autorização. Você pode mudar isso quando quiser."
+            : es ? "Para reconocer el audio del equipo y controlar Spotify, FrontLine necesita tu permiso. Puedes cambiarlo cuando quieras."
+            : id ? "Untuk mengenali suara komputer dan mengontrol Spotify, FrontLine memerlukan izin Anda."
+            : "To recognize computer audio and control Spotify, FrontLine needs your permission. You can change it at any time.";
+        OpenSnapPermissionsButton.Content = pt ? "Ver permissões e instruções" : es ? "Ver permisos e instrucciones" : id ? "Lihat izin dan panduan" : "View permissions and instructions";
+        _ = RefreshSnapPermissionsStatusAsync();
         TelemetryToggle.Content = pt ? "Enviar estatísticas anônimas" : es ? "Enviar estadísticas anónimas" : id ? "Kirim statistik anonim" : "Share anonymous statistics";
     }
     private void UpdateLoadingLabel()
