@@ -7,7 +7,8 @@ APP="$ROOT/FrontLine-Linux"
 SERVER="$ROOT/FrontlineServer"
 OUT="$APP/dist-linux"
 STAGE="$OUT/.frontline-deb-stage"
-VERSION="1.0.0-1"
+VERSION="${FRONTLINE_PACKAGE_VERSION:-1.0.0-1}"
+APP_VERSION="${VERSION%-*}"
 PACKAGE="frontline-lyrics"
 
 fail() { printf '\nERROR: %s\n' "$*" >&2; exit 1; }
@@ -37,9 +38,9 @@ case "$ARCH" in
 esac
 
 mkdir -p "$OUT/py-spec"
-printf '[1/5] Publishing Avalonia 1.0.0 (%s)...\n' "$RID"
+printf '[1/5] Publishing Avalonia %s (%s)...\n' "$APP_VERSION" "$RID"
 dotnet publish "$APP/FrontLine-Linux.csproj" -c Release -r "$RID" \
-  --self-contained true -p:UseAppHost=true \
+  --self-contained true -p:UseAppHost=true -p:Version="$APP_VERSION" \
   -o "$OUT/frontend"
 [[ -x "$OUT/frontend/FrontLine-Linux" ]] || fail "Missing published Avalonia executable"
 
@@ -79,7 +80,7 @@ Priority: optional
 Architecture: $ARCH
 Maintainer: FrontLine Lyrics <https://github.com/juliocax/FrontLine-Lyrics-Desktop>
 Depends: libc6, libstdc++6, libgcc-s1, playerctl
-Description: FrontLine Lyrics for Linux (1.0.0 testing build)
+Description: FrontLine Lyrics for Linux ($APP_VERSION)
  Synchronized desktop lyrics with local Python recognition and translation engine.
  Includes self-contained Avalonia frontend and bundled Python backend.
 CONTROL

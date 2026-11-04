@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
+# Snap launcher: use the already-proven .deb binaries, but obey snap paths.
 set -Eeuo pipefail
 APP_DIR="$SNAP/opt/frontline-lyrics"
+# Discover staged parecord, pactl and playerctl inside Snap confinement.
+export PATH="$SNAP/usr/bin:$SNAP/bin:$PATH"
 SERVER="$APP_DIR/server/FrontlineServer"
 FRONTEND="$APP_DIR/frontend/FrontLine-Linux"
 STATE_DIR="${SNAP_USER_COMMON:-${XDG_STATE_HOME:-$HOME/.local/state}/frontline-lyrics}/logs"
@@ -8,6 +11,23 @@ mkdir -p "$STATE_DIR"
 exec >>"$STATE_DIR/launcher.log" 2>&1
 printf '[%s] Starting FrontLine Lyrics snap\n' "$(date -Is)"
 [[ -x "$SERVER" && -x "$FRONTEND" ]] || { echo 'Missing bundled binaries'; exit 1; }
+# Fontconfig inside a strict Snap: read bundled fonts and use a writable cache.
+# Do not set FONTCONFIG_SYSROOT: it would prefix cache paths with the read-only Snap.
+unset FONTCONFIG_SYSROOT
+FONTCONFIG_CACHE_DIR="$SNAP_USER_COMMON/fontconfig-cache"
+FONTCONFIG_CONFIG="$SNAP_USER_COMMON/fonts.conf"
+mkdir -p "$FONTCONFIG_CACHE_DIR"
+cat > "$FONTCONFIG_CONFIG" <<EOF
+<?xml version="1.0"?>
+<!DOCTYPE fontconfig SYSTEM "fonts.dtd">
+<fontconfig>
+  <dir>$SNAP/usr/share/fonts</dir>
+  <cachedir>$FONTCONFIG_CACHE_DIR</cachedir>
+</fontconfig>
+EOF
+export FONTCONFIG_FILE="$FONTCONFIG_CONFIG"
+export FONTCONFIG_PATH="$SNAP/etc/fonts"
+# Snap may give a private /run; keep a per-user lock in persistent snap data.
 exec 9>"$STATE_DIR/launch.lock"
 if ! flock -n 9; then echo 'An instance is already running'; exit 0; fi
 port_open() { (echo >/dev/tcp/127.0.0.1/8765) >/dev/null 2>&1; }
