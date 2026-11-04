@@ -8,6 +8,14 @@
 ![Linux](https://img.shields.io/badge/Linux-Ubuntu-E95420?logo=ubuntu&logoColor=white)
 ![C#](https://img.shields.io/badge/Frontend-C%23%20%2F%20.NET-512BD4?logo=dotnet&logoColor=white)
 ![Python](https://img.shields.io/badge/Backend-Python-3776AB?logo=python&logoColor=white)
+[![Contributors](https://img.shields.io/badge/Contributors-2-orange)](CONTRIBUTORS.md)
+
+<a href="https://get.microsoft.com/installer/download/9P6LNJCL8ZCC?referrer=appbadge&cid=readme" target="_self">
+  <img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/>
+</a>
+
+
+https://github.com/user-attachments/assets/0a6f3278-49b2-43f0-9004-6709d65f74b9
 
 </div>
 
