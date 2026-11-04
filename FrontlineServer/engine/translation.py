@@ -1,41 +1,25 @@
 """
 Lyric translation.
 
-Translating a whole song one line at a time, one source at a time, is slow
-and fragile (any single source rate-limiting or breaking stalls everything).
-Instead we "race" three free translation sources per line and keep whichever
-answers first, and dispatch every line of the song in parallel too.
+MyMemory is the only enabled translation provider on Windows and Linux.
+Google and Bing are disabled following repeated errors and rate limiting.
 
-This module owns the thread pools and the racing/validation logic.
-MusicManager.generate_translation() (in music_manager.py) still owns the
-song-level orchestration (iterating lines, caching by target language)
-because that part needs the manager's state.
+MusicManager.generate_translation() still handles each song's line order,
+per-language cache, and the fallback to original text for failed lines.
 """
 
 import asyncio
 import logging
-import time
-from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait as futures_wait
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Tuple
 
 from anyascii import anyascii
-from deep_translator import GoogleTranslator, MyMemoryTranslator
+from deep_translator import MyMemoryTranslator
 
-import os
-os.environ.setdefault("translators_default_region", "EN")
-import translators as ts
+LINE_DISPATCH_EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="translate-mymemory")
 
-# One executor per line (fans a whole song out in parallel) and one for the
-# 3 racing sources within a single line.
-LINE_DISPATCH_EXECUTOR = ThreadPoolExecutor(max_workers=8, thread_name_prefix="translate-line")
-TRANSLATION_EXECUTOR = ThreadPoolExecutor(max_workers=24, thread_name_prefix="translate-src")
-LINE_TRANSLATE_TIMEOUT = 8.0
-
-# The WebSocket and MusicManager continue to use short language codes.
-# MyMemory requires a locale-specific code for Brazilian Portuguese.
 MYMEMORY_TARGET_LANGUAGES = {"pt": "pt-BR", "es": "es-ES", "fr": "fr-FR", "en": "en-GB"}
-# MyMemory does not support source="auto"; lyrics in English use en-GB.
-# A future language-detection step is needed for non-English songs.
+
 MYMEMORY_SOURCE_LANGUAGE = "en-GB"
 
 
@@ -76,61 +60,32 @@ def romanize_line(text: str) -> str:
 
 
 def translate_line_raced(text: str, target_language: str) -> Tuple[Optional[str], Optional[str]]:
-    """Translate one line by racing 3 free sources in parallel (not one after
-    another) and keeping the FIRST valid answer. Losing sources are not
-    cancelled (the thread is already running), just ignored -- so racing in
-    parallel never makes a line slower than the fastest source, and if one
-    source goes down or hangs (like Google's scraping did), the others cover
-    for it with no extra delay. Returns (translated_text, winning_source_name)
-    or (None, None) if all three fail within the timeout.
+    """Translate a line using MyMemory only.
+
+    Keep the original function signature because MusicManager imports it in
+    both Windows and Linux. Google and Bing are intentionally not called.
     """
+    if not text or not text.strip():
+        return text, "mymemory"
 
-    def _google():
-        return GoogleTranslator(source='auto', target=target_language).translate(text)
+    my_target = MYMEMORY_TARGET_LANGUAGES.get(target_language.lower(), target_language)
+    try:
+        result = MyMemoryTranslator(
+            source=MYMEMORY_SOURCE_LANGUAGE, target=my_target
+        ).translate(text)
+    except Exception as error:
+        logging.warning("MyMemory falhou: %s", _short_provider_error(error))
+        return None, None
 
-    def _mymemory():
-        my_target = MYMEMORY_TARGET_LANGUAGES.get(target_language.lower(), target_language)
-        return MyMemoryTranslator(source=MYMEMORY_SOURCE_LANGUAGE, target=my_target).translate(text)
+    if not result or not str(result).strip():
+        logging.warning("MyMemory retornou tradução vazia.")
+        return None, None
 
-    def _translators_pkg():
-        return ts.translate_text(
-            text, translator='bing', from_language='auto', to_language=target_language,
-            timeout=6.0, if_print_warning=False,
-        )
-
-    futures = {
-        TRANSLATION_EXECUTOR.submit(_google): "google",
-        TRANSLATION_EXECUTOR.submit(_mymemory): "mymemory",
-        TRANSLATION_EXECUTOR.submit(_translators_pkg): "translators/bing",
-    }
-
-    deadline = time.monotonic() + LINE_TRANSLATE_TIMEOUT
-    pending = set(futures.keys())
-
-    while pending:
-        remaining = deadline - time.monotonic()
-        if remaining <= 0:
-            break
-        done, pending = futures_wait(pending, timeout=remaining, return_when=FIRST_COMPLETED)
-        for fut in done:
-            source_name = futures[fut]
-            try:
-                result = fut.result()
-            except Exception as e:
-                logging.warning("Fonte de tradução '%s' falhou: %s", source_name, _short_provider_error(e))
-                continue
-            if result and str(result).strip():
-                candidate = str(result).strip()
-                if looks_like_bogus_translation(candidate, text):
-                    logging.warning(
-                        f"Fonte '{source_name}' devolveu algo que parece erro/boilerplate "
-                        f"em vez de tradução ('{candidate[:60]}...'); ignorando."
-                    )
-                    continue
-                return candidate, source_name
-            logging.warning(f"Fonte de tradução '{source_name}' retornou vazio.")
-
-    return None, None
+    candidate = str(result).strip()
+    if looks_like_bogus_translation(candidate, text):
+        logging.warning("MyMemory retornou resposta inválida; mantendo original se necessário.")
+        return None, None
+    return candidate, "mymemory"
 
 
 async def apply_translation_in_background(manager, target_lang: str):

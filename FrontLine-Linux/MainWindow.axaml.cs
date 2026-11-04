@@ -386,8 +386,7 @@ public partial class MainWindow : Window
         SearchPanel.IsVisible = _searchOpen;
         SettingsPopup.IsOpen = _settingsOpen;
         var showingControls = _hover || _searchOpen || _settingsOpen || (!lyrics && !loading);
-        ShazamSyncTools.IsVisible = lyrics && showingControls && _lyricTimes.Count > 0;
-        // Em LISTENING/SEARCHING: somente indicador e texto na tela sem hover.
+        ShazamSyncTools.IsVisible = lyrics && showingControls && !_playerClock && _lyricTimes.Count > 0;
         LoadingLogo.IsVisible = showingControls;
         LoadingControls.IsVisible = showingControls;
         LoadingPanel.ColumnDefinitions[0].Width = showingControls
@@ -749,7 +748,7 @@ public partial class MainWindow : Window
             File.AppendAllText(Path.Combine(folder, "playerctl.log"),
                 $"{DateTimeOffset.Now:O} {string.Join(" | ", errors)}{Environment.NewLine}");
         }
-        catch { /*  */ }
+        catch { /**/ }
     }
     private void OpenSearch_Click(object? sender, RoutedEventArgs e) { _searchOpen = true; UpdatePanels(); }
     private void CloseSearch_Click(object? sender, RoutedEventArgs e) { _searchOpen = false; UpdatePanels(); }
