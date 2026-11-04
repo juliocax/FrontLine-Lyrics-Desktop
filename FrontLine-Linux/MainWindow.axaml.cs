@@ -141,8 +141,8 @@ public partial class MainWindow : Window
     private bool _translationStarted;
     private DateTime _translationRequestedUtc;
     private string? _translationUiError;
-    private static readonly string ReleaseNotesUrl = "https://buymeacoffee.com/juliocax/frontline-lyrics-0-1-0";
-    private static readonly string HelpUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v0.1.0.html";
+    private static readonly string ReleaseNotesUrl = "https://buymeacoffee.com/juliocax/frontline-lyrics-linux-1-0-0";
+    private static readonly string HelpUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_linux_v1.0.0.html";
     private static readonly HttpClient CoverHttp = new() { Timeout = TimeSpan.FromSeconds(8) };
     private string _lastCover = "";
     private int _coverRequestVersion;
@@ -681,6 +681,7 @@ public partial class MainWindow : Window
     private async void NextTrack_Click(object? sender, RoutedEventArgs e) => await PlayerctlAsync("next");
     private static async Task PlayerctlAsync(string operation)
     {
+
         var errors = new List<string>();
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SNAP")))
         {
@@ -748,7 +749,7 @@ public partial class MainWindow : Window
             File.AppendAllText(Path.Combine(folder, "playerctl.log"),
                 $"{DateTimeOffset.Now:O} {string.Join(" | ", errors)}{Environment.NewLine}");
         }
-        catch { /**/ }
+        catch { /*  */ }
     }
     private void OpenSearch_Click(object? sender, RoutedEventArgs e) { _searchOpen = true; UpdatePanels(); }
     private void CloseSearch_Click(object? sender, RoutedEventArgs e) { _searchOpen = false; UpdatePanels(); }
@@ -1153,10 +1154,10 @@ public partial class MainWindow : Window
             : id ? "Opsional. Mengirim pengaturan, versi dan bahasa sistem ke Aptabase paling banyak sekali sehari. Tidak mengirim lagu, lirik, atau pencarian."
             : "Optional. Sends settings, app version and system language to Aptabase at most once daily. Never sends songs, lyrics or searches.";
         SnapPermissionsHeader.Text = pt ? "PERMISSÕES DE MÚSICA E ÁUDIO" : es ? "PERMISOS DE MÚSICA Y AUDIO" : id ? "IZIN MUSIK DAN AUDIO" : "MUSIC AND AUDIO PERMISSIONS";
-        SnapPermissionsDescription.Text = pt ? "Para reconhecer o som do computador e controlar o Spotify, o FrontLine precisa da sua autorização. Você pode mudar isso quando quiser."
-            : es ? "Para reconocer el audio del equipo y controlar Spotify, FrontLine necesita tu permiso. Puedes cambiarlo cuando quieras."
-            : id ? "Untuk mengenali suara komputer dan mengontrol Spotify, FrontLine memerlukan izin Anda."
-            : "To recognize computer audio and control Spotify, FrontLine needs your permission. You can change it at any time.";
+        SnapPermissionsDescription.Text = pt ? "Para reconhecer músicas pelo áudio e controlar seu reprodutor, autorize a captura de som e a conexão MPRIS do aplicativo que você usa."
+            : es ? "Para reconocer canciones por audio y controlar tu reproductor, autoriza la grabación de audio y la conexión MPRIS del reproductor que uses."
+            : id ? "Untuk mengenali musik dan mengontrol pemutar, izinkan perekaman audio serta koneksi MPRIS pemutar yang Anda gunakan."
+            : "To recognize songs and control your music player, allow audio capture and the MPRIS connection for the player you use.";
         OpenSnapPermissionsButton.Content = pt ? "Ver permissões e instruções" : es ? "Ver permisos e instrucciones" : id ? "Lihat izin dan panduan" : "View permissions and instructions";
         _ = RefreshSnapPermissionsStatusAsync();
         TelemetryToggle.Content = pt ? "Enviar estatísticas anônimas" : es ? "Enviar estadísticas anónimas" : id ? "Kirim statistik anonim" : "Share anonymous statistics";

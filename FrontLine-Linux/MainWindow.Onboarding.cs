@@ -110,10 +110,10 @@ public partial class MainWindow
         bool mpris = await SnapPermissionsDialog.IsConnectedAsync("mpris");
         bool audio = await SnapPermissionsDialog.IsConnectedAsync("audio-record");
         SnapMusicPermissionStatus.Text = DialogUi.L(_appLanguage,
-            mpris ? "Music player: allowed" : "Music player: permission needed",
-            mpris ? "Reprodutor: permitido" : "Reprodutor: precisa de autorização",
-            mpris ? "Reproductor: permitido" : "Reproductor: requiere permiso",
-            mpris ? "Pemutar musik: diizinkan" : "Pemutar musik: perlu izin");
+            mpris ? "Music player: connected" : "Music player: permission needed",
+            mpris ? "Reprodutor: conectado" : "Reprodutor: precisa de autorização",
+            mpris ? "Reproductor: conectado" : "Reproductor: requiere permiso",
+            mpris ? "Pemutar musik: terhubung" : "Pemutar musik: perlu izin");
         SnapAudioPermissionStatus.Text = DialogUi.L(_appLanguage,
             audio ? "Music recognition: allowed" : "Music recognition: permission needed",
             audio ? "Reconhecimento de áudio: permitido" : "Reconhecimento de áudio: precisa de autorização",

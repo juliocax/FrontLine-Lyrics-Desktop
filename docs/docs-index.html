@@ -3,32 +3,50 @@ layout: base
 title: "Documentation — FrontLine Lyrics"
 nav_active: tutorial
 ---
+<style>
+.docs-platform-header{display:flex;align-items:center;gap:12px;margin:0 0 18px}.docs-platform-header .material-symbols-outlined{font-size:25px;color:#b6a4ff}.docs-platform-header h2{font-size:1.35rem;letter-spacing:-.025em;margin:0}.docs-platform-header p{margin:3px 0 0;color:var(--muted,#9ba1b0);font-size:.92rem}
+.docs-platform-group{margin-bottom:54px}.docs-platform-group--linux .docs-platform-header .material-symbols-outlined{color:#f57c46}
+.docs-platform-group--linux .docs-version-card--current{border-color:rgba(233,84,32,.45);box-shadow:0 14px 40px rgba(233,84,32,.09)}
+.docs-platform-group--linux .docs-version-current{background:rgba(233,84,32,.14);color:#ffb28c}
+.docs-platform-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(195px,1fr));gap:16px}
+.docs-platform-grid .docs-version-card{min-height:165px}
+@media(max-width:580px){.docs-platform-group{margin-bottom:36px}.docs-platform-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.docs-platform-grid .docs-version-card{min-height:155px}}
+</style>
 <main>
   <section class="wrap doc-hero">
     <span class="eyebrow pill" data-i18n="doc.eyebrow">Tutorial</span>
     <h1 data-i18n="docs_hub.h1">Choose the documentation version</h1>
-    <p data-i18n="docs_hub.subtitle">Select the version of FrontLine Lyrics you are using to see the correct instructions.</p>
+    <p data-i18n="docs_hub.platformSubtitle">Choose your operating system and app version.</p>
   </section>
-
-  <section class="wrap docs-version-section" aria-label="Documentation versions">
-    <div class="docs-version-grid">
-      <a href="documentation_v1.5.0.html" class="docs-version-card docs-version-card--current glass-hover" aria-label="Documentation v1.5.0 — current version">
-        <span class="docs-version-icon material-symbols-outlined" aria-hidden="true">menu_book</span>
-        <span class="docs-version-number">v1.5.0</span>
-        <span class="docs-version-current" data-i18n="docs_hub.card2_label">Current Version</span>
-      </a>
-      <a href="documentation_v1.4.2.html" class="docs-version-card glass-hover" aria-label="Documentation v1.4.2">
-        <span class="docs-version-icon material-symbols-outlined" aria-hidden="true">menu_book</span>
-        <span class="docs-version-number">v1.4.2</span>
-      </a>
-      <a href="documentation_v1.4.1.html" class="docs-version-card glass-hover" aria-label="Documentation v1.4.1">
-        <span class="docs-version-icon material-symbols-outlined" aria-hidden="true">menu_book</span>
-        <span class="docs-version-number">v1.4.1</span>
-      </a>
-      <a href="documentation.html" class="docs-version-card glass-hover" aria-label="Documentation v1.3.0">
-        <span class="docs-version-icon material-symbols-outlined" aria-hidden="true">menu_book</span>
-        <span class="docs-version-number">v1.3.0</span>
-      </a>
+  <section class="wrap docs-version-section" aria-label="Documentation by platform">
+    <div class="docs-platform-group">
+      <div class="docs-platform-header">
+        <span class="material-symbols-outlined" aria-hidden="true">desktop_windows</span>
+        <div><h2>Windows</h2><p data-i18n="docs_hub.windowsDesc">Documentation for the Microsoft Store version.</p></div>
+      </div>
+      <div class="docs-platform-grid">
+        <a href="documentation_v1.5.0.html" class="docs-version-card docs-version-card--current glass-hover" aria-label="Windows v1.5.0">
+          <span class="docs-version-icon material-symbols-outlined" aria-hidden="true">menu_book</span>
+          <span class="docs-version-number">v1.5.0</span>
+          <span class="docs-version-current" data-i18n="docs_hub.card2_label">Current Version</span>
+        </a>
+        <a href="documentation_v1.4.2.html" class="docs-version-card glass-hover" aria-label="Windows v1.4.2"><span class="docs-version-icon material-symbols-outlined" aria-hidden="true">menu_book</span><span class="docs-version-number">v1.4.2</span></a>
+        <a href="documentation_v1.4.1.html" class="docs-version-card glass-hover" aria-label="Windows v1.4.1"><span class="docs-version-icon material-symbols-outlined" aria-hidden="true">menu_book</span><span class="docs-version-number">v1.4.1</span></a>
+        <a href="documentation.html" class="docs-version-card glass-hover" aria-label="Windows v1.3.0"><span class="docs-version-icon material-symbols-outlined" aria-hidden="true">menu_book</span><span class="docs-version-number">v1.3.0</span></a>
+      </div>
+    </div>
+    <div class="docs-platform-group docs-platform-group--linux">
+      <div class="docs-platform-header">
+        <span class="material-symbols-outlined" aria-hidden="true">terminal</span>
+        <div><h2>Linux <span style="font-weight:400;opacity:.7;font-size:.85em">· Ubuntu</span></h2><p data-i18n="docs_hub.linuxDesc">Documentation for the Linux desktop app.</p></div>
+      </div>
+      <div class="docs-platform-grid">
+        <a href="documentation_linux_v1.0.0.html" class="docs-version-card docs-version-card--current glass-hover" aria-label="Linux v1.0.0">
+          <span class="docs-version-icon material-symbols-outlined" aria-hidden="true">menu_book</span>
+          <span class="docs-version-number">v1.0.0</span>
+          <span class="docs-version-current" data-i18n="docs_hub.linuxFirst">First Linux release</span>
+        </a>
+      </div>
     </div>
   </section>
 </main>
