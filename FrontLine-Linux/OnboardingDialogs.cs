@@ -31,6 +31,19 @@ internal static class DialogUi
         BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(9)
     };
 
+    internal static Button Link(string title) => new()
+    {
+        Content = new TextBlock
+        {
+            Text = title, TextDecorations = TextDecorations.Underline,
+            Foreground = new SolidColorBrush(Color.Parse("#BCA7FF")), FontSize = 13
+        },
+        Background = Brushes.Transparent, BorderThickness = new Thickness(0),
+        Padding = new Thickness(0), MinHeight = 0,
+        HorizontalAlignment = HorizontalAlignment.Left,
+        Cursor = new Avalonia.Input.Cursor(Avalonia.Input.StandardCursorType.Hand)
+    };
+
     internal static Window Window(int width = 565, int height = 525) => new()
     {
         Title = "FrontLine Lyrics", Width = width, Height = height,
@@ -52,7 +65,7 @@ internal sealed class WelcomeDialog : Window
 
     internal WelcomeDialog(string language, bool enabled)
     {
-        var shell = DialogUi.Window(570, 570);
+        var shell = DialogUi.Window(610, 610);
         Title = shell.Title; Width = shell.Width; Height = shell.Height;
         MinWidth = shell.MinWidth; MinHeight = shell.MinHeight;
         Background = shell.Background; WindowStartupLocation = shell.WindowStartupLocation;
@@ -64,63 +77,89 @@ internal sealed class WelcomeDialog : Window
 
     private void Render()
     {
-        var root = new DockPanel { Margin = new Thickness(23, 18, 23, 20), LastChildFill = true };
-        var header = new StackPanel { Spacing = 11 };
-        var lang = new ComboBox { HorizontalAlignment = HorizontalAlignment.Right, MinWidth = 144 };
+        var root = new DockPanel { Margin = new Thickness(26, 22, 26, 22), LastChildFill = true };
+        var header = new StackPanel { Spacing = 12 };
+        var lang = new ComboBox { HorizontalAlignment = HorizontalAlignment.Right, MinWidth = 154 };
         foreach (var (id, title) in new[] { ("en", "English"), ("pt", "Português"), ("es", "Español"), ("id", "Bahasa Indonesia") })
             lang.Items.Add(new ComboBoxItem { Content = title, Tag = id });
         foreach (var item in lang.Items)
-            if (item is ComboBoxItem languageOption && languageOption.Tag?.ToString() == _language) lang.SelectedItem = languageOption;
+            if (item is ComboBoxItem option && option.Tag?.ToString() == _language) lang.SelectedItem = option;
         lang.SelectionChanged += (_, _) =>
         {
             var next = (lang.SelectedItem as ComboBoxItem)?.Tag?.ToString();
             if (next is not null && next != _language) { _language = next; Render(); }
         };
         header.Children.Add(lang);
-        header.Children.Add(DialogUi.Text(DialogUi.L(_language,"Welcome to FrontLine Lyrics","Bem-vindo(a) ao FrontLine Lyrics","Bienvenido a FrontLine Lyrics","Selamat datang di FrontLine Lyrics"), 23, true, "#FFFFFF"));
         header.Children.Add(DialogUi.Text(DialogUi.L(_language,
-            "Thanks for using this free, open-source lyrics companion.",
-            "Obrigado por usar este aplicativo gratuito e de código aberto.",
-            "Gracias por usar esta aplicación gratuita y de código abierto.",
-            "Terima kasih telah menggunakan aplikasi gratis dan open-source ini.")));
+            "Welcome to FrontLine Lyrics", "Bem-vindo(a) ao FrontLine Lyrics",
+            "Bienvenido(a) a FrontLine Lyrics", "Selamat datang di FrontLine Lyrics"), 23, true, "#FFFFFF"));
+        header.Children.Add(DialogUi.Text(DialogUi.L(_language,
+            "Thanks for using FrontLine Lyrics! It's a free, open-source project, and knowing it's useful to you means a lot.",
+            "Obrigado por usar o FrontLine Lyrics! É um projeto gratuito e open-source, e saber que ele é útil para você significa muito.",
+            "¡Gracias por usar FrontLine Lyrics! Es un proyecto gratuito y de código abierto; saber que te resulta útil significa mucho.",
+            "Terima kasih telah menggunakan FrontLine Lyrics! Ini proyek gratis dan open-source; mengetahui bahwa aplikasi ini bermanfaat sangat berarti.")));
+        var tutorial = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
+        tutorial.Children.Add(DialogUi.Text(DialogUi.L(_language,
+            "First time here?", "Primeira vez por aqui?", "¿Es tu primera vez aquí?", "Baru pertama kali di sini?")));
+        var tutorialLink = DialogUi.Link(DialogUi.L(_language,
+            "See the tutorials", "Veja os tutoriais", "Ver los tutoriales", "Lihat tutorial"));
+        tutorialLink.Click += (_, _) => Open("https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_linux_v1.0.0.html");
+        tutorial.Children.Add(tutorialLink);
+        header.Children.Add(tutorial);
         DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
 
-        var footer = new StackPanel { Spacing = 12, Margin = new Thickness(0, 14, 0, 0) };
-        var choice = new CheckBox { IsChecked = _enabled, Content = DialogUi.L(_language,
-            "Send optional anonymous settings statistics", "Enviar estatísticas anônimas opcionais",
-            "Enviar estadísticas anónimas opcionales", "Kirim statistik pengaturan anonim (opsional)"),
-            Foreground = Brushes.White };
+        var footer = new StackPanel { Spacing = 12, Margin = new Thickness(0, 13, 0, 0) };
+        var choice = new CheckBox
+        {
+            IsChecked = _enabled,
+            Content = DialogUi.L(_language, "Send anonymous usage statistics",
+                "Enviar estatísticas anônimas de uso", "Enviar estadísticas de uso anónimas",
+                "Kirim statistik penggunaan anonim"),
+            Foreground = Brushes.White
+        };
         choice.Click += (_, _) => _enabled = choice.IsChecked == true;
         footer.Children.Add(choice);
-        var start = DialogUi.Button(DialogUi.L(_language,"Get started","Começar","Empezar","Mulai"), true);
+        var start = DialogUi.Button(DialogUi.L(_language, "Get started", "Começar", "Empezar", "Mulai"), true);
         start.HorizontalAlignment = HorizontalAlignment.Right;
         start.Click += (_, _) => { Completed = true; Close(); };
         footer.Children.Add(start);
         DockPanel.SetDock(footer, Dock.Bottom); root.Children.Add(footer);
 
-        var content = new StackPanel { Spacing = 13, Margin = new Thickness(0, 17, 8, 0) };
-        content.Children.Add(DialogUi.Text(DialogUi.L(_language,"GETTING STARTED","PRIMEIROS PASSOS","PRIMEROS PASOS","MEMULAI"), 12, true, "#BBBBBB"));
+        var content = new StackPanel { Spacing = 10, Margin = new Thickness(0, 17, 8, 0) };
         content.Children.Add(DialogUi.Text(DialogUi.L(_language,
-            "LISTEN identifies songs from audio. SEARCH finds lyrics by artist and title. Use the settings icon to adjust appearance, translation and interface language.",
-            "OUVIR identifica músicas pelo áudio. BUSCAR encontra letras por artista e título. Use o ícone de configurações para mudar a aparência, tradução e idioma.",
-            "ESCUCHAR identifica canciones por audio. BUSCAR encuentra letras por artista y título. Ajusta apariencia, traducción e idioma en configuración.",
-            "DENGARKAN mengenali lagu dari audio. CARI menemukan lirik melalui artis dan judul. Atur tampilan, terjemahan dan bahasa di pengaturan.")));
-        var guide = DialogUi.Button(DialogUi.L(_language,"Open tutorial","Abrir tutorial","Abrir tutorial","Buka tutorial"));
-        guide.HorizontalAlignment = HorizontalAlignment.Left;
-        guide.Click += (_, _) => Open("https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v0.1.0.html");
-        content.Children.Add(guide);
-        content.Children.Add(DialogUi.Text(DialogUi.L(_language,"ANONYMOUS STATISTICS","ESTATÍSTICAS ANÔNIMAS","ESTADÍSTICAS ANÓNIMAS","STATISTIK ANONIM"), 12, true, "#BBBBBB"));
+            "ANONYMOUS USAGE STATISTICS", "ESTATÍSTICAS DE USO ANÔNIMAS",
+            "ESTADÍSTICAS DE USO ANÓNIMAS", "STATISTIK PENGGUNAAN ANONIM"), 12, true, "#BBBBBB"));
         content.Children.Add(DialogUi.Text(DialogUi.L(_language,
-            "If enabled, a small settings snapshot may be sent to Aptabase at most once per day: lyric font, color, visible lines, interface language, app version and system locale. This does not contain songs, artists, lyrics, searches, names, emails or a persistent user ID.",
-            "Se ativado, o Aptabase poderá receber no máximo uma vez por dia um resumo: fonte, cor e linhas da letra, idioma da interface, versão e idioma do sistema. Não inclui músicas, artistas, letras, buscas, nomes, e-mails nem identificador persistente.",
-            "Si se activa, Aptabase podrá recibir como máximo una vez al día un resumen: fuente, color, líneas visibles, idioma, versión e idioma del sistema. No incluye canciones, artistas, letras, búsquedas ni identificador persistente.",
-            "Jika diaktifkan, ringkasan font, warna, baris lirik, bahasa aplikasi, versi dan lokal sistem dapat dikirim ke Aptabase maksimal sekali sehari. Tidak menyertakan lagu, artis, lirik, pencarian atau ID pengguna permanen.")));
+            "To understand what to improve, FrontLine can send a small anonymous report about its settings, at most once per day.",
+            "Para saber o que melhorar, o FrontLine pode enviar um pequeno relatório anônimo sobre como ele está configurado. O envio acontece no máximo uma vez por dia.",
+            "Para saber qué mejorar, FrontLine puede enviar un breve informe anónimo sobre su configuración, como máximo una vez al día.",
+            "Untuk mengetahui apa yang perlu diperbaiki, FrontLine dapat mengirim ringkasan pengaturan anonim paling banyak sekali sehari.")));
         content.Children.Add(DialogUi.Text(DialogUi.L(_language,
-            "You can change your choice any time under Settings → General. Without a configured Aptabase app key, no data is sent.",
-            "Você pode mudar sua escolha em Configurações → Geral. Sem uma chave Aptabase configurada, nenhum dado é enviado.",
-            "Puedes cambiarlo en Ajustes → General. Sin clave Aptabase configurada, no se envían datos.",
-            "Anda dapat mengubah pilihan di Pengaturan → Umum. Tanpa kunci aplikasi Aptabase, tidak ada data terkirim."), 12, false, "#AAAAAA"));
-        var source = DialogUi.Button(DialogUi.L(_language,"View source code","Ver código-fonte","Ver código fuente","Lihat kode sumber"));
+            "WHAT IS SENT", "O QUE É ENVIADO", "QUÉ SE ENVÍA", "DATA YANG DIKIRIM"), 11, true, "#BBBBBB"));
+        var sent = _language switch
+        {
+            "pt" => new[] { "A fonte da letra, a cor e a quantidade de linhas visíveis", "O idioma do aplicativo", "O tema padrão (atual) e a plataforma Linux", "A versão do aplicativo e o idioma do sistema" },
+            "es" => new[] { "Fuente, color y cantidad de líneas visibles", "Idioma de la aplicación", "Tema predeterminado (actual) y plataforma Linux", "Versión de la aplicación e idioma del sistema" },
+            "id" => new[] { "Font, warna, dan jumlah baris lirik", "Bahasa aplikasi", "Tema bawaan (saat ini) dan platform Linux", "Versi aplikasi dan bahasa sistem" },
+            _ => new[] { "Lyric font, color, and visible line count", "App language", "Default theme (currently) and Linux platform", "App version and system language" }
+        };
+        foreach (var item in sent)
+            content.Children.Add(DialogUi.Text("•  " + item, 12));
+        content.Children.Add(DialogUi.Text(DialogUi.L(_language,
+            "NEVER SENT: songs, artists, lyrics, searches, your name or email. No persistent user identifier is included in the event.",
+            "NUNCA é enviado: músicas, artistas, letras, buscas, seu nome ou e-mail. O evento não inclui um identificador persistente de usuário.",
+            "NUNCA se envían canciones, artistas, letras, búsquedas, nombre o correo electrónico. El evento no incluye un identificador persistente del usuario.",
+            "TIDAK PERNAH dikirim: lagu, artis, lirik, pencarian, nama atau email. Tidak ada pengenal pengguna permanen dalam peristiwa ini."), 12));
+        content.Children.Add(DialogUi.Text(DialogUi.L(_language,
+            "Data goes to Aptabase, a privacy-focused analytics service. You can turn this off any time in Settings → General. No report is sent without a configured Aptabase app key.",
+            "Os dados vão para o Aptabase, um serviço de análise focado em privacidade. Você pode desativar quando quiser em Configurações → Geral. Sem chave Aptabase configurada, nenhum relatório é enviado.",
+            "Los datos van a Aptabase, un servicio de análisis centrado en la privacidad. Puedes desactivarlo en Ajustes → General. Sin una clave Aptabase configurada, no se envía nada.",
+            "Data dikirim ke Aptabase, layanan analitik berfokus privasi. Anda bisa menonaktifkan di Pengaturan → Umum. Tanpa kunci Aptabase, laporan tidak dikirim."), 12, false, "#BBBBBB"));
+        var source = DialogUi.Link(DialogUi.L(_language,
+            "Open-source: view the project repository",
+            "Open-source: veja o repositório do projeto",
+            "Código abierto: consulta el repositorio del proyecto",
+            "Open-source: lihat repositori proyek"));
         source.HorizontalAlignment = HorizontalAlignment.Left;
         source.Click += (_, _) => Open("https://github.com/juliocax/FrontLine-Lyrics-Desktop");
         content.Children.Add(source);

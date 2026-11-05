@@ -162,6 +162,12 @@ The backend uses `127.0.0.1:8765`; do not start a second instance. Check the Rel
 dotnet build FrontLine-Linux/FrontLine-Linux.csproj -c Release
 ```
 
+To follow the backend log in real time, use:
+
+```bash
+tail -f ~/FrontLineLyrics/logs/frontline_server.log
+```
+
 **Build a `.deb`** (from the repository root, with `.venv` activated):
 
 ```bash

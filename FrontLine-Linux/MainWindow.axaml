@@ -19,7 +19,8 @@
     <Image x:Name="MenuLogo" Width="260" Height="250" Source="avares://FrontLine-Linux/assets/logo.png" Stretch="Uniform"/>
     <TextBlock Text="Ready." Foreground="#999999" HorizontalAlignment="Center"/>
    </StackPanel>
-   <Viewbox Grid.Column="1" Stretch="Uniform" StretchDirection="DownOnly" VerticalAlignment="Center" HorizontalAlignment="Center"><Border BorderBrush="#454545" BorderThickness="1" CornerRadius="40" Padding="18">
+   <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10">
+   <Viewbox Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Center"><Border BorderBrush="#454545" BorderThickness="1" CornerRadius="40" Padding="18">
     <StackPanel Orientation="Horizontal" Spacing="12">
      <Button x:Name="ReleaseNotesButton" Background="Transparent" BorderThickness="0" Padding="4,2" Click="ReleaseNotes_Click" ToolTip.Tip="release" Tag="tip:release">
       <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"><TextBlock Text="FRONTLINE LYRICS" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center" TextAlignment="Center"/><TextBlock Text="v1.0.0" Foreground="#A99BD4" FontSize="11" HorizontalAlignment="Center" TextAlignment="Center"/></StackPanel>
@@ -29,7 +30,14 @@
      <Button Click="Help_Click" ToolTip.Tip="help" Tag="tip:help"><svg:Svg Path="/assets/icon_help.svg" Width="17" Height="17" IsHitTestVisible="False"/></Button>
     </StackPanel>
    </Border></Viewbox>
-   <!-- Rodapé da tela inicial: seção de apoio, avaliação e feedback. -->
+   <Border x:Name="LyricsServiceNotice" IsVisible="False" MaxWidth="420"
+           HorizontalAlignment="Center" Background="#ED211B25"
+           BorderBrush="#795B6274" BorderThickness="1" CornerRadius="10"
+           Padding="13,9" Margin="0,3,0,0">
+    <TextBlock x:Name="LyricsServiceMessage" TextWrapping="Wrap" TextAlignment="Center"
+               HorizontalAlignment="Center" FontSize="12" Foreground="#F3EAF1"/>
+   </Border>
+   </StackPanel>
    <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8"
                HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,14,5,2">
     <TextBlock x:Name="EnjoyingAppLabel" Text="Enjoying the app?" Foreground="#8F8F98"
@@ -63,6 +71,14 @@
    <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="18">
     <ProgressBar Width="150" Height="6" IsIndeterminate="True" Foreground="#A182FB"/>
     <TextBlock x:Name="LoadingText" Text="Listening..." FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+    <TextBlock x:Name="RecognitionNotice" Text="Song not identified yet. Still listening…"
+               IsVisible="False" Foreground="#C8BCE3" FontSize="12"
+               TextAlignment="Center" TextWrapping="Wrap" MaxWidth="360"
+               HorizontalAlignment="Center"/>
+    <TextBlock x:Name="LyricsWaitHint" Text="The lyrics server may be having issues. Still trying…"
+               IsVisible="False" Foreground="#C8BCE3" FontSize="12"
+               TextAlignment="Center" TextWrapping="Wrap" MaxWidth="360"
+               HorizontalAlignment="Center"/>
    </StackPanel>
    <Viewbox x:Name="LoadingControls" Grid.Row="1" Grid.ColumnSpan="2" Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Right" MaxHeight="53" Margin="0,0,16,10"><StackPanel Orientation="Horizontal" Spacing="10">
     <Button  Click="PreviousTrack_Click" ToolTip.Tip="prev_track" Tag="tip:prev_track"><svg:Svg Path="/assets/double_arrow_left.svg" Width="17" Height="17" IsHitTestVisible="False"/></Button><Button  Click="Listen_Click" ToolTip.Tip="listen" Tag="tip:listen"><StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center"><svg:Svg Path="/assets/icon_listen.svg" Width="17" Height="17" IsHitTestVisible="False"/><TextBlock x:Name="LoadingListenLabel" Text="LISTEN" VerticalAlignment="Center"/></StackPanel></Button><TextBlock x:Name="LoadingAutoLabel" Text="AUTO" VerticalAlignment="Center"/>

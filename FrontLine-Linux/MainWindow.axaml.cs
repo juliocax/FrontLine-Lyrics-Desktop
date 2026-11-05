@@ -126,6 +126,16 @@ public partial class MainWindow : Window
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private ClientWebSocket? _socket;
     private string _status = "IDLE";
+    private string? _recognitionFailure;
+    private string? _recognitionNotice;
+    private string _lyricsServiceStatus = "ok";
+    private string? _lyricsLookupNotice;
+    private DateTime _lyricsWaitStartedUtc = DateTime.MinValue;
+    private string _lyricsWaitKey = "";
+    private bool _lyricsWaitInProgress;
+    private string _lastSongTitle = "";
+    private string _lastArtistName = "";
+
     private bool _connected, _searchOpen, _settingsOpen, _hover = true, _autoSyncing;
     private bool _autoMode;
     private CancellationTokenSource? _hoverExitDelay;
@@ -241,6 +251,11 @@ public partial class MainWindow : Window
             if (doc.RootElement.ValueKind != JsonValueKind.Object) continue;
             var root = doc.RootElement;
             var status = ReadString(root, "status") ?? "IDLE";
+            var lyricsServiceStatus = ReadString(root, "lyrics_service_status") ?? "ok";
+            var lyricsLookupNotice = ReadString(root, "lyrics_lookup_notice");
+            var recognitionFailure = ReadString(root, "recognition_failure");
+            var recognitionNotice = ReadString(root, "recognition_notice");
+
             var title = ReadString(root, "song") ?? "";
             var artist = ReadString(root, "artist") ?? "";
             var previous = ReadString(root, "previous_lyrics") ?? "";
@@ -279,6 +294,15 @@ public partial class MainWindow : Window
                     foreach (var line in lines) { _lyricTimes.Add(line.timestamp); _lyricTexts.Add(line.text); }
                 }
                 _status = status;
+                _lyricsServiceStatus = lyricsServiceStatus;
+                _lyricsLookupNotice = lyricsLookupNotice;
+                _recognitionFailure = recognitionFailure;
+                _recognitionNotice = recognitionNotice;
+                _lastSongTitle = title;
+                _lastArtistName = artist;
+                UpdateLyricsWaitHint(status, artist, title);
+                UpdateRecognitionNotice();
+
                 _currentTranslation = currentLang;
                 if (status != "SYNCED")
                 {
@@ -331,7 +355,7 @@ public partial class MainWindow : Window
                 SongText.Text = title;
                 ArtistText.Text = artist;
                 PreviousText.Text = previous;
-                CurrentText.Text = current;
+                CurrentText.Text = status == "NOT_FOUND" ? LocalizedNotFoundMessage() : current;
                 NextText.Text = next;
                 RefreshLyricView();
                 UpdateLoadingLabel();
@@ -378,15 +402,17 @@ public partial class MainWindow : Window
 
     private void UpdatePanels()
     {
-        var lyrics = _status == "SYNCED";
+        var lyrics = _status is "SYNCED" or "NOT_FOUND";
         var loading = _status is "LISTENING" or "SEARCHING";
         MenuPanel.IsVisible = !lyrics && !loading;
+        UpdateLyricsServiceNotice();
         LoadingPanel.IsVisible = loading;
         LyricsPanel.IsVisible = lyrics;
         SearchPanel.IsVisible = _searchOpen;
         SettingsPopup.IsOpen = _settingsOpen;
         var showingControls = _hover || _searchOpen || _settingsOpen || (!lyrics && !loading);
-        ShazamSyncTools.IsVisible = lyrics && showingControls && !_playerClock && _lyricTimes.Count > 0;
+        ShazamSyncTools.IsVisible = _status == "SYNCED" && showingControls && !_playerClock && _lyricTimes.Count > 0;
+        // Em LISTENING/SEARCHING: somente indicador e texto na tela sem hover.
         LoadingLogo.IsVisible = showingControls;
         LoadingControls.IsVisible = showingControls;
         LoadingPanel.ColumnDefinitions[0].Width = showingControls
@@ -411,6 +437,97 @@ public partial class MainWindow : Window
         WindowBackground.BorderThickness = new Thickness(0);
         LyricsBackdrop.Background = new SolidColorBrush(Color.FromArgb(
             (byte)(255 * (showingControls ? 0.0 : _backgroundOpacity)), 0, 0, 0));
+    }
+
+    private string LocalizedNotFoundMessage() => _recognitionFailure switch
+    {
+        "connection_error" => _appLanguage switch
+        {
+            "pt" => "Não foi possível acessar o serviço de reconhecimento. Verifique sua conexão.",
+            "es" => "No se pudo acceder al reconocimiento musical. Comprueba tu conexión.",
+            "id" => "Layanan pengenalan musik tidak dapat diakses. Periksa koneksi Anda.",
+            _ => "Couldn't reach music recognition. Check your internet connection."
+        },
+        "no_match" => _appLanguage switch
+        {
+            "pt" => "Não foi possível identificar a música pelo áudio. Tente novamente ou use a busca manual.",
+            "es" => "No se pudo identificar la canción por audio. Inténtalo de nuevo o busca manualmente.",
+            "id" => "Lagu tidak dapat dikenali dari audio. Coba lagi atau cari secara manual.",
+            _ => "Couldn't identify the song from audio. Try again or search manually."
+        },
+        _ => LocalizedNoLyrics()
+    };
+
+    private string LocalizedNoLyrics() => _appLanguage switch
+    {
+        "pt" => "Letra não encontrada.",
+        "es" => "Letra no encontrada.",
+        "id" => "Lirik tidak ditemukan.",
+        _ => "Lyrics not found."
+    };
+
+    private void UpdateLyricsWaitHint(string status, string artist, string title)
+    {
+        if (LyricsWaitHint is null) return;
+        // Only an actual lookup counts. When we're merely recognizing audio,
+        // LISTENING with no track must not suggest that LRCLIB is unstable.
+        bool lookupPending = status == "SEARCHING" ||
+            (status == "LISTENING" && !string.IsNullOrWhiteSpace(title) &&
+             !string.IsNullOrWhiteSpace(artist));
+        if (!lookupPending)
+        {
+            _lyricsWaitInProgress = false;
+            _lyricsWaitKey = "";
+            _lyricsWaitStartedUtc = DateTime.MinValue;
+            LyricsWaitHint.IsVisible = false;
+            return;
+        }
+
+        var key = $"{artist.Trim().ToLowerInvariant()}|{title.Trim().ToLowerInvariant()}";
+        if (!_lyricsWaitInProgress || _lyricsWaitKey != key)
+        {
+            _lyricsWaitInProgress = true;
+            _lyricsWaitKey = key;
+            _lyricsWaitStartedUtc = DateTime.UtcNow;
+        }
+        bool delayed = DateTime.UtcNow - _lyricsWaitStartedUtc >= TimeSpan.FromSeconds(10);
+        LyricsWaitHint.IsVisible = delayed;
+        LyricsWaitHint.Text = _appLanguage switch
+        {
+            "pt" => "O servidor de letras pode estar instável. Ainda estamos tentando…",
+            "es" => "El servidor de letras podría estar fallando. Seguimos intentando…",
+            "id" => "Server lirik mungkin sedang bermasalah. Masih mencoba…",
+            _ => "The lyrics server may be having issues. Still trying…"
+        };
+    }
+
+    private void UpdateLyricsServiceNotice()
+    {
+        if (LyricsServiceNotice is null || LyricsServiceMessage is null) return;
+
+        string? reason = _lyricsLookupNotice is "connection_error" or "service_offline"
+            ? _lyricsLookupNotice : _lyricsServiceStatus;
+        if (_status == "NOT_FOUND") reason = "ok";
+        bool isMenu = _status == "IDLE";
+        LyricsServiceNotice.IsVisible = isMenu && (reason is "connection_error" or "service_offline");
+        LyricsServiceMessage.Text = reason switch
+        {
+            "connection_error" => _appLanguage switch
+            {
+                "pt" => "Verifique sua conexão com a internet.",
+                "es" => "Comprueba tu conexión a Internet.",
+                "id" => "Periksa koneksi internet Anda.",
+                _ => "Check your internet connection."
+            },
+            "service_offline" => _appLanguage switch
+            {
+                "pt" => "Fonte de letras temporariamente indisponível: Estamos planejando a criação de um servidor próprio para oferecer mais estabilidade e independência ao projeto.",
+                "es" => "Fuente de letras temporalmente no disponible: Estamos planeando crear un servidor propio para ofrecer mayor estabilidad e independencia al proyecto.",
+                "id" => "Sumber lirik sementara tidak tersedia: Kami berencana membuat server sendiri agar layanan lebih stabil dan mandiri.",
+                _ => "Lyrics source temporarily unavailable: We're planning our own server to make the project more stable and independent."
+            },
+            _ => ""
+        };
     }
 
     private void RefreshLyricView()
@@ -681,7 +798,6 @@ public partial class MainWindow : Window
     private async void NextTrack_Click(object? sender, RoutedEventArgs e) => await PlayerctlAsync("next");
     private static async Task PlayerctlAsync(string operation)
     {
-
         var errors = new List<string>();
         if (!string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SNAP")))
         {
@@ -749,7 +865,7 @@ public partial class MainWindow : Window
             File.AppendAllText(Path.Combine(folder, "playerctl.log"),
                 $"{DateTimeOffset.Now:O} {string.Join(" | ", errors)}{Environment.NewLine}");
         }
-        catch { /*  */ }
+        catch { /* */ }
     }
     private void OpenSearch_Click(object? sender, RoutedEventArgs e) { _searchOpen = true; UpdatePanels(); }
     private void CloseSearch_Click(object? sender, RoutedEventArgs e) { _searchOpen = false; UpdatePanels(); }
@@ -1147,6 +1263,10 @@ public partial class MainWindow : Window
         FontSizeDescription.Text = pt ? "Ajuste a letra enquanto a observa" : es ? "Ajusta el texto mientras lo ves" : id ? "Atur ukuran sambil melihat lirik" : "Adjust the size while viewing the lyrics";
         RefreshSegmentSelections();
         UpdateLoadingLabel();
+        UpdateRecognitionNotice();
+        UpdateLyricsServiceNotice();
+        UpdateLyricsWaitHint(_status, _lastArtistName, _lastSongTitle);
+        if (_status == "NOT_FOUND") CurrentText.Text = LocalizedNotFoundMessage();
         UpdateTranslationFeedback();
         TelemetryHeading.Text = pt ? "ESTATÍSTICAS ANÔNIMAS" : es ? "ESTADÍSTICAS ANÓNIMAS" : id ? "STATISTIK ANONIM" : "ANONYMOUS SETTINGS STATISTICS";
         TelemetryDescription.Text = pt ? "Opcional. Envia preferências, versão e idioma do sistema ao Aptabase no máximo uma vez por dia. Nunca envia músicas, letras ou pesquisas."
@@ -1162,6 +1282,19 @@ public partial class MainWindow : Window
         _ = RefreshSnapPermissionsStatusAsync();
         TelemetryToggle.Content = pt ? "Enviar estatísticas anônimas" : es ? "Enviar estadísticas anónimas" : id ? "Kirim statistik anonim" : "Share anonymous statistics";
     }
+    private void UpdateRecognitionNotice()
+    {
+        if (RecognitionNotice is null) return;
+        RecognitionNotice.IsVisible = _status == "LISTENING" && _recognitionNotice == "no_match";
+        RecognitionNotice.Text = _appLanguage switch
+        {
+            "pt" => "Dificuldade para identificar esta música. Continuando a escutar…",
+            "es" => "Dificultad para identificar esta canción. Seguimos escuchando…",
+            "id" => "Kesulitan mengenali lagu ini. Masih mendengarkan…",
+            _ => "Trouble identifying this song. Still listening…"
+        };
+    }
+
     private void UpdateLoadingLabel()
     {
         if (LoadingText is null) return;

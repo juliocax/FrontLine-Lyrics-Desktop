@@ -20,7 +20,7 @@ internal sealed class SnapPermissionsDialog : Window
     {
         _lang = language;
         Title = DialogUi.L(_lang, "Permissions", "Permissões", "Permisos", "Izin");
-        Width = 545; Height = 470; MinWidth = 420; MinHeight = 390;
+        Width = 645; Height = 630; MinWidth = 470; MinHeight = 430;
         Background = new SolidColorBrush(Color.Parse("#101010"));
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
         var root = new StackPanel { Margin = new Thickness(24), Spacing = 14 };
@@ -53,23 +53,15 @@ internal sealed class SnapPermissionsDialog : Window
             "Permite identificar música por el audio del equipo, incluso sin controlar directamente el reproductor.",
             "Memungkinkan pengenalan musik dari audio komputer tanpa perlu mengontrol pemutar."), 12));
 
-        var copyAudio = DialogUi.Button(DialogUi.L(_lang,
-            "Copy audio permission command", "Copiar comando do áudio",
-            "Copiar comando de audio", "Salin perintah audio"));
-        copyAudio.Click += async (_, _) => await CopyAsync("sudo snap connect frontline-lyrics:audio-record");
-        root.Children.Add(copyAudio);
-
-        var copySpotify = DialogUi.Button(DialogUi.L(_lang,
-            "Copy Spotify command", "Copiar comando do Spotify",
-            "Copiar comando de Spotify", "Salin perintah Spotify"));
-        copySpotify.Click += async (_, _) => await CopyAsync("sudo snap connect frontline-lyrics:mpris spotify:spotify-mpris");
-        root.Children.Add(copySpotify);
-
-        var copyPlayers = DialogUi.Button(DialogUi.L(_lang,
-            "Copy command to list available players", "Copiar comando para listar reprodutores",
-            "Copiar comando para ver reproductores", "Salin perintah daftar pemutar"));
-        copyPlayers.Click += async (_, _) => await CopyAsync("snap connections --all | grep mpris");
-        root.Children.Add(copyPlayers);
+        root.Children.Add(CommandRow("sudo snap connect frontline-lyrics:audio-record"));
+        root.Children.Add(DialogUi.Text(DialogUi.L(_lang,
+            "Spotify (only if installed as a Snap):", "Spotify (se instalado como Snap):",
+            "Spotify (si está instalado como Snap):", "Spotify (jika dipasang sebagai Snap):"), 12));
+        root.Children.Add(CommandRow("sudo snap connect frontline-lyrics:mpris spotify:spotify-mpris"));
+        root.Children.Add(DialogUi.Text(DialogUi.L(_lang,
+            "See available music-player connections:", "Consultar conexões de reprodutores disponíveis:",
+            "Consultar conexiones de reproductores disponibles:", "Lihat koneksi pemutar yang tersedia:"), 12));
+        root.Children.Add(CommandRow("snap connections --all | grep mpris"));
 
         root.Children.Add(DialogUi.Text(DialogUi.L(_lang,
             "In Ubuntu's app permissions, open FrontLine Lyrics and choose your music player under 'Control music and video players'. For a Snap player, its MPRIS slot may also be connected manually. The available players depend on what is installed, and changing the selected player may replace the previous connection. Paste only the command appropriate for your device into a terminal and confirm it yourself.",
@@ -85,6 +77,29 @@ internal sealed class SnapPermissionsDialog : Window
         root.Children.Add(actions);
         Content = new ScrollViewer { Content = root };
         Opened += async (_, _) => await RefreshAsync();
+    }
+
+    private Control CommandRow(string command)
+    {
+        var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 8 };
+        var code = new TextBox
+        {
+            Text = command, IsReadOnly = true, IsTabStop = false,
+            MinHeight = 37, VerticalContentAlignment = VerticalAlignment.Center,
+            FontSize = 11, FontFamily = new FontFamily("monospace"),
+            Background = new SolidColorBrush(Color.Parse("#191919")),
+            Foreground = Brushes.White,
+            BorderBrush = new SolidColorBrush(Color.Parse("#454545")),
+            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8)
+        };
+        Grid.SetColumn(code, 0);
+        row.Children.Add(code);
+        var copy = DialogUi.Button(DialogUi.L(_lang, "Copy", "Copiar", "Copiar", "Salin"));
+        copy.MinWidth = 76;
+        copy.Click += async (_, _) => await CopyAsync(command);
+        Grid.SetColumn(copy, 1);
+        row.Children.Add(copy);
+        return row;
     }
 
     private async Task CopyAsync(string command)

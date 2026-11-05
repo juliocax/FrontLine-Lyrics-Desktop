@@ -180,6 +180,8 @@ class MusicManager:
         self._media_busy = False
         self._lyrics_lookup_failed_at = None
         self.lyrics_lookup_notice = None
+        self.recognition_failure_reason = None
+        self.recognition_notice = None
         self._next_live_fingerprint = 0.0
         self._live_fp_busy = False
         self._live_fp_drift_hits = 0
@@ -986,7 +988,9 @@ class MusicManager:
         current_line_original = ""
         overlay_msg, status = "", ""
 
-        if not self.is_listening:
+        if self.recognition_failure_reason:
+            status = "NOT_FOUND"
+        elif not self.is_listening:
             status = "IDLE"
         elif self.is_listening and not self.current_song:
             # Spotify/SMTC already identified the track, but LRCLIB may be
@@ -1062,6 +1066,8 @@ class MusicManager:
             "status": status,
             "lyrics_service_status": ("ok" if status == "NOT_FOUND" else service_health.status()),
             "lyrics_lookup_notice": self.lyrics_lookup_notice,
+            "recognition_failure": self.recognition_failure_reason,
+            "recognition_notice": self.recognition_notice,
             "auto_mode": self.auto_mode,
             "is_translating": self.is_translating,
             "current_lyrics": current_line,
