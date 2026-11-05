@@ -582,7 +582,6 @@ namespace FrontLineOverlay
             _opacityPreviewTimer.Start();
         }
 
-        // Linux settings layout; delegate choices to the existing WPF controls.
         private void SettingsPopup_Opened(object? sender, EventArgs e)
         {
             UpdateSettingsPresentation();
@@ -594,6 +593,50 @@ namespace FrontLineOverlay
             SettingsCloseButton.Focus();
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SettingsMonitorInfo
+        {
+            public int Size;
+            public RECT Monitor;
+            public RECT Work;
+            public uint Flags;
+        }
+
+        [DllImport("user32.dll", EntryPoint = "MonitorFromWindow")]
+        private static extern IntPtr SettingsMonitorFromWindow(IntPtr hwnd, uint flags);
+
+        [DllImport("user32.dll", EntryPoint = "GetMonitorInfoW", ExactSpelling = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SettingsGetMonitorInfo(IntPtr monitor, ref SettingsMonitorInfo info);
+
+        private CustomPopupPlacement[] PlaceSettingsPopup(Size popupSize, Size targetSize, Point offset)
+        {
+            var info = new SettingsMonitorInfo { Size = Marshal.SizeOf<SettingsMonitorInfo>() };
+            IntPtr monitor = SettingsMonitorFromWindow(new WindowInteropHelper(this).Handle, 2);
+            if (monitor == IntPtr.Zero || !SettingsGetMonitorInfo(monitor, ref info))
+            {
+                // A conservative fallback keeps the panel inside the menu's right edge.
+                return new[] { new CustomPopupPlacement(
+                    new Point(Math.Max(0, targetSize.Width - popupSize.Width), 0), PopupPrimaryAxis.None) };
+            }
+
+            Point origin = MainBorder.PointToScreen(new Point(0, 0));
+            DpiScale dpi = VisualTreeHelper.GetDpi(MainBorder);
+            // WPF invokes this callback with device-space bounds, and consumes the
+            // returned displacement in that same screen space. Do not scale sizes twice.
+            double desiredX = origin.X + targetSize.Width - 10.0 * dpi.DpiScaleX;
+            double desiredY = origin.Y;
+            double rightLimit = Math.Max(info.Work.Left, info.Work.Right - popupSize.Width);
+            double bottomLimit = Math.Max(info.Work.Top, info.Work.Bottom - popupSize.Height);
+            double x = Math.Clamp(desiredX, info.Work.Left, rightLimit);
+            double y = Math.Clamp(desiredY, info.Work.Top, bottomLimit);
+
+            // Prefer the existing right-hand attachment. As space runs out, slide
+            // left over the menu instead of clipping the panel or flipping sides.
+            return new[] { new CustomPopupPlacement(
+                new Point(x - origin.X, y - origin.Y), PopupPrimaryAxis.None) };
+        }
+
         private void RepositionSettingsPopup()
         {
             if (SettingsPopup?.IsOpen != true) return;
@@ -603,12 +646,10 @@ namespace FrontLineOverlay
             SettingsPopup.SetCurrentValue(Popup.HorizontalOffsetProperty, offset);
         }
 
-        private void SettingsHeader_DragDelta(object sender, DragDeltaEventArgs e)
+        private void SettingsPanel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
         {
-            if (WindowState != WindowState.Normal) return;
-            // Move the application, keeping its settings panel attached.
-            Left += e.HorizontalChange;
-            Top += e.VerticalChange;
+            // Empty settings surfaces must not bubble into the owner's DragMove.
+            // Child controls keep their own input handling; only the main app body drags.
             e.Handled = true;
         }
 
@@ -754,7 +795,6 @@ namespace FrontLineOverlay
             TabSettingsLyrics.Content = SettingsText("LYRICS", "LETRAS", "LETRAS", "LIRIK");
             TabSettingsTranslate.Content = SettingsText("TRANSLATION", "TRADUÇÃO", "TRADUCCIÓN", "TERJEMAH");
             TabSettingsApp.Content = SettingsText("GENERAL", "GERAL", "GENERAL", "UMUM");
-            SettingsDragHandle.ToolTip = SettingsText("Drag window", "Arrastar janela", "Arrastrar ventana", "Geser jendela");
             SettingsCloseButton.ToolTip = SettingsText("Close settings", "Fechar configurações", "Cerrar ajustes", "Tutup pengaturan");
             SettingsOpacityDescription.Text = SettingsText("Background outside the window", "Fundo fora da janela", "Fondo fuera de la ventana", "Latar di luar jendela");
             SettingsFontDescription.Text = SettingsText("Keep the highlight readable", "Mantenha o destaque legível", "Mantén el texto destacado legible", "Jaga sorotan tetap terbaca");
@@ -1239,6 +1279,7 @@ namespace FrontLineOverlay
 
             _welcomeWasShownAtLaunch = Telemetry.WelcomeShown;
             InitializeComponent();
+            SettingsPopup.CustomPopupPlacementCallback = PlaceSettingsPopup;
             this.StateChanged += MainWindow_StateChanged;
             Loaded += MainWindow_Loaded;
             LocationChanged += (_, _) => { ScheduleSave(); RepositionSettingsPopup(); };

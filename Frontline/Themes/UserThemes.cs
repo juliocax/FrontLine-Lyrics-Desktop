@@ -81,6 +81,21 @@ namespace FrontLineOverlay
 
             new UserThemeDef
             {
+                Id = "neonnights",
+                Names = N("Neon Nights", "Neon Nights", "Neon Nights", "Neon Nights"),
+                CreateGround = () => new NeonNightsGroundView(),
+                CreateLayer = () => new NeonNightsFrameView(),
+                PageVeil = Solid(0xF2, 0x10, 0x08, 0x10),
+                CardBackground = Solid(0xFA, 0x16, 0x0A, 0x12),
+                CardBorder = Solid(0x70, 0xFF, 0x14, 0x93),
+                LogoColor = Solid(0xFF, 0xFF, 0x14, 0x93),
+                DockBackground = Solid(0xFA, 0x10, 0x09, 0x0F),
+                DockBorder = Solid(0xFF, 0xFF, 0x14, 0x93),
+                DockCornerRadius = new System.Windows.CornerRadius(25),
+            },
+
+            new UserThemeDef
+            {
                 Id = "goldenedition",
                 Names = N("Golden Edition", "Edição de Ouro", "Edición Dorada", "Edisi Emas"),
                 CreateGround = () => new GoldVinylGroundView(),
