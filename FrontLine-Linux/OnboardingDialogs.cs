@@ -93,11 +93,6 @@ internal sealed class WelcomeDialog : Window
         header.Children.Add(DialogUi.Text(DialogUi.L(_language,
             "Welcome to FrontLine Lyrics", "Bem-vindo(a) ao FrontLine Lyrics",
             "Bienvenido(a) a FrontLine Lyrics", "Selamat datang di FrontLine Lyrics"), 23, true, "#FFFFFF"));
-        header.Children.Add(DialogUi.Text(DialogUi.L(_language,
-            "Thanks for using FrontLine Lyrics! It's a free, open-source project, and knowing it's useful to you means a lot.",
-            "Obrigado por usar o FrontLine Lyrics! É um projeto gratuito e open-source, e saber que ele é útil para você significa muito.",
-            "¡Gracias por usar FrontLine Lyrics! Es un proyecto gratuito y de código abierto; saber que te resulta útil significa mucho.",
-            "Terima kasih telah menggunakan FrontLine Lyrics! Ini proyek gratis dan open-source; mengetahui bahwa aplikasi ini bermanfaat sangat berarti.")));
         var tutorial = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 6 };
         tutorial.Children.Add(DialogUi.Text(DialogUi.L(_language,
             "First time here?", "Primeira vez por aqui?", "¿Es tu primera vez aquí?", "Baru pertama kali di sini?")));
@@ -151,15 +146,15 @@ internal sealed class WelcomeDialog : Window
             "NUNCA se envían canciones, artistas, letras, búsquedas, nombre o correo electrónico. El evento no incluye un identificador persistente del usuario.",
             "TIDAK PERNAH dikirim: lagu, artis, lirik, pencarian, nama atau email. Tidak ada pengenal pengguna permanen dalam peristiwa ini."), 12));
         content.Children.Add(DialogUi.Text(DialogUi.L(_language,
-            "Data goes to Aptabase, a privacy-focused analytics service. You can turn this off any time in Settings → General. No report is sent without a configured Aptabase app key.",
-            "Os dados vão para o Aptabase, um serviço de análise focado em privacidade. Você pode desativar quando quiser em Configurações → Geral. Sem chave Aptabase configurada, nenhum relatório é enviado.",
-            "Los datos van a Aptabase, un servicio de análisis centrado en la privacidad. Puedes desactivarlo en Ajustes → General. Sin una clave Aptabase configurada, no se envía nada.",
-            "Data dikirim ke Aptabase, layanan analitik berfokus privasi. Anda bisa menonaktifkan di Pengaturan → Umum. Tanpa kunci Aptabase, laporan tidak dikirim."), 12, false, "#BBBBBB"));
+            "Data goes to Aptabase, a privacy-focused analytics service. You can turn this off any time in Settings → General. No report is sent.",
+            "Os dados vão para o Aptabase, um serviço de análise focado em privacidade. Você pode desativar quando quiser em Configurações → Geral.",
+            "Los datos van a Aptabase, un servicio de análisis centrado en la privacidad. Puedes desactivarlo en Ajustes → General.",
+            "Data dikirim ke Aptabase, layanan analitik berfokus privasi. Anda bisa menonaktifkan di Pengaturan → Umum."), 12, false, "#BBBBBB"));
         var source = DialogUi.Link(DialogUi.L(_language,
-            "Open-source: view the project repository",
-            "Open-source: veja o repositório do projeto",
-            "Código abierto: consulta el repositorio del proyecto",
-            "Open-source: lihat repositori proyek"));
+            "View the project repository",
+            "Veja o repositório do projeto",
+            "Consulta el repositorio del proyecto",
+            "Lihat repositori proyek"));
         source.HorizontalAlignment = HorizontalAlignment.Left;
         source.Click += (_, _) => Open("https://github.com/juliocax/FrontLine-Lyrics-Desktop");
         content.Children.Add(source);
