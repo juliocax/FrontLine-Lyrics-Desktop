@@ -1,4 +1,4 @@
-using Frontline.Themes.Seasonal;
+﻿using Frontline.Themes.Seasonal;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -272,6 +272,7 @@ namespace FrontLineOverlay
             if (CmbLyricFont != null) SelectCombo(CmbLyricFont, _lyricFontId);
             if (CmbLyricWeight != null) SelectCombo(CmbLyricWeight, _lyricWeightId);
             if (CmbLyricStyle != null) SelectCombo(CmbLyricStyle, _lyricStyleId);
+            SyncSettingsTypography();
         }
 
         private void LyricCombo_DropDownOpened(object sender, EventArgs e)
@@ -281,7 +282,7 @@ namespace FrontLineOverlay
 
         private void LyricCombo_DropDownClosed(object sender, EventArgs e)
         {
-            if (SettingsPopup != null) SettingsPopup.StaysOpen = false;
+            if (SettingsPopup != null) SettingsPopup.StaysOpen = true;
         }
 
         private void CmbLyricFont_SelectionChanged(object sender, SelectionChangedEventArgs e)

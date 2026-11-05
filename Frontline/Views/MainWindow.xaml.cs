@@ -145,6 +145,14 @@ namespace FrontLineOverlay
 
         private string _lyricAlignment = "center";
 
+        private string _settingsPreferredTranslation = "original";
+        private string _settingsCurrentTranslation = "original";
+        private string _settingsTranslationKey = "";
+        private string? _settingsPendingTranslation;
+        private bool _settingsTranslationStarted;
+        private bool _settingsTranslationFailed;
+        private DateTime _settingsTranslationRequestedUtc;
+
         private string? _autoHoldKey;
         private DateTime _autoHoldUntilUtc = DateTime.MinValue;
 
@@ -538,7 +546,8 @@ namespace FrontLineOverlay
         {
             bgOpacity = e.NewValue;
             if (_loadingSettings) return;
-            UpdateOpacityPreview();
+            if (IsLoaded) UpdateVisualState(isGhostMode);
+            ScheduleSave();
         }
 
         private void UpdateOpacityPreview()
@@ -573,6 +582,198 @@ namespace FrontLineOverlay
             _opacityPreviewTimer.Start();
         }
 
+        // Linux settings layout; delegate choices to the existing WPF controls.
+        private void SettingsPopup_Opened(object? sender, EventArgs e)
+        {
+            UpdateSettingsPresentation();
+            SyncSettingsSegments();
+            SyncSettingsTypography();
+            ShowSettingsTab(_settingsTab);
+            UpdateVisualState(false);
+            RepositionSettingsPopup();
+            SettingsCloseButton.Focus();
+        }
+
+        private void RepositionSettingsPopup()
+        {
+            if (SettingsPopup?.IsOpen != true) return;
+            // WPF popups do not automatically follow their owner's movement.
+            double offset = SettingsPopup.HorizontalOffset;
+            SettingsPopup.SetCurrentValue(Popup.HorizontalOffsetProperty, offset + 0.1);
+            SettingsPopup.SetCurrentValue(Popup.HorizontalOffsetProperty, offset);
+        }
+
+        private void SettingsHeader_DragDelta(object sender, DragDeltaEventArgs e)
+        {
+            if (WindowState != WindowState.Normal) return;
+            // Move the application, keeping its settings panel attached.
+            Left += e.HorizontalChange;
+            Top += e.VerticalChange;
+            e.Handled = true;
+        }
+
+        private void CloseSettings_Click(object sender, RoutedEventArgs e)
+        {
+            BtnMenu.IsChecked = false;
+        }
+
+        private void SettingsPopup_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Let shortcut capture consume Escape to cancel its own edit first.
+            if (e.Key != Key.Escape || isCapturingHotkey) return;
+            BtnMenu.IsChecked = false;
+            e.Handled = true;
+        }
+
+        private void SettingsLineChoice_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton button && button.Tag is string tag)
+                SelectCombo(CmbLyricLines, tag);
+            SyncSettingsSegments();
+        }
+
+        private void SettingsAlignmentChoice_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton button && button.Tag is string tag)
+                SelectCombo(CmbLyricAlignment, tag);
+            SyncSettingsSegments();
+        }
+
+        private void SettingsLanguageChoice_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton button && button.Tag is string language)
+                ApplyUILanguage(language);
+        }
+
+        private void SyncSettingsSegments()
+        {
+            if (SettingsLinesSegment == null || SettingsAlignmentSegment == null || SettingsLanguageSegment == null) return;
+            foreach (ToggleButton button in SettingsLinesSegment.Children)
+            {
+                button.IsChecked = button.Tag?.ToString() == _lyricLineCount.ToString();
+                button.ToolTip = button.Content;
+            }
+            SettingsFullLinesChoice.IsChecked = _lyricLineCount == 0;
+            foreach (ToggleButton button in SettingsAlignmentSegment.Children)
+            {
+                string alignment = button.Tag?.ToString() ?? "center";
+                button.IsChecked = alignment == _lyricAlignment;
+                button.ToolTip = LocalizedAlignment(currentAppLanguage, alignment);
+            }
+            foreach (ToggleButton button in SettingsLanguageSegment.Children)
+                button.IsChecked = button.Tag?.ToString() == currentAppLanguage;
+        }
+
+        private void SyncSettingsTypography()
+        {
+            if (SettingsBold == null || SettingsItalic == null) return;
+            SettingsBold.IsChecked = LyricWeights.Resolve(_lyricWeightId).ToOpenTypeWeight() >= FontWeights.Bold.ToOpenTypeWeight();
+            SettingsItalic.IsChecked = LyricStyles.Resolve(_lyricStyleId) == FontStyles.Italic;
+        }
+
+        private void SettingsTypography_Click(object sender, RoutedEventArgs e)
+        {
+            // Resolve IDs from the installed catalogs; keep advanced Windows weights available.
+            if (sender == SettingsBold)
+            {
+                var target = SettingsBold.IsChecked == true ? FontWeights.Bold : FontWeights.Normal;
+                foreach (var weight in LyricWeights.All)
+                    if (weight.Weight == target) { _lyricWeightId = weight.Id; break; }
+            }
+            else
+            {
+                var target = SettingsItalic.IsChecked == true ? FontStyles.Italic : FontStyles.Normal;
+                foreach (var style in LyricStyles.All)
+                    if (style.Style == target) { _lyricStyleId = style.Id; break; }
+            }
+            ApplyLyricType();
+            ScheduleSave();
+        }
+
+        private void RequestSettingsTranslation(string artist, string song)
+        {
+            _settingsTranslationKey = $"{artist.Trim()}|{song.Trim()}|{_settingsPreferredTranslation}";
+            _settingsPendingTranslation = _settingsPreferredTranslation;
+            _settingsTranslationStarted = false;
+            _settingsTranslationFailed = false;
+            _settingsTranslationRequestedUtc = DateTime.UtcNow;
+            SendCommand("TRANSLATE", _settingsPreferredTranslation);
+        }
+
+        private void UpdateSettingsTranslation(string status, string language, bool translating,
+            string error, string artist, string song, bool hasLyrics)
+        {
+            _settingsCurrentTranslation = language;
+            if (status != "SYNCED")
+            {
+                _settingsPendingTranslation = null;
+                _settingsTranslationStarted = false;
+                _settingsTranslationFailed = false;
+                _settingsTranslationKey = "";
+            }
+            if (_settingsPendingTranslation != null)
+            {
+                if (translating) _settingsTranslationStarted = true;
+                bool success = language == _settingsPendingTranslation && !translating;
+                bool failed = _settingsTranslationStarted && !translating && error == _settingsPendingTranslation;
+                bool timedOut = DateTime.UtcNow - _settingsTranslationRequestedUtc > TimeSpan.FromSeconds(90);
+                if (success || failed || timedOut)
+                {
+                    _settingsTranslationFailed = failed || timedOut;
+                    _settingsPendingTranslation = null;
+                    _settingsTranslationStarted = false;
+                }
+            }
+            if (status == "SYNCED" && hasLyrics && _settingsPendingTranslation == null && _settingsPreferredTranslation != language)
+            {
+                string key = $"{artist.Trim()}|{song.Trim()}|{_settingsPreferredTranslation}";
+                if (_settingsTranslationKey != key) RequestSettingsTranslation(artist, song);
+            }
+            SyncSettingsTranslation();
+        }
+
+        private void SyncSettingsTranslation()
+        {
+            if (SettingsTranslationNotice == null) return;
+            foreach (var choice in new[] { TransOriginal, TransRomanized, TransEn, TransEs, TransFr, TransPt })
+                choice.IsChecked = choice.Tag?.ToString() == _settingsPreferredTranslation;
+            bool pending = _settingsPendingTranslation != null;
+            SettingsTranslationNotice.Visibility = pending || _settingsTranslationFailed ? Visibility.Visible : Visibility.Collapsed;
+            SettingsTranslationProgress.Visibility = pending ? Visibility.Visible : Visibility.Collapsed;
+            SettingsTranslationNoticeText.Text = _settingsTranslationFailed && !pending
+                ? SettingsText("Translation failed. Try again.", "Não foi possível traduzir. Tente novamente.", "No fue posible traducir. Inténtalo de nuevo.", "Terjemahan gagal. Coba lagi.")
+                : SettingsText("Translating…", "Traduzindo…", "Traduciendo…", "Menerjemahkan…");
+        }
+
+        private string SettingsText(string en, string pt, string es, string id) =>
+            currentAppLanguage switch { "pt" => pt, "es" => es, "id" => id, _ => en };
+
+        private void UpdateSettingsPresentation()
+        {
+            if (SettingsCloseButton == null) return;
+            TabSettingsLyrics.Content = SettingsText("LYRICS", "LETRAS", "LETRAS", "LIRIK");
+            TabSettingsTranslate.Content = SettingsText("TRANSLATION", "TRADUÇÃO", "TRADUCCIÓN", "TERJEMAH");
+            TabSettingsApp.Content = SettingsText("GENERAL", "GERAL", "GENERAL", "UMUM");
+            SettingsDragHandle.ToolTip = SettingsText("Drag window", "Arrastar janela", "Arrastrar ventana", "Geser jendela");
+            SettingsCloseButton.ToolTip = SettingsText("Close settings", "Fechar configurações", "Cerrar ajustes", "Tutup pengaturan");
+            SettingsOpacityDescription.Text = SettingsText("Background outside the window", "Fundo fora da janela", "Fondo fuera de la ventana", "Latar di luar jendela");
+            SettingsFontDescription.Text = SettingsText("Keep the highlight readable", "Mantenha o destaque legível", "Mantén el texto destacado legible", "Jaga sorotan tetap terbaca");
+            SettingsAdvancedTypography.Header = SettingsText("Advanced typography", "Tipografia avançada", "Tipografía avanzada", "Tipografi lanjutan");
+            SettingsBold.Content = AppearanceText("Bold");
+            SettingsItalic.Content = AppearanceText("Italic");
+            SettingsFullLinesChoice.Content = SettingsText("Full", "Inteira", "Completa", "Penuh");
+            TransOriginal.Content = "Original";
+            TransRomanized.Content = SettingsText("Romanization", "Romanização", "Romanización", "Romanisasi");
+            TransEn.Content = "English";
+            TransEs.Content = "Español";
+            TransFr.Content = "Français";
+            TransPt.Content = "Português";
+            SettingsTranslationNoticeText.Text = SettingsText("Translating…", "Traduzindo…", "Traduciendo…", "Menerjemahkan…");
+            SyncSettingsSegments();
+            SyncSettingsTypography();
+            SyncSettingsTranslation();
+        }
+
         private void SettingsTab_Click(object sender, RoutedEventArgs e)
         {
             if (sender is ToggleButton tab)
@@ -589,7 +790,9 @@ namespace FrontLineOverlay
             if (SettingsPanelLyrics != null) SettingsPanelLyrics.Visibility = id == "lyrics" ? Visibility.Visible : Visibility.Collapsed;
             if (SettingsPanelTranslate != null) SettingsPanelTranslate.Visibility = id == "translate" ? Visibility.Visible : Visibility.Collapsed;
             if (SettingsPanelApp != null) SettingsPanelApp.Visibility = id == "app" ? Visibility.Visible : Visibility.Collapsed;
-            if (SettingsOpacityBlock != null) SettingsOpacityBlock.Visibility = id == "lyrics" ? Visibility.Visible : Visibility.Collapsed;
+            if (SettingsLyricsScroll != null) SettingsLyricsScroll.Visibility = id == "lyrics" ? Visibility.Visible : Visibility.Collapsed;
+            if (SettingsTranslateScroll != null) SettingsTranslateScroll.Visibility = id == "translate" ? Visibility.Visible : Visibility.Collapsed;
+            if (SettingsAppScroll != null) SettingsAppScroll.Visibility = id == "app" ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void SetSettingsPreviewMode(bool previewing)
@@ -637,6 +840,11 @@ namespace FrontLineOverlay
             _opacityPreviewTimer.Stop();
             OpacityPreviewOverlay.Visibility = Visibility.Collapsed;
             SetSettingsPreviewMode(false);
+            BtnMenu.IsChecked = false;
+            isCapturingHotkey = false;
+            UpdateShortcutButtonText();
+            UpdateVisualState(isGhostMode);
+            BtnMenu.Focus();
         }
 
         private static string LocalizedAlignment(string language, string alignment) =>
@@ -678,6 +886,7 @@ namespace FrontLineOverlay
             if (CmbLyricLines?.SelectedItem is not ComboBoxItem selected ||
                 !int.TryParse(selected.Tag?.ToString(), out int count)) return;
             _lyricLineCount = count is 0 or 1 or 3 or 5 ? count : 3;
+            SyncSettingsSegments();
             RefreshLyricDisplay();
             _readingFollowing = true;
             _readingManualUntil = DateTime.MinValue;
@@ -689,6 +898,7 @@ namespace FrontLineOverlay
             if (CmbLyricAlignment?.SelectedItem is not ComboBoxItem selected) return;
             string value = selected.Tag?.ToString() ?? "center";
             _lyricAlignment = value is "left" or "right" ? value : "center";
+            SyncSettingsSegments();
             RefreshLyricDisplay();
             if (!_loadingSettings) ScheduleSave();
         }
@@ -1031,8 +1241,8 @@ namespace FrontLineOverlay
             InitializeComponent();
             this.StateChanged += MainWindow_StateChanged;
             Loaded += MainWindow_Loaded;
-            LocationChanged += (_, _) => ScheduleSave();
-            SizeChanged += (_, _) => { ScheduleSave(); UpdateSupportBarLayout(); };
+            LocationChanged += (_, _) => { ScheduleSave(); RepositionSettingsPopup(); };
+            SizeChanged += (_, _) => { ScheduleSave(); UpdateSupportBarLayout(); RepositionSettingsPopup(); };
             _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); PersistSettings(); };
 
             RestoreFontAndAuto();
@@ -1359,6 +1569,7 @@ namespace FrontLineOverlay
             ApplyAppearanceLanguage();
             ApplyTelemetryLanguage();
             SyncLanguagePicker(lang);
+            UpdateSettingsPresentation();
             ApplyButtonTooltips(t);
             ApplyFestivalUiLanguage();
             RefreshHistoryHeaders();
@@ -1405,7 +1616,7 @@ namespace FrontLineOverlay
 
         private void CmbAppLang_DropDownClosed(object sender, EventArgs e)
         {
-            if (SettingsPopup != null) SettingsPopup.StaysOpen = false;
+            if (SettingsPopup != null) SettingsPopup.StaysOpen = true;
         }
 
         private void ApplyButtonTooltips(Dictionary<string, string> t)
@@ -1514,7 +1725,7 @@ namespace FrontLineOverlay
         private void UpdateVisualState(bool enableGhost)
         {
             if (isResizing) return;
-            isGhostMode = enableGhost;
+            isGhostMode = enableGhost && SettingsPopup?.IsOpen != true;
             IntPtr hwnd = new WindowInteropHelper(this).Handle;
             if (hwnd == IntPtr.Zero) return;
 
@@ -1530,7 +1741,7 @@ namespace FrontLineOverlay
                 TopRightControls.Visibility = Visibility.Visible;
                 PlayingControls.Visibility = Visibility.Collapsed;
             }
-            else if (isGhostMode || isLocked)
+            else if ((isGhostMode || isLocked) && SettingsPopup?.IsOpen != true)
             {
                 SetWindowStyle(hwnd, true, isLocked);
 
@@ -1557,6 +1768,10 @@ namespace FrontLineOverlay
                 PlayingControls.Visibility = Visibility.Visible;
             }
 
+            if (SettingsPopup?.IsOpen == true)
+            {
+                TopRightControls.Visibility = Visibility.Collapsed;
+            }
             SyncTimingTools();
             RefreshSeasonalChrome();
         }
@@ -1703,6 +1918,7 @@ namespace FrontLineOverlay
                 string status = root.GetProperty("status").GetString() ?? "IDLE";
                 string currentLyrics = root.TryGetProperty("current_lyrics", out var clp) ? clp.GetString() ?? "" : "";
                 bool isTranslating = root.TryGetProperty("is_translating", out var tp) && tp.GetBoolean();
+                string translationError = root.TryGetProperty("translation_error", out var te) && te.ValueKind == JsonValueKind.String ? te.GetString() ?? "" : "";
                 bool autoMode = root.TryGetProperty("auto_mode", out var amp) && amp.GetBoolean();
                 string currentLyricsOriginal = root.TryGetProperty("current_lyrics_original", out var clo) ? clo.GetString() ?? "" : "";
                 bool isTranslatedActive = root.TryGetProperty("is_translated_active", out var ita) && ita.GetBoolean();
@@ -1753,14 +1969,11 @@ namespace FrontLineOverlay
                     ApplyLyricsServiceStatus(serviceNotice);
                     _playerClock = playerClock;
                     LblTranslating.Visibility = isTranslating ? Visibility.Visible : Visibility.Collapsed;
+
                     ApplyAutoModeFromServer(autoMode);
 
-                    TransOriginal.IsChecked = currentLanguage == "original";
-                    TransRomanized.IsChecked = currentLanguage == "romanized";
-                    TransEn.IsChecked = currentLanguage == "en";
-                    TransEs.IsChecked = currentLanguage == "es";
-                    TransFr.IsChecked = currentLanguage == "fr";
-                    TransPt.IsChecked = currentLanguage == "pt";
+                    UpdateSettingsTranslation(status, currentLanguage, isTranslating, translationError, artist, song,
+                        !string.IsNullOrWhiteSpace(currentLyrics) || (fullLyricsRaw != null && fullLyricsRaw != "[]"));
 
                     if (status == "IDLE")
                     {
@@ -2275,10 +2488,26 @@ namespace FrontLineOverlay
             SendCommand("RESET");
             BtnMenu.IsChecked = false;
         }
-        private void BtnTrans_Click(object sender, RoutedEventArgs e) { if (sender is ToggleButton b && b.Tag is string l) SendCommand("TRANSLATE", l); BtnMenu.IsChecked = false; }
+        private void BtnTrans_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton b && b.Tag is string l)
+            {
+                if (_settingsPreferredTranslation == l && _settingsPendingTranslation == l) return;
+                _settingsPreferredTranslation = l;
+                AppSettings.SetString("PreferredTranslation", l);
+                _settingsTranslationKey = "";
+                _settingsTranslationFailed = false;
+                if (currentAppStatus == "SYNCED" &&
+                    (!string.IsNullOrWhiteSpace(LblCurrent.Text) || _visibleLyrics?.Count > 0) &&
+                    _settingsCurrentTranslation != l)
+                    RequestSettingsTranslation(LblArtistName.Text, LblSongTitle.Text);
+                SyncSettingsTranslation();
+            }
+        }
         private void ChkKeepOriginal_Click(object sender, RoutedEventArgs e)
         {
             keepOriginalWithTranslation = ChkKeepOriginal.IsChecked == true;
+            AppSettings.SetBool("KeepOriginalWithTranslation", keepOriginalWithTranslation);
             RefreshOriginalLyricsDisplay();
         }
 
@@ -2580,6 +2809,10 @@ namespace FrontLineOverlay
                 _wantAuto = AppSettings.GetBool("AutoMode", false);
                 if (BtnAutoSide != null)
                     BtnAutoSide.IsChecked = _wantAuto;
+                string translation = AppSettings.GetString("PreferredTranslation", "original");
+                _settingsPreferredTranslation = translation is "original" or "romanized" or "en" or "es" or "fr" or "pt" ? translation : "original";
+                keepOriginalWithTranslation = AppSettings.GetBool("KeepOriginalWithTranslation", false);
+                ChkKeepOriginal.IsChecked = keepOriginalWithTranslation;
                 string lang = AppSettings.GetString("AppLanguage", "en");
                 if (!uiStrings.ContainsKey(lang)) lang = "en";
                 currentAppLanguage = lang;
