@@ -48,6 +48,41 @@ namespace FrontLineOverlay
 
         private static readonly Dictionary<string, Dictionary<string, string[]>> Notes = new()
         {
+            ["1.6.0"] = new()
+            {
+                ["en"] = new[]
+                {
+                    "A fresh look: new logo, refreshed settings and a more cohesive visual identity.",
+                    "New themes: Neon Nights, City Lights and Cat Lovers, alongside the existing and seasonal themes.",
+                    "Use the active theme behind lyrics and adjust its background opacity in Lyrics settings.",
+                    "Choose 1, 3 or 5 lines, or the full lyrics, with left, center or right alignment.",
+
+                },
+                ["pt"] = new[]
+                {
+                    "Visual renovado: nova logo, configurações redesenhadas e uma identidade visual mais integrada.",
+                    "Novos temas: Noites Neon, Luzes da Cidade e Amantes de Gatos, junto dos temas existentes e sazonais.",
+                    "Use o tema ativo atrás das letras e ajuste a opacidade do fundo nas configurações de Letras.",
+                    "Escolha 1, 3 ou 5 linhas, ou a letra completa, com alinhamento à esquerda, ao centro ou à direita.",
+
+                },
+                ["es"] = new[]
+                {
+                    "Nueva imagen: nuevo logo, ajustes rediseñados y una identidad visual más integrada.",
+                    "Nuevos temas: Noches Neón, Luces de la Ciudad y Amantes de los Gatos, además de los temas existentes y estacionales.",
+                    "Usa el tema activo detrás de las letras y ajusta la opacidad del fondo en los ajustes de Letras.",
+                    "Elige 1, 3 o 5 líneas, o la letra completa, con alineación izquierda, centrada o derecha.",
+
+                },
+                ["id"] = new[]
+                {
+                    "Tampilan baru: logo baru, pengaturan yang didesain ulang dan identitas visual yang lebih selaras.",
+                    "Tema baru: Malam Neon, Cahaya Kota dan Pencinta Kucing, selain tema lama dan musiman.",
+                    "Gunakan tema aktif di belakang lirik dan atur opasitas latar di pengaturan Lirik.",
+                    "Pilih 1, 3 atau 5 baris, atau seluruh lirik, dengan perataan kiri, tengah atau kanan.",
+
+                },
+            },
             ["1.5.3"] = new()
             {
                 ["en"] = new[] { "Improved handling of missing lyrics and temporary service errors." },
@@ -137,7 +172,12 @@ namespace FrontLineOverlay
             ["id"] = new[] { "Yang baru di FrontLine Lyrics", "Berikut perubahan dalam versi ini.", "DALAM RILIS INI", "MENGERTI", "Catatan untuk versi ini belum tersedia." }
         };
 
-        private const string FullReleaseUrl = "https://buymeacoffee.com/juliocax/frontline-lyrics-1-5-0";
+        private static string? FullReleaseUrl => CurrentVersion switch
+        {
+            "1.6.0" => "https://buymeacoffee.com/juliocax/frontline-lyrics-1-6",
+            "1.5.0" or "1.5.1" or "1.5.2" or "1.5.3" => "https://buymeacoffee.com/juliocax/frontline-lyrics-1-5-0",
+            _ => null
+        };
 
         private static readonly Dictionary<string, string> FullReleaseLabels = new()
         {
@@ -165,10 +205,10 @@ namespace FrontLineOverlay
             TxtDescription.Text = labels[1];
             TxtChangesTitle.Text = labels[2];
             BtnDone.Content = labels[3];
-            TxtFullRelease.Visibility = (CurrentVersion == "1.5.0" || CurrentVersion == "1.5.1" || CurrentVersion == "1.5.2" || CurrentVersion == "1.5.3")
+            TxtFullRelease.Visibility = (FullReleaseUrl != null)
                 ? Visibility.Visible : Visibility.Collapsed;
             LinkFullRelease.Inlines.Clear();
-            if ((CurrentVersion == "1.5.0" || CurrentVersion == "1.5.1" || CurrentVersion == "1.5.2" || CurrentVersion == "1.5.3"))
+            if (FullReleaseUrl != null)
                 LinkFullRelease.Inlines.Add(FullReleaseLabels[language]);
             PanelChanges.Children.Clear();
             var changes = Notes.TryGetValue(CurrentVersion, out var translations)
@@ -194,7 +234,9 @@ namespace FrontLineOverlay
         {
             try
             {
-                Process.Start(new ProcessStartInfo(FullReleaseUrl) { UseShellExecute = true });
+                var url = FullReleaseUrl;
+                if (url != null)
+                    Process.Start(new ProcessStartInfo(url) { UseShellExecute = true });
             }
             catch (Exception ex)
             {

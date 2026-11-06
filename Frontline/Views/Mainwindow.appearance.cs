@@ -1,4 +1,4 @@
-﻿using Frontline.Themes.Seasonal;
+using Frontline.Themes.Seasonal;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -375,21 +375,21 @@ namespace FrontLineOverlay
                 FestivalHubPanel.IsVisibleChanged += (_, _) => RefreshSeasonalChrome();
         }
 
-        private readonly Dictionary<ContentControl, (HorizontalAlignment Horizontal, VerticalAlignment Vertical)> _neonHostAlignment = new();
+        private readonly Dictionary<ContentControl, (HorizontalAlignment Horizontal, VerticalAlignment Vertical)> _ambientHostAlignment = new();
 
-        private void UpdateNeonHostAlignment(bool enabled)
+        private void UpdateAmbientHostAlignment(bool enabled)
         {
             foreach (ContentControl? host in new[] { UserThemeGround, UserThemeLayer })
             {
                 if (host == null) continue;
                 if (enabled)
                 {
-                    if (!_neonHostAlignment.ContainsKey(host))
-                        _neonHostAlignment[host] = (host.HorizontalContentAlignment, host.VerticalContentAlignment);
+                    if (!_ambientHostAlignment.ContainsKey(host))
+                        _ambientHostAlignment[host] = (host.HorizontalContentAlignment, host.VerticalContentAlignment);
                     host.HorizontalContentAlignment = HorizontalAlignment.Stretch;
                     host.VerticalContentAlignment = VerticalAlignment.Stretch;
                 }
-                else if (_neonHostAlignment.Remove(host, out var previous))
+                else if (_ambientHostAlignment.Remove(host, out var previous))
                 {
                     host.HorizontalContentAlignment = previous.Horizontal;
                     host.VerticalContentAlignment = previous.Vertical;
@@ -405,23 +405,57 @@ namespace FrontLineOverlay
             if (element != null) element.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
         }
 
+        private void PlaceThemeForegroundBehindLyrics(bool behindLyrics)
+        {
+            if (SeasonalLayer == null || ThemeBackgroundLayer == null || RootGrid == null) return;
+            if (behindLyrics && RootGrid.Children.Contains(SeasonalLayer))
+            {
+                RootGrid.Children.Remove(SeasonalLayer);
+                ThemeBackgroundLayer.Children.Add(SeasonalLayer);
+            }
+            else if (!behindLyrics && ThemeBackgroundLayer.Children.Contains(SeasonalLayer))
+            {
+                ThemeBackgroundLayer.Children.Remove(SeasonalLayer);
+                RootGrid.Children.Add(SeasonalLayer);
+            }
+            Panel.SetZIndex(SeasonalLayer, 35);
+        }
+
         private void RefreshSeasonalChrome()
         {
             var theme = _appliedTheme ?? SeasonalTheme.None;
-            bool lyricsOnly = isGhostMode || isResizing;
+            bool lyricsOnly = currentAppStatus != "IDLE"
+                && SearchInputPanel?.Visibility != Visibility.Visible
+                && FestivalHubPanel?.Visibility != Visibility.Visible
+                && SettingsPopup?.IsOpen != true
+                && (isGhostMode || isLocked || isResizing);
             var user = ActiveUserTheme(theme);
             var adorn = AdornThemeFor(theme, user);
             _appliedAdornTheme = adorn;
             EnsureUserThemeContent(user, adorn);
             RefreshUserThemeSlots();
-            bool themed = (theme != SeasonalTheme.None || user != null) && !lyricsOnly;
-            UpdateNeonHostAlignment(user?.Id == "neonnights");
+            bool hasTheme = theme != SeasonalTheme.None || user != null;
+            bool themeInLyrics = lyricsOnly && _showThemeBehindLyrics && hasTheme;
+            bool themed = hasTheme && (!lyricsOnly || (themeInLyrics && bgOpacity > 0));
+            PlaceThemeForegroundBehindLyrics(themeInLyrics);
+            if (ThemeBackgroundLayer != null)
+            {
+                ThemeBackgroundLayer.Opacity = themeInLyrics ? Math.Clamp(bgOpacity, 0, 1) : 1;
+                ThemeBackgroundLayer.Visibility = themed ? Visibility.Visible : Visibility.Collapsed;
+            }
+            SetLayer(ThemeLyricsBase, themeInLyrics && themed);
+            SetLayer(ThemeLyricsShade, themeInLyrics && themed);
+            if (lyricsOnly && MainBorder != null)
+                MainBorder.Background = themeInLyrics ? Brushes.Transparent
+                    : new SolidColorBrush(Color.FromArgb((byte)(255 * Math.Clamp(bgOpacity, 0, 1)), 5, 5, 5));
+            bool fullCanvasTheme = user?.Id is "neonnights" or "citylights" or "cozycats";
+            UpdateAmbientHostAlignment(fullCanvasTheme);
 
             SetLayer(SeasonalLayer, themed);
             SetLayer(UserThemeGround, themed && user != null);
             SetLayer(UserThemeLayer, themed && user != null);
             if (UserThemeGround != null)
-                UserThemeGround.Margin = user?.Id == "neonnights"
+                UserThemeGround.Margin = fullCanvasTheme
                     ? new Thickness(-20) : new Thickness(-20, -20, -20, -SeasonGroundHeight);
             SetLayer(ChristmasSnowLayer, themed && theme == SeasonalTheme.Christmas);
             SetLayer(HalloweenGround, themed && theme == SeasonalTheme.Halloween);
@@ -429,6 +463,7 @@ namespace FrontLineOverlay
 
             bool veilOpen = SearchInputPanel?.Visibility == Visibility.Visible || FestivalHubPanel?.Visibility == Visibility.Visible;
             int groundZ = veilOpen ? 10 : 0;
+            if (ThemeBackgroundLayer != null) Panel.SetZIndex(ThemeBackgroundLayer, groundZ);
             if (ChristmasSnowLayer != null) Panel.SetZIndex(ChristmasSnowLayer, groundZ);
             if (HalloweenGround != null) Panel.SetZIndex(HalloweenGround, groundZ);
             if (NewYearGround != null) Panel.SetZIndex(NewYearGround, groundZ);
@@ -442,18 +477,16 @@ namespace FrontLineOverlay
             }
 
             if (MainBorder != null)
-                MainBorder.Padding = new Thickness(20); // The ground is decorative and must not move the menu.
+                MainBorder.Padding = new Thickness(20); 
 
             if (SeasonalLayer != null)
-                SeasonalLayer.Margin = new Thickness(0);
+                SeasonalLayer.Margin = themeInLyrics ? new Thickness(-20) : new Thickness(0);
 
             var veilMargin = themed ? new Thickness(-20, -20, -20, SeasonVeilBottom - SeasonGroundHeight) : new Thickness(-20);
             var veil = user?.PageVeil ?? PageVeil(theme);
             if (SearchInputPanel != null) { SearchInputPanel.Margin = veilMargin; SearchInputPanel.Background = veil; }
             if (FestivalHubPanel != null) { FestivalHubPanel.Margin = veilMargin; FestivalHubPanel.Background = veil; }
 
-            // Support actions follow the actual theme contrast, without affecting main buttons.
-            // The Christmas ground is light; all other currently supplied themes are dark.
             Brush supportColor = themed && theme == SeasonalTheme.Christmas
                 ? Brushes.Black : Brushes.White;
             if (BtnDonate != null) BtnDonate.Foreground = supportColor;
@@ -594,6 +627,8 @@ namespace FrontLineOverlay
             }
             return _appliedUserTheme?.Id switch
             {
+                "citylights" => Color.FromRgb(0x05, 0x0D, 0x1C),
+                "cozycats" => Color.FromRgb(0x18, 0x12, 0x1D),
                 "neonnights" => Color.FromRgb(0x18, 0x08, 0x12),
                 "backstage" => Color.FromRgb(0x1C, 0x1C, 0x1F),
                 "goldenedition" => Color.FromRgb(0x14, 0x0E, 0x07),
@@ -654,7 +689,6 @@ namespace FrontLineOverlay
                 pixels[i] = shaded.B;
                 pixels[i + 1] = shaded.G;
                 pixels[i + 2] = shaded.R;
-                // Preserve source alpha exactly, including anti-aliased edges.
             }
 
             var wb = new WriteableBitmap(w, h, bgra.DpiX, bgra.DpiY, PixelFormats.Bgra32, null);
@@ -757,7 +791,6 @@ namespace FrontLineOverlay
 
                 AlbumCoverImg.Source = GetThemeLogoBitmap(path, menu: true);
 
-                // Mostra a decoração do tema apenas quando a logo padrão está presente.
                 if (AlbumCoverImg.Source is BitmapSource logo)
                     UpdateLogoAdornSpace(logo.PixelWidth, logo.PixelHeight);
             }
@@ -899,7 +932,7 @@ namespace FrontLineOverlay
 
     internal static class LyricFonts
     {
-        public const string DefaultId = "segoe";
+        public const string DefaultId = "poppins";
 
         private static readonly (string Id, string Name, string Group, string File)[] Bundled =
         {
