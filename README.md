@@ -11,11 +11,11 @@
 <br>
 
 <a href="https://get.microsoft.com/installer/download/9P6LNJCL8ZCC?referrer=appbadge&cid=readme" target="_self">
-  <img src="https://get.microsoft.com/images/en-us%20dark.svg" height="55" alt="Get it from Microsoft Store"/>
+  <img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200" height="60" alt="Get it from Microsoft Store"/>
 </a>
 &nbsp;&nbsp;&nbsp;
 <a href="https://snapcraft.io/frontline-lyrics" target="_self">
-  <img src="https://snapcraft.io/en/dark/install.svg" height="55" alt="Get it from the Snap Store" />
+  <img src="https://snapcraft.io/en/dark/install.svg" width="200" height="60" alt="Get it from the Snap Store" />
 </a>
 
 <br><br>
