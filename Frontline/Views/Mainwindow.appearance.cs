@@ -477,7 +477,7 @@ namespace FrontLineOverlay
             }
 
             if (MainBorder != null)
-                MainBorder.Padding = new Thickness(20); 
+                MainBorder.Padding = new Thickness(20); // The ground is decorative and must not move the menu.
 
             if (SeasonalLayer != null)
                 SeasonalLayer.Margin = themeInLyrics ? new Thickness(-20) : new Thickness(0);
@@ -486,6 +486,7 @@ namespace FrontLineOverlay
             var veil = user?.PageVeil ?? PageVeil(theme);
             if (SearchInputPanel != null) { SearchInputPanel.Margin = veilMargin; SearchInputPanel.Background = veil; }
             if (FestivalHubPanel != null) { FestivalHubPanel.Margin = veilMargin; FestivalHubPanel.Background = veil; }
+
 
             Brush supportColor = themed && theme == SeasonalTheme.Christmas
                 ? Brushes.Black : Brushes.White;
@@ -547,7 +548,7 @@ namespace FrontLineOverlay
         {
             SeasonalTheme.Halloween => Color.FromRgb(160, 106, 224),
             SeasonalTheme.Christmas => Color.FromRgb(208, 228, 245),
-            SeasonalTheme.NewYear => Color.FromRgb(224, 197, 106),
+            SeasonalTheme.NewYear => Color.FromRgb(0xFF, 0xD2, 0x3F),
             _ => Color.FromRgb(255, 255, 255)
         };
 
@@ -570,6 +571,7 @@ namespace FrontLineOverlay
 
         private static Color ShadeLogoPixel(byte red, byte green, byte blue, Color themeColor, Color? backdrop, bool whiteHighlights)
         {
+
             double peak = Math.Max(red, Math.Max(green, blue)) / 255.0;
             double luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255.0;
             double light = 0.75 * peak + 0.25 * luminance;
@@ -583,6 +585,7 @@ namespace FrontLineOverlay
             }
             Color shaded = Color.FromRgb(Channel(themeColor.R), Channel(themeColor.G), Channel(themeColor.B));
             if (backdrop is not Color background) return shaded;
+
             double coverage = Math.Clamp((light - 0.08) / 0.20, 0.0, 1.0);
             coverage = coverage * coverage * (3.0 - 2.0 * coverage);
             byte Blend(byte dark, byte lit) => (byte)Math.Clamp(
@@ -605,9 +608,7 @@ namespace FrontLineOverlay
         {
             var seasonal = _appliedTheme ?? SeasonalTheme.None;
             if (seasonal == SeasonalTheme.NewYear)
-                return ThemeLogoGradient(
-                    (0xFFAE790E, 0.00), (0xFFE9B82F, 0.22), (0xFFFFDB55, 0.43),
-                    (0xFFFFF3BF, 0.52), (0xFFFFD449, 0.62), (0xFFCF981C, 0.83), (0xFFF2C64B, 1.00));
+                return new SolidColorBrush(Color.FromRgb(0xFF, 0xD2, 0x3F));
             if (seasonal == SeasonalTheme.Christmas)
                 return new SolidColorBrush(Color.FromRgb(0x16, 0x84, 0x3C));
             if (_appliedUserTheme?.Id == "goldenedition")
@@ -657,7 +658,8 @@ namespace FrontLineOverlay
             BitmapSource result;
             Brush logoBrush = ResolveLogoBrush();
             Color? backdrop = ResolveLogoBackdrop();
-            bool whiteHighlights = (_appliedTheme ?? SeasonalTheme.None) != SeasonalTheme.Christmas;
+            var logoSeason = _appliedTheme ?? SeasonalTheme.None;
+            bool whiteHighlights = logoSeason != SeasonalTheme.Christmas && logoSeason != SeasonalTheme.NewYear;
             if (logoBrush is LinearGradientBrush gradient)
                 result = TintBitmap(source, gradient, backdrop, whiteHighlights);
             else
