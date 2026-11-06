@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -70,7 +70,7 @@ namespace FrontLineOverlay
         private const int SkipIconDecodeWidth = 64;
         private const int MaxPythonRestarts = 5;
 
-        private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v1.5.0.html";
+        private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v1.6.0.html";
         private const string FeedbackFormUrl = "https://forms.gle/bwV1xeKncmGPATDaA";
         private const string StoreReviewUrl = "ms-windows-store://review/?ProductId=9P6LNJCL8ZCC";
 
@@ -95,7 +95,8 @@ namespace FrontLineOverlay
         private string _lyricsWaitTrackKey = "";
         private bool _lyricsWaitActive;
 
-        private double bgOpacity = 0.8;
+        private double bgOpacity = 1.0;
+        private bool _showThemeBehindLyrics = true;
         private bool _playerClock;
         private bool _syncingLangPicker;
         private bool keepOriginalWithTranslation = false;
@@ -550,6 +551,14 @@ namespace FrontLineOverlay
             ScheduleSave();
         }
 
+        private void ChkThemeBehindLyrics_Click(object sender, RoutedEventArgs e)
+        {
+            if (_loadingSettings) return;
+            _showThemeBehindLyrics = ChkThemeBehindLyrics.IsChecked == true;
+            ScheduleSave();
+            UpdateVisualState(isGhostMode);
+        }
+
         private void UpdateOpacityPreview()
         {
             if (OpacityPreviewOverlay == null) return;
@@ -797,6 +806,13 @@ namespace FrontLineOverlay
             TabSettingsApp.Content = SettingsText("GENERAL", "GERAL", "GENERAL", "UMUM");
             SettingsCloseButton.ToolTip = SettingsText("Close settings", "Fechar configurações", "Cerrar ajustes", "Tutup pengaturan");
             SettingsOpacityDescription.Text = SettingsText("Background outside the window", "Fundo fora da janela", "Fondo fuera de la ventana", "Latar di luar jendela");
+            LblThemeBehindLyrics.Text = SettingsText("Use theme behind lyrics", "Usar tema no fundo das letras", "Usar tema detrás de las letras", "Gunakan tema di belakang lirik");
+            LblThemeBehindLyricsHint.Text = SettingsText(
+                "Show the selected theme behind lyrics. Opacity controls the scenery.",
+                "Exibe o tema selecionado atrás das letras. A opacidade controla o cenário.",
+                "Muestra el tema seleccionado detrás de las letras. La opacidad controla el fondo.",
+                "Tampilkan tema terpilih di belakang lirik. Opasitas mengatur latar.");
+            ChkThemeBehindLyrics.ToolTip = LblThemeBehindLyricsHint.Text;
             SettingsFontDescription.Text = SettingsText("Keep the highlight readable", "Mantenha o destaque legível", "Mantén el texto destacado legible", "Jaga sorotan tetap terbaca");
             SettingsAdvancedTypography.Header = SettingsText("Advanced typography", "Tipografia avançada", "Tipografía avanzada", "Tipografi lanjutan");
             SettingsBold.Content = AppearanceText("Bold");
@@ -1288,6 +1304,7 @@ namespace FrontLineOverlay
 
             RestoreFontAndAuto();
             InitAppearance();
+            InitExpandedSettingsTelemetry();
             InitSearchHistory();
             InitFestivalMode();
 
@@ -1338,8 +1355,6 @@ namespace FrontLineOverlay
 
         private void UpdateLyricsWaitHint(string status, string artist, string song, bool festivalMode)
         {
-            // LISTENING only counts as a lyrics lookup if SMTC already provided
-            // a song. Pure audio recognition should not falsely blame LRCLIB.
             bool searching = status == "SEARCHING";
             bool identifiedListening = status == "LISTENING"
                 && !string.IsNullOrWhiteSpace(song)
@@ -1609,6 +1624,7 @@ namespace FrontLineOverlay
             UpdateShortcutButtonText();
             ApplyAppearanceLanguage();
             ApplyTelemetryLanguage();
+            UpdateTelemetrySettingsDisclosure();
             SyncLanguagePicker(lang);
             UpdateSettingsPresentation();
             ApplyButtonTooltips(t);
@@ -2633,7 +2649,7 @@ namespace FrontLineOverlay
         {
             try
             {
-                Process.Start(new ProcessStartInfo("https://buymeacoffee.com/juliocax/frontline-lyrics-1-5-0") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo("https://buymeacoffee.com/juliocax/frontline-lyrics-1-6") { UseShellExecute = true });
             }
             catch (Exception ex)
             {
@@ -2857,7 +2873,9 @@ namespace FrontLineOverlay
                 string lang = AppSettings.GetString("AppLanguage", "en");
                 if (!uiStrings.ContainsKey(lang)) lang = "en";
                 currentAppLanguage = lang;
-                double opacity = AppSettings.GetDouble("BgOpacity", 0.8);
+                _showThemeBehindLyrics = AppSettings.GetBool("ShowThemeBehindLyrics", true);
+                ChkThemeBehindLyrics.IsChecked = _showThemeBehindLyrics;
+                double opacity = AppSettings.GetDouble("BgOpacity", 1.0);
                 if (SldBgOpacity != null)
                     SldBgOpacity.Value = Math.Clamp(opacity, SldBgOpacity.Minimum, SldBgOpacity.Maximum);
                 else
@@ -2977,6 +2995,7 @@ namespace FrontLineOverlay
                 if (SldFontSize != null)
                     AppSettings.SetDouble("FontSize", SldFontSize.Value);
                 AppSettings.SetDouble("BgOpacity", SldBgOpacity != null ? SldBgOpacity.Value : bgOpacity);
+                AppSettings.SetBool("ShowThemeBehindLyrics", _showThemeBehindLyrics);
                 AppSettings.SetDouble("LyricLineCount", _lyricLineCount);
                 AppSettings.SetString("LyricAlignment", _lyricAlignment);
                 AppSettings.SetBool("AutoMode", _wantAuto);
