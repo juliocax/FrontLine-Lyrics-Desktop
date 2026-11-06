@@ -2,9 +2,6 @@ import pytest
 
 from engine import lyrics
 
-
-# clean_lrclib_query
-
 @pytest.mark.parametrize("artist,song,expected", [
     ("Drake feat. Rihanna", "Take Care (Official Audio)", ("Drake", "Take Care")),
     ("Artist A & Artist B", "Song Title - Live", ("Artist A", "Song Title")),
@@ -27,7 +24,7 @@ def test_clean_lrclib_query_falls_back_to_raw_when_everything_is_stripped():
 @pytest.mark.parametrize("query,candidate,expected", [
     ("Drake", "drake", True),
     ("The Weeknd", "the weeknd", True),
-    ("Beyonce", "Beyonce Knowles", True),  # substring-ish / shared long word
+    ("Beyonce", "Beyonce Knowles", False),  # strict identity, not substring
     ("Foo", "Bar", False),
     ("", "Anything", False),
 ])
@@ -35,10 +32,8 @@ def test_names_are_close(query, candidate, expected):
     assert lyrics.names_are_close(query, candidate) is expected
 
 
-def test_names_are_close_does_not_normalize_accents():
-    # Documents current behavior: "Beyonce" vs "Beyoncé" don't match because
-    # accents aren't stripped before comparing. Worth knowing if lyric
-    # matching seems to miss accented artist/track names.
+def test_names_are_close_normalizes_accents_but_not_extra_names():
+    assert lyrics.names_are_close("Beyonce", "Beyoncé") is True
     assert lyrics.names_are_close("Beyonce", "Beyoncé Knowles") is False
 
 
@@ -105,7 +100,8 @@ def test_pick_lrclib_search_hit_returns_none_when_nothing_matches():
 def test_fetch_lyrics_lrclib_uses_exact_get_endpoint(requests_mock):
     requests_mock.get(
         "https://lrclib.net/api/get",
-        json={"syncedLyrics": "[00:10.00]primeira linha\n"},
+        json={"artistName": "Some Artist", "trackName": "Some Song",
+              "syncedLyrics": "[00:10.00]primeira linha\n"},
     )
     result = lyrics.fetch_lyrics_lrclib("Some Artist", "Some Song")
     assert result[0]["text"] == "primeira linha"
@@ -139,7 +135,8 @@ def test_fetch_lyrics_from_candidates_tries_pairs_in_order(requests_mock):
         "https://lrclib.net/api/get",
         [
             {"status_code": 404},
-            {"json": {"syncedLyrics": "[00:01.00]second pair hit\n"}},
+            {"json": {"artistName": "SMTC Artist", "trackName": "SMTC Title",
+                      "syncedLyrics": "[00:01.00]second pair hit\n"}},
         ],
     )
     requests_mock.get("https://lrclib.net/api/search", json=[])
@@ -152,3 +149,28 @@ def test_fetch_lyrics_from_candidates_tries_pairs_in_order(requests_mock):
 
 def test_fetch_lyrics_from_candidates_skips_empty_pairs():
     assert lyrics.fetch_lyrics_from_candidates([("", ""), ("", "")]) is None
+
+
+@pytest.mark.parametrize("candidate_artist,candidate_title", [
+    ("Breakdown", "Don't Give Up"),
+    ("Lorde", "Ribs"),
+    ("sombr", "Ribs and Bones"),
+])
+def test_lrclib_rejects_wrong_track_or_artist(candidate_artist, candidate_title):
+    hit = {"artistName": candidate_artist, "trackName": candidate_title,
+           "syncedLyrics": "[00:01.00]hello"}
+    assert lyrics.pick_lrclib_search_hit([hit], "sombr", "Ribs") is None
+
+
+def test_lrclib_accepts_live_suffix():
+    hit = {"artistName": "sombr", "trackName": "Ribs (Live)",
+           "syncedLyrics": "[00:01.00]hello"}
+    assert lyrics.pick_lrclib_search_hit([hit], "sombr", "Ribs") == hit
+
+
+def test_lrclib_get_rejects_mismatched_track(requests_mock):
+    requests_mock.get("https://lrclib.net/api/get", json={
+        "artistName": "Breakdown", "trackName": "Don't Give Up",
+        "syncedLyrics": "[00:01.00]hello"})
+    requests_mock.get("https://lrclib.net/api/search", json=[])
+    assert lyrics.fetch_lyrics_lrclib("sombr", "Ribs") is None
