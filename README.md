@@ -8,10 +8,17 @@
 ![Python](https://img.shields.io/badge/Backend-Python-3776AB?logo=python&logoColor=white)
 [![Contributors](https://img.shields.io/badge/Contributors-2-orange)](CONTRIBUTORS.md)
 
+<br>
+
 <a href="https://get.microsoft.com/installer/download/9P6LNJCL8ZCC?referrer=appbadge&cid=readme" target="_self">
-  <img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/>
+  <img src="https://get.microsoft.com/images/en-us%20dark.svg" height="55" alt="Get it from Microsoft Store"/>
+</a>
+&nbsp;&nbsp;&nbsp;
+<a href="https://snapcraft.io/frontline-lyrics" target="_self">
+  <img src="https://snapcraft.io/en/dark/install.svg" height="55" alt="Get it from the Snap Store" />
 </a>
 
+<br><br>
 
 https://github.com/user-attachments/assets/0a6f3278-49b2-43f0-9004-6709d65f74b9
 
