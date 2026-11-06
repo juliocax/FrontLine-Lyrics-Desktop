@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -70,7 +70,7 @@ namespace FrontLineOverlay
         private const int SkipIconDecodeWidth = 64;
         private const int MaxPythonRestarts = 5;
 
-        private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v1.5.0.html";
+        private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v1.6.0.html";
         private const string FeedbackFormUrl = "https://forms.gle/bwV1xeKncmGPATDaA";
         private const string StoreReviewUrl = "ms-windows-store://review/?ProductId=9P6LNJCL8ZCC";
 
@@ -95,7 +95,8 @@ namespace FrontLineOverlay
         private string _lyricsWaitTrackKey = "";
         private bool _lyricsWaitActive;
 
-        private double bgOpacity = 0.8;
+        private double bgOpacity = 1.0;
+        private bool _showThemeBehindLyrics = true;
         private bool _playerClock;
         private bool _syncingLangPicker;
         private bool keepOriginalWithTranslation = false;
@@ -134,6 +135,25 @@ namespace FrontLineOverlay
         private bool _shuttingDown;
         private int _pythonRestartCount;
         private string? _lastFullLyricsJson;
+        private List<LyricLine>? _visibleLyrics;
+        private int _currentLyricIndex = -1;
+        private int _lyricLineCount = 3;
+        private readonly List<TextBlock> _readingLines = new();
+        private int _readingHighlighted = -1;
+        private int _readingLastScrolled = -1;
+        private bool _readingFollowing = true;
+        private DateTime _readingManualUntil = DateTime.MinValue;
+
+        private string _lyricAlignment = "center";
+
+        private string _settingsPreferredTranslation = "original";
+        private string _settingsCurrentTranslation = "original";
+        private string _settingsTranslationKey = "";
+        private string? _settingsPendingTranslation;
+        private bool _settingsTranslationStarted;
+        private bool _settingsTranslationFailed;
+        private DateTime _settingsTranslationRequestedUtc;
+
         private string? _autoHoldKey;
         private DateTime _autoHoldUntilUtc = DateTime.MinValue;
 
@@ -527,7 +547,16 @@ namespace FrontLineOverlay
         {
             bgOpacity = e.NewValue;
             if (_loadingSettings) return;
-            UpdateOpacityPreview();
+            if (IsLoaded) UpdateVisualState(isGhostMode);
+            ScheduleSave();
+        }
+
+        private void ChkThemeBehindLyrics_Click(object sender, RoutedEventArgs e)
+        {
+            if (_loadingSettings) return;
+            _showThemeBehindLyrics = ChkThemeBehindLyrics.IsChecked == true;
+            ScheduleSave();
+            UpdateVisualState(isGhostMode);
         }
 
         private void UpdateOpacityPreview()
@@ -562,6 +591,245 @@ namespace FrontLineOverlay
             _opacityPreviewTimer.Start();
         }
 
+        private void SettingsPopup_Opened(object? sender, EventArgs e)
+        {
+            UpdateSettingsPresentation();
+            SyncSettingsSegments();
+            SyncSettingsTypography();
+            ShowSettingsTab(_settingsTab);
+            UpdateVisualState(false);
+            RepositionSettingsPopup();
+            SettingsCloseButton.Focus();
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct SettingsMonitorInfo
+        {
+            public int Size;
+            public RECT Monitor;
+            public RECT Work;
+            public uint Flags;
+        }
+
+        [DllImport("user32.dll", EntryPoint = "MonitorFromWindow")]
+        private static extern IntPtr SettingsMonitorFromWindow(IntPtr hwnd, uint flags);
+
+        [DllImport("user32.dll", EntryPoint = "GetMonitorInfoW", ExactSpelling = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool SettingsGetMonitorInfo(IntPtr monitor, ref SettingsMonitorInfo info);
+
+        private CustomPopupPlacement[] PlaceSettingsPopup(Size popupSize, Size targetSize, Point offset)
+        {
+            var info = new SettingsMonitorInfo { Size = Marshal.SizeOf<SettingsMonitorInfo>() };
+            IntPtr monitor = SettingsMonitorFromWindow(new WindowInteropHelper(this).Handle, 2);
+            if (monitor == IntPtr.Zero || !SettingsGetMonitorInfo(monitor, ref info))
+            {
+                // A conservative fallback keeps the panel inside the menu's right edge.
+                return new[] { new CustomPopupPlacement(
+                    new Point(Math.Max(0, targetSize.Width - popupSize.Width), 0), PopupPrimaryAxis.None) };
+            }
+
+            Point origin = MainBorder.PointToScreen(new Point(0, 0));
+            DpiScale dpi = VisualTreeHelper.GetDpi(MainBorder);
+            // WPF invokes this callback with device-space bounds, and consumes the
+            // returned displacement in that same screen space. Do not scale sizes twice.
+            double desiredX = origin.X + targetSize.Width - 10.0 * dpi.DpiScaleX;
+            double desiredY = origin.Y;
+            double rightLimit = Math.Max(info.Work.Left, info.Work.Right - popupSize.Width);
+            double bottomLimit = Math.Max(info.Work.Top, info.Work.Bottom - popupSize.Height);
+            double x = Math.Clamp(desiredX, info.Work.Left, rightLimit);
+            double y = Math.Clamp(desiredY, info.Work.Top, bottomLimit);
+
+            // Prefer the existing right-hand attachment. As space runs out, slide
+            // left over the menu instead of clipping the panel or flipping sides.
+            return new[] { new CustomPopupPlacement(
+                new Point(x - origin.X, y - origin.Y), PopupPrimaryAxis.None) };
+        }
+
+        private void RepositionSettingsPopup()
+        {
+            if (SettingsPopup?.IsOpen != true) return;
+            // WPF popups do not automatically follow their owner's movement.
+            double offset = SettingsPopup.HorizontalOffset;
+            SettingsPopup.SetCurrentValue(Popup.HorizontalOffsetProperty, offset + 0.1);
+            SettingsPopup.SetCurrentValue(Popup.HorizontalOffsetProperty, offset);
+        }
+
+        private void SettingsPanel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            // Empty settings surfaces must not bubble into the owner's DragMove.
+            // Child controls keep their own input handling; only the main app body drags.
+            e.Handled = true;
+        }
+
+        private void CloseSettings_Click(object sender, RoutedEventArgs e)
+        {
+            BtnMenu.IsChecked = false;
+        }
+
+        private void SettingsPopup_PreviewKeyDown(object sender, KeyEventArgs e)
+        {
+            // Let shortcut capture consume Escape to cancel its own edit first.
+            if (e.Key != Key.Escape || isCapturingHotkey) return;
+            BtnMenu.IsChecked = false;
+            e.Handled = true;
+        }
+
+        private void SettingsLineChoice_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton button && button.Tag is string tag)
+                SelectCombo(CmbLyricLines, tag);
+            SyncSettingsSegments();
+        }
+
+        private void SettingsAlignmentChoice_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton button && button.Tag is string tag)
+                SelectCombo(CmbLyricAlignment, tag);
+            SyncSettingsSegments();
+        }
+
+        private void SettingsLanguageChoice_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton button && button.Tag is string language)
+                ApplyUILanguage(language);
+        }
+
+        private void SyncSettingsSegments()
+        {
+            if (SettingsLinesSegment == null || SettingsAlignmentSegment == null || SettingsLanguageSegment == null) return;
+            foreach (ToggleButton button in SettingsLinesSegment.Children)
+            {
+                button.IsChecked = button.Tag?.ToString() == _lyricLineCount.ToString();
+                button.ToolTip = button.Content;
+            }
+            SettingsFullLinesChoice.IsChecked = _lyricLineCount == 0;
+            foreach (ToggleButton button in SettingsAlignmentSegment.Children)
+            {
+                string alignment = button.Tag?.ToString() ?? "center";
+                button.IsChecked = alignment == _lyricAlignment;
+                button.ToolTip = LocalizedAlignment(currentAppLanguage, alignment);
+            }
+            foreach (ToggleButton button in SettingsLanguageSegment.Children)
+                button.IsChecked = button.Tag?.ToString() == currentAppLanguage;
+        }
+
+        private void SyncSettingsTypography()
+        {
+            if (SettingsBold == null || SettingsItalic == null) return;
+            SettingsBold.IsChecked = LyricWeights.Resolve(_lyricWeightId).ToOpenTypeWeight() >= FontWeights.Bold.ToOpenTypeWeight();
+            SettingsItalic.IsChecked = LyricStyles.Resolve(_lyricStyleId) == FontStyles.Italic;
+        }
+
+        private void SettingsTypography_Click(object sender, RoutedEventArgs e)
+        {
+            // Resolve IDs from the installed catalogs; keep advanced Windows weights available.
+            if (sender == SettingsBold)
+            {
+                var target = SettingsBold.IsChecked == true ? FontWeights.Bold : FontWeights.Normal;
+                foreach (var weight in LyricWeights.All)
+                    if (weight.Weight == target) { _lyricWeightId = weight.Id; break; }
+            }
+            else
+            {
+                var target = SettingsItalic.IsChecked == true ? FontStyles.Italic : FontStyles.Normal;
+                foreach (var style in LyricStyles.All)
+                    if (style.Style == target) { _lyricStyleId = style.Id; break; }
+            }
+            ApplyLyricType();
+            ScheduleSave();
+        }
+
+        private void RequestSettingsTranslation(string artist, string song)
+        {
+            _settingsTranslationKey = $"{artist.Trim()}|{song.Trim()}|{_settingsPreferredTranslation}";
+            _settingsPendingTranslation = _settingsPreferredTranslation;
+            _settingsTranslationStarted = false;
+            _settingsTranslationFailed = false;
+            _settingsTranslationRequestedUtc = DateTime.UtcNow;
+            SendCommand("TRANSLATE", _settingsPreferredTranslation);
+        }
+
+        private void UpdateSettingsTranslation(string status, string language, bool translating,
+            string error, string artist, string song, bool hasLyrics)
+        {
+            _settingsCurrentTranslation = language;
+            if (status != "SYNCED")
+            {
+                _settingsPendingTranslation = null;
+                _settingsTranslationStarted = false;
+                _settingsTranslationFailed = false;
+                _settingsTranslationKey = "";
+            }
+            if (_settingsPendingTranslation != null)
+            {
+                if (translating) _settingsTranslationStarted = true;
+                bool success = language == _settingsPendingTranslation && !translating;
+                bool failed = _settingsTranslationStarted && !translating && error == _settingsPendingTranslation;
+                bool timedOut = DateTime.UtcNow - _settingsTranslationRequestedUtc > TimeSpan.FromSeconds(90);
+                if (success || failed || timedOut)
+                {
+                    _settingsTranslationFailed = failed || timedOut;
+                    _settingsPendingTranslation = null;
+                    _settingsTranslationStarted = false;
+                }
+            }
+            if (status == "SYNCED" && hasLyrics && _settingsPendingTranslation == null && _settingsPreferredTranslation != language)
+            {
+                string key = $"{artist.Trim()}|{song.Trim()}|{_settingsPreferredTranslation}";
+                if (_settingsTranslationKey != key) RequestSettingsTranslation(artist, song);
+            }
+            SyncSettingsTranslation();
+        }
+
+        private void SyncSettingsTranslation()
+        {
+            if (SettingsTranslationNotice == null) return;
+            foreach (var choice in new[] { TransOriginal, TransRomanized, TransEn, TransEs, TransFr, TransPt })
+                choice.IsChecked = choice.Tag?.ToString() == _settingsPreferredTranslation;
+            bool pending = _settingsPendingTranslation != null;
+            SettingsTranslationNotice.Visibility = pending || _settingsTranslationFailed ? Visibility.Visible : Visibility.Collapsed;
+            SettingsTranslationProgress.Visibility = pending ? Visibility.Visible : Visibility.Collapsed;
+            SettingsTranslationNoticeText.Text = _settingsTranslationFailed && !pending
+                ? SettingsText("Translation failed. Try again.", "Não foi possível traduzir. Tente novamente.", "No fue posible traducir. Inténtalo de nuevo.", "Terjemahan gagal. Coba lagi.")
+                : SettingsText("Translating…", "Traduzindo…", "Traduciendo…", "Menerjemahkan…");
+        }
+
+        private string SettingsText(string en, string pt, string es, string id) =>
+            currentAppLanguage switch { "pt" => pt, "es" => es, "id" => id, _ => en };
+
+        private void UpdateSettingsPresentation()
+        {
+            if (SettingsCloseButton == null) return;
+            TabSettingsLyrics.Content = SettingsText("LYRICS", "LETRAS", "LETRAS", "LIRIK");
+            TabSettingsTranslate.Content = SettingsText("TRANSLATION", "TRADUÇÃO", "TRADUCCIÓN", "TERJEMAH");
+            TabSettingsApp.Content = SettingsText("GENERAL", "GERAL", "GENERAL", "UMUM");
+            SettingsCloseButton.ToolTip = SettingsText("Close settings", "Fechar configurações", "Cerrar ajustes", "Tutup pengaturan");
+            SettingsOpacityDescription.Text = SettingsText("Background outside the window", "Fundo fora da janela", "Fondo fuera de la ventana", "Latar di luar jendela");
+            LblThemeBehindLyrics.Text = SettingsText("Use theme behind lyrics", "Usar tema no fundo das letras", "Usar tema detrás de las letras", "Gunakan tema di belakang lirik");
+            LblThemeBehindLyricsHint.Text = SettingsText(
+                "Show the selected theme behind lyrics. Opacity controls the scenery.",
+                "Exibe o tema selecionado atrás das letras. A opacidade controla o cenário.",
+                "Muestra el tema seleccionado detrás de las letras. La opacidad controla el fondo.",
+                "Tampilkan tema terpilih di belakang lirik. Opasitas mengatur latar.");
+            ChkThemeBehindLyrics.ToolTip = LblThemeBehindLyricsHint.Text;
+            SettingsFontDescription.Text = SettingsText("Keep the highlight readable", "Mantenha o destaque legível", "Mantén el texto destacado legible", "Jaga sorotan tetap terbaca");
+            SettingsAdvancedTypography.Header = SettingsText("Advanced typography", "Tipografia avançada", "Tipografía avanzada", "Tipografi lanjutan");
+            SettingsBold.Content = AppearanceText("Bold");
+            SettingsItalic.Content = AppearanceText("Italic");
+            SettingsFullLinesChoice.Content = SettingsText("Full", "Inteira", "Completa", "Penuh");
+            TransOriginal.Content = "Original";
+            TransRomanized.Content = SettingsText("Romanization", "Romanização", "Romanización", "Romanisasi");
+            TransEn.Content = "English";
+            TransEs.Content = "Español";
+            TransFr.Content = "Français";
+            TransPt.Content = "Português";
+            SettingsTranslationNoticeText.Text = SettingsText("Translating…", "Traduzindo…", "Traduciendo…", "Menerjemahkan…");
+            SyncSettingsSegments();
+            SyncSettingsTypography();
+            SyncSettingsTranslation();
+        }
+
         private void SettingsTab_Click(object sender, RoutedEventArgs e)
         {
             if (sender is ToggleButton tab)
@@ -578,7 +846,9 @@ namespace FrontLineOverlay
             if (SettingsPanelLyrics != null) SettingsPanelLyrics.Visibility = id == "lyrics" ? Visibility.Visible : Visibility.Collapsed;
             if (SettingsPanelTranslate != null) SettingsPanelTranslate.Visibility = id == "translate" ? Visibility.Visible : Visibility.Collapsed;
             if (SettingsPanelApp != null) SettingsPanelApp.Visibility = id == "app" ? Visibility.Visible : Visibility.Collapsed;
-            if (SettingsOpacityBlock != null) SettingsOpacityBlock.Visibility = id == "lyrics" ? Visibility.Visible : Visibility.Collapsed;
+            if (SettingsLyricsScroll != null) SettingsLyricsScroll.Visibility = id == "lyrics" ? Visibility.Visible : Visibility.Collapsed;
+            if (SettingsTranslateScroll != null) SettingsTranslateScroll.Visibility = id == "translate" ? Visibility.Visible : Visibility.Collapsed;
+            if (SettingsAppScroll != null) SettingsAppScroll.Visibility = id == "app" ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void SetSettingsPreviewMode(bool previewing)
@@ -626,6 +896,201 @@ namespace FrontLineOverlay
             _opacityPreviewTimer.Stop();
             OpacityPreviewOverlay.Visibility = Visibility.Collapsed;
             SetSettingsPreviewMode(false);
+            BtnMenu.IsChecked = false;
+            isCapturingHotkey = false;
+            UpdateShortcutButtonText();
+            UpdateVisualState(isGhostMode);
+            BtnMenu.Focus();
+        }
+
+        private static string LocalizedAlignment(string language, string alignment) =>
+            language switch
+            {
+                "pt" => alignment switch { "left" => "Esquerda", "right" => "Direita", _ => "Centro" },
+                "es" => alignment switch { "left" => "Izquierda", "right" => "Derecha", _ => "Centro" },
+                "id" => alignment switch { "left" => "Kiri", "right" => "Kanan", _ => "Tengah" },
+                _ => alignment switch { "left" => "Left", "right" => "Right", _ => "Center" }
+            };
+
+        private void UpdateLyricSettingsLanguage()
+        {
+            if (LblLyricLinesTitle == null || LblLyricAlignmentTitle == null) return;
+            LblLyricLinesTitle.Text = currentAppLanguage switch
+            {
+                "pt" => "LINHAS DA LETRA", "es" => "LÍNEAS DE LETRA", "id" => "BARIS LIRIK", _ => "LYRIC LINES"
+            };
+            LblLyricAlignmentTitle.Text = currentAppLanguage switch
+            {
+                "pt" => "ALINHAMENTO", "es" => "ALINEACIÓN", "id" => "PERATAAN", _ => "ALIGNMENT"
+            };
+            if (CmbLyricLines != null)
+                foreach (ComboBoxItem item in CmbLyricLines.Items)
+                    if (item.Tag?.ToString() == "0")
+                        item.Content = currentAppLanguage switch
+                        {
+                            "pt" => "Inteira", "es" => "Completa", "id" => "Penuh", _ => "Full"
+                        };
+            if (CmbLyricAlignment != null)
+            {
+                foreach (ComboBoxItem item in CmbLyricAlignment.Items)
+                    item.Content = LocalizedAlignment(currentAppLanguage, item.Tag?.ToString() ?? "center");
+            }
+        }
+
+        private void CmbLyricLines_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbLyricLines?.SelectedItem is not ComboBoxItem selected ||
+                !int.TryParse(selected.Tag?.ToString(), out int count)) return;
+            _lyricLineCount = count is 0 or 1 or 3 or 5 ? count : 3;
+            SyncSettingsSegments();
+            RefreshLyricDisplay();
+            _readingFollowing = true;
+            _readingManualUntil = DateTime.MinValue;
+            if (!_loadingSettings) ScheduleSave();
+        }
+
+        private void CmbLyricAlignment_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (CmbLyricAlignment?.SelectedItem is not ComboBoxItem selected) return;
+            string value = selected.Tag?.ToString() ?? "center";
+            _lyricAlignment = value is "left" or "right" ? value : "center";
+            SyncSettingsSegments();
+            RefreshLyricDisplay();
+            if (!_loadingSettings) ScheduleSave();
+        }
+
+        private void RefreshLyricDisplay()
+        {
+            if (LblCurrent == null || LblPrevious == null || LblNext == null ||
+                LblPrevious2 == null || LblNext2 == null || LblCurrentOriginal == null) return;
+
+            TextAlignment align = _lyricAlignment switch
+            {
+                "left" => TextAlignment.Left, "right" => TextAlignment.Right, _ => TextAlignment.Center
+            };
+            foreach (TextBlock label in new[] { LblPrevious2, LblPrevious, LblCurrent,
+                         LblCurrentOriginal, LblNext, LblNext2 })
+            {
+                label.TextAlignment = align;
+                label.HorizontalAlignment = HorizontalAlignment.Stretch;
+            }
+
+            if (LyricsReadingView != null)
+            {
+                bool fullReading = _lyricLineCount == 0 && !isManualSyncMode &&
+                    currentAppStatus != "IDLE" && currentAppStatus != "LISTENING" &&
+                    currentAppStatus != "SEARCHING" && _visibleLyrics?.Count > 0;
+                LyricsReadingView.Visibility = fullReading ? Visibility.Visible : Visibility.Collapsed;
+                if (fullReading)
+                {
+                    LyricsNormalView.Visibility = Visibility.Collapsed;
+                    UpdateReadingLineStyles();
+                }
+                else if (!isManualSyncMode && currentAppStatus != "LISTENING" && currentAppStatus != "SEARCHING")
+                    LyricsNormalView.Visibility = Visibility.Visible;
+            }
+            foreach (var label in _readingLines) label.TextAlignment = align;
+
+            bool showSides = _lyricLineCount >= 3;
+            bool showOuter = _lyricLineCount == 5;
+            LblPrevious.Visibility = showSides ? Visibility.Visible : Visibility.Collapsed;
+            LblNext.Visibility = showSides ? Visibility.Visible : Visibility.Collapsed;
+            LblPrevious2.Visibility = showOuter ? Visibility.Visible : Visibility.Collapsed;
+            LblNext2.Visibility = showOuter ? Visibility.Visible : Visibility.Collapsed;
+
+            if (showOuter && _visibleLyrics != null && _currentLyricIndex >= 0)
+            {
+                int index = _currentLyricIndex;
+                LblPrevious2.Text = index >= 2 && index - 2 < _visibleLyrics.Count
+                    ? _visibleLyrics[index - 2].Text : "";
+                LblNext2.Text = index + 2 < _visibleLyrics.Count
+                    ? _visibleLyrics[index + 2].Text : "";
+            }
+            else
+            {
+                LblPrevious2.Text = "";
+                LblNext2.Text = "";
+            }
+        }
+
+        // Full lyrics: display-only ScrollViewer separate from manual synchronization ListBox.
+        private void RebuildReadingLines()
+        {
+            if (LyricsReadingPanel == null) return;
+            LyricsReadingPanel.Children.Clear();
+            _readingLines.Clear();
+            _readingHighlighted = -1;
+            _readingLastScrolled = -1;
+            if (_visibleLyrics == null) return;
+            foreach (var lyric in _visibleLyrics)
+            {
+                var line = new TextBlock
+                {
+                    Text = lyric.Text,
+                    TextWrapping = TextWrapping.Wrap,
+                    TextAlignment = _lyricAlignment == "left" ? TextAlignment.Left :
+                        _lyricAlignment == "right" ? TextAlignment.Right : TextAlignment.Center,
+                    FontSize = Math.Max(12, SldFontSize?.Value ?? 26) * 0.72,
+                    Foreground = new SolidColorBrush(Color.FromRgb(160, 160, 160)),
+                    FontWeight = FontWeights.Normal,
+                    Margin = new Thickness(0, 5, 0, 5)
+                };
+                _readingLines.Add(line);
+                LyricsReadingPanel.Children.Add(line);
+            }
+            _readingFollowing = true;
+            _readingManualUntil = DateTime.MinValue;
+            if (BtnResumeLyricsFollow != null) BtnResumeLyricsFollow.Visibility = Visibility.Collapsed;
+            UpdateReadingLineStyles();
+        }
+
+        private void UpdateReadingLineStyles()
+        {
+            if (_readingLines.Count == 0) return;
+            int idx = _currentLyricIndex;
+            if (idx < 0 || idx >= _readingLines.Count) return;
+            if (_readingHighlighted != idx)
+            {
+                if (_readingHighlighted >= 0 && _readingHighlighted < _readingLines.Count)
+                {
+                    var old = _readingLines[_readingHighlighted];
+                    old.Foreground = new SolidColorBrush(Color.FromRgb(160, 160, 160));
+                    old.FontWeight = FontWeights.Normal;
+                }
+                var current = _readingLines[idx];
+                current.Foreground = LblCurrent.Foreground;
+                current.FontWeight = FontWeights.Bold;
+                _readingHighlighted = idx;
+            }
+            if (_readingFollowing && _readingLastScrolled != idx && DateTime.UtcNow >= _readingManualUntil &&
+                LyricsReadingView?.Visibility == Visibility.Visible)
+            {
+                _readingLastScrolled = idx;
+                var target = _readingLines[idx];
+                target.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (!target.IsLoaded || !_readingFollowing || LyricsReadingScroll == null) return;
+                    var pos = target.TransformToAncestor(LyricsReadingPanel).Transform(new Point(0, 0));
+                    LyricsReadingScroll.ScrollToVerticalOffset(Math.Max(0,
+                        pos.Y - (LyricsReadingScroll.ViewportHeight - target.ActualHeight) / 2));
+                }), DispatcherPriority.Background);
+            }
+        }
+
+        private void LyricsReadingScroll_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            _readingFollowing = false;
+            _readingManualUntil = DateTime.MaxValue; // Resume only when user requests it.
+            BtnResumeLyricsFollow.Visibility = Visibility.Visible;
+        }
+
+        private void BtnResumeLyricsFollow_Click(object sender, RoutedEventArgs e)
+        {
+            _readingFollowing = true;
+            _readingLastScrolled = -1;
+            _readingManualUntil = DateTime.MinValue;
+            BtnResumeLyricsFollow.Visibility = Visibility.Collapsed;
+            UpdateReadingLineStyles();
         }
 
         private void SldFontSize_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -640,10 +1105,13 @@ namespace FrontLineOverlay
             // Direct font sizes keep wrapping based on the real available width.
             double scale = Math.Max(0.1, fontSize / 26.0);
             if (LblCurrent != null) LblCurrent.FontSize = fontSize;
+            if (LblPrevious2 != null) LblPrevious2.FontSize = 14 * scale;
+            if (LblNext2 != null) LblNext2.FontSize = 14 * scale;
             if (LblPrevious != null) LblPrevious.FontSize = 14 * scale;
             if (LblNext != null) LblNext.FontSize = 14 * scale;
             if (LblCurrentOriginal != null) LblCurrentOriginal.FontSize = 14 * scale;
             if (FullLyricsList != null) FullLyricsList.FontSize = 16 * scale;
+            foreach (var line in _readingLines) line.FontSize = Math.Max(12, fontSize * 0.72);
             UpdateSupportBarLayout();
         }
 
@@ -827,14 +1295,16 @@ namespace FrontLineOverlay
 
             _welcomeWasShownAtLaunch = Telemetry.WelcomeShown;
             InitializeComponent();
+            SettingsPopup.CustomPopupPlacementCallback = PlaceSettingsPopup;
             this.StateChanged += MainWindow_StateChanged;
             Loaded += MainWindow_Loaded;
-            LocationChanged += (_, _) => ScheduleSave();
-            SizeChanged += (_, _) => { ScheduleSave(); UpdateSupportBarLayout(); };
+            LocationChanged += (_, _) => { ScheduleSave(); RepositionSettingsPopup(); };
+            SizeChanged += (_, _) => { ScheduleSave(); UpdateSupportBarLayout(); RepositionSettingsPopup(); };
             _saveTimer.Tick += (_, _) => { _saveTimer.Stop(); PersistSettings(); };
 
             RestoreFontAndAuto();
             InitAppearance();
+            InitExpandedSettingsTelemetry();
             InitSearchHistory();
             InitFestivalMode();
 
@@ -885,8 +1355,6 @@ namespace FrontLineOverlay
 
         private void UpdateLyricsWaitHint(string status, string artist, string song, bool festivalMode)
         {
-            // LISTENING only counts as a lyrics lookup if SMTC already provided
-            // a song. Pure audio recognition should not falsely blame LRCLIB.
             bool searching = status == "SEARCHING";
             bool identifiedListening = status == "LISTENING"
                 && !string.IsNullOrWhiteSpace(song)
@@ -1149,13 +1617,16 @@ namespace FrontLineOverlay
             LblSearchHistoryTitle.Text = t["SearchHistory"];
             LblSearchHistoryEmpty.Text = t["HistoryEmpty"];
             LblFontSizeTitle.Text = t["FontSizeTitle"];
+            UpdateLyricSettingsLanguage();
             LblBgOpacityTitle.Text = t["BgOpacityTitle"];
             LblLockShortcutTitle.Text = t["LockShortcutTitle"];
             LblLockShortcutHint.Text = t["LockShortcutHint"];
             UpdateShortcutButtonText();
             ApplyAppearanceLanguage();
             ApplyTelemetryLanguage();
+            UpdateTelemetrySettingsDisclosure();
             SyncLanguagePicker(lang);
+            UpdateSettingsPresentation();
             ApplyButtonTooltips(t);
             ApplyFestivalUiLanguage();
             RefreshHistoryHeaders();
@@ -1202,7 +1673,7 @@ namespace FrontLineOverlay
 
         private void CmbAppLang_DropDownClosed(object sender, EventArgs e)
         {
-            if (SettingsPopup != null) SettingsPopup.StaysOpen = false;
+            if (SettingsPopup != null) SettingsPopup.StaysOpen = true;
         }
 
         private void ApplyButtonTooltips(Dictionary<string, string> t)
@@ -1311,7 +1782,7 @@ namespace FrontLineOverlay
         private void UpdateVisualState(bool enableGhost)
         {
             if (isResizing) return;
-            isGhostMode = enableGhost;
+            isGhostMode = enableGhost && SettingsPopup?.IsOpen != true;
             IntPtr hwnd = new WindowInteropHelper(this).Handle;
             if (hwnd == IntPtr.Zero) return;
 
@@ -1327,7 +1798,7 @@ namespace FrontLineOverlay
                 TopRightControls.Visibility = Visibility.Visible;
                 PlayingControls.Visibility = Visibility.Collapsed;
             }
-            else if (isGhostMode || isLocked)
+            else if ((isGhostMode || isLocked) && SettingsPopup?.IsOpen != true)
             {
                 SetWindowStyle(hwnd, true, isLocked);
 
@@ -1354,6 +1825,10 @@ namespace FrontLineOverlay
                 PlayingControls.Visibility = Visibility.Visible;
             }
 
+            if (SettingsPopup?.IsOpen == true)
+            {
+                TopRightControls.Visibility = Visibility.Collapsed;
+            }
             SyncTimingTools();
             RefreshSeasonalChrome();
         }
@@ -1381,7 +1856,7 @@ namespace FrontLineOverlay
             {
                 isManualSyncMode = false;
                 if (FullLyricsList != null) FullLyricsList.Visibility = Visibility.Collapsed;
-                if (LyricsNormalView != null) LyricsNormalView.Visibility = Visibility.Visible;
+                RefreshLyricDisplay();
             }
         }
 
@@ -1500,12 +1975,15 @@ namespace FrontLineOverlay
                 string status = root.GetProperty("status").GetString() ?? "IDLE";
                 string currentLyrics = root.TryGetProperty("current_lyrics", out var clp) ? clp.GetString() ?? "" : "";
                 bool isTranslating = root.TryGetProperty("is_translating", out var tp) && tp.GetBoolean();
+                string translationError = root.TryGetProperty("translation_error", out var te) && te.ValueKind == JsonValueKind.String ? te.GetString() ?? "" : "";
                 bool autoMode = root.TryGetProperty("auto_mode", out var amp) && amp.GetBoolean();
                 string currentLyricsOriginal = root.TryGetProperty("current_lyrics_original", out var clo) ? clo.GetString() ?? "" : "";
                 bool isTranslatedActive = root.TryGetProperty("is_translated_active", out var ita) && ita.GetBoolean();
                 string currentLanguage = root.TryGetProperty("current_language", out var cl) ? cl.GetString() ?? "original" : "original";
                 string song = root.TryGetProperty("song", out var songEl) ? songEl.GetString() ?? "" : "";
                 string artist = root.TryGetProperty("artist", out var artEl) ? artEl.GetString() ?? "" : "";
+                int lyricIndex = root.TryGetProperty("current_lyric_index", out var li) && li.TryGetInt32(out int parsedIndex)
+                    ? parsedIndex : -1;
                 string previousLyrics = root.TryGetProperty("previous_lyrics", out var prevEl) ? prevEl.GetString() ?? "" : "";
                 string nextLyrics = root.TryGetProperty("next_lyrics", out var nextEl) ? nextEl.GetString() ?? "" : "";
                 string? coverUrl = root.TryGetProperty("cover_art", out var c) ? c.GetString() : null;
@@ -1548,14 +2026,11 @@ namespace FrontLineOverlay
                     ApplyLyricsServiceStatus(serviceNotice);
                     _playerClock = playerClock;
                     LblTranslating.Visibility = isTranslating ? Visibility.Visible : Visibility.Collapsed;
+
                     ApplyAutoModeFromServer(autoMode);
 
-                    TransOriginal.IsChecked = currentLanguage == "original";
-                    TransRomanized.IsChecked = currentLanguage == "romanized";
-                    TransEn.IsChecked = currentLanguage == "en";
-                    TransEs.IsChecked = currentLanguage == "es";
-                    TransFr.IsChecked = currentLanguage == "fr";
-                    TransPt.IsChecked = currentLanguage == "pt";
+                    UpdateSettingsTranslation(status, currentLanguage, isTranslating, translationError, artist, song,
+                        !string.IsNullOrWhiteSpace(currentLyrics) || (fullLyricsRaw != null && fullLyricsRaw != "[]"));
 
                     if (status == "IDLE")
                     {
@@ -1565,12 +2040,18 @@ namespace FrontLineOverlay
                         HomeControls.Visibility = (festivalMode || IsFestivalHubOpen) ? Visibility.Collapsed : Visibility.Visible;
                         isGhostMode = false;
                         LblCurrent.Text = ""; LblPrevious.Text = ""; LblNext.Text = "";
+                        _visibleLyrics = null;
+                        _currentLyricIndex = -1;
+                        RefreshLyricDisplay();
                         LblCurrentOriginal.Text = ""; LblCurrentOriginal.Visibility = Visibility.Collapsed;
                         lastCurrentLyricsOriginal = ""; lastIsTranslatedActive = false;
                         if (_lastFullLyricsJson != null)
                         {
                             _lastFullLyricsJson = null;
                             FullLyricsList.ItemsSource = null;
+                            if (LyricsReadingPanel != null) LyricsReadingPanel.Children.Clear();
+                            _readingLines.Clear();
+                            _readingHighlighted = -1;
                         }
                         LoadingSpinner.Visibility = Visibility.Collapsed;
                         StopLoadingSpinnerAnimation();
@@ -1618,6 +2099,8 @@ namespace FrontLineOverlay
                         LblCurrent.Text = currentLyrics;
                         LblPrevious.Text = previousLyrics;
                         LblNext.Text = nextLyrics;
+                        _currentLyricIndex = lyricIndex;
+                        RefreshLyricDisplay();
                         lastCurrentLyricsOriginal = currentLyricsOriginal;
                         lastIsTranslatedActive = isTranslatedActive;
                         RefreshOriginalLyricsDisplay();
@@ -1625,9 +2108,13 @@ namespace FrontLineOverlay
                     if (fullLyricsRaw != null && fullLyricsRaw != _lastFullLyricsJson)
                     {
                         _lastFullLyricsJson = fullLyricsRaw;
-                        FullLyricsList.ItemsSource = JsonSerializer.Deserialize<List<LyricLine>>(fullLyricsRaw);
+                        _visibleLyrics = JsonSerializer.Deserialize<List<LyricLine>>(fullLyricsRaw);
+                        FullLyricsList.ItemsSource = _visibleLyrics;
+                        RebuildReadingLines();
+                        RefreshLyricDisplay();
                     }
 
+                    RefreshLyricDisplay();
                     ApplyFestivalFromServer(festivalMode, artist, song, status, festivalAdvanceSong, festivalAdvanceArtist);
                     SyncTimingTools();
 
@@ -2018,7 +2505,7 @@ namespace FrontLineOverlay
             SetOverlayBackVisible(IsFestivalHubOpen);
             if (!isResizing) UpdateVisualState(isGhostMode);
         }
-        private void BtnManualSync_Toggle(object sender, RoutedEventArgs e) { isManualSyncMode = !isManualSyncMode; FullLyricsList.Visibility = isManualSyncMode ? Visibility.Visible : Visibility.Collapsed; LyricsNormalView.Visibility = isManualSyncMode ? Visibility.Collapsed : Visibility.Visible; BtnMenu.IsChecked = false; }
+        private void BtnManualSync_Toggle(object sender, RoutedEventArgs e) { isManualSyncMode = !isManualSyncMode; FullLyricsList.Visibility = isManualSyncMode ? Visibility.Visible : Visibility.Collapsed; RefreshLyricDisplay(); BtnMenu.IsChecked = false; }
         private void FullLyricsList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (FullLyricsList.SelectedItem is not LyricLine s) return;
@@ -2028,6 +2515,7 @@ namespace FrontLineOverlay
             FullLyricsList.Visibility = Visibility.Collapsed;
             LyricsNormalView.Visibility = Visibility.Visible;
             FullLyricsList.SelectedItem = null;
+            RefreshLyricDisplay();
         }
         private void BtnListen_Click(object sender, RoutedEventArgs e)
         {
@@ -2057,10 +2545,26 @@ namespace FrontLineOverlay
             SendCommand("RESET");
             BtnMenu.IsChecked = false;
         }
-        private void BtnTrans_Click(object sender, RoutedEventArgs e) { if (sender is ToggleButton b && b.Tag is string l) SendCommand("TRANSLATE", l); BtnMenu.IsChecked = false; }
+        private void BtnTrans_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is ToggleButton b && b.Tag is string l)
+            {
+                if (_settingsPreferredTranslation == l && _settingsPendingTranslation == l) return;
+                _settingsPreferredTranslation = l;
+                AppSettings.SetString("PreferredTranslation", l);
+                _settingsTranslationKey = "";
+                _settingsTranslationFailed = false;
+                if (currentAppStatus == "SYNCED" &&
+                    (!string.IsNullOrWhiteSpace(LblCurrent.Text) || _visibleLyrics?.Count > 0) &&
+                    _settingsCurrentTranslation != l)
+                    RequestSettingsTranslation(LblArtistName.Text, LblSongTitle.Text);
+                SyncSettingsTranslation();
+            }
+        }
         private void ChkKeepOriginal_Click(object sender, RoutedEventArgs e)
         {
             keepOriginalWithTranslation = ChkKeepOriginal.IsChecked == true;
+            AppSettings.SetBool("KeepOriginalWithTranslation", keepOriginalWithTranslation);
             RefreshOriginalLyricsDisplay();
         }
 
@@ -2145,7 +2649,7 @@ namespace FrontLineOverlay
         {
             try
             {
-                Process.Start(new ProcessStartInfo("https://buymeacoffee.com/juliocax/frontline-lyrics-1-5-0") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo("https://buymeacoffee.com/juliocax/frontline-lyrics-1-6") { UseShellExecute = true });
             }
             catch (Exception ex)
             {
@@ -2346,13 +2850,32 @@ namespace FrontLineOverlay
                 double font = AppSettings.GetDouble("FontSize", 26);
                 if (SldFontSize != null)
                     SldFontSize.Value = Math.Clamp(font, SldFontSize.Minimum, SldFontSize.Maximum);
+                _lyricLineCount = (int)AppSettings.GetDouble("LyricLineCount", 3);
+                if (_lyricLineCount is not (0 or 1 or 3 or 5)) _lyricLineCount = 3;
+                if (CmbLyricLines != null)
+                    foreach (ComboBoxItem item in CmbLyricLines.Items)
+                        if (item.Tag?.ToString() == _lyricLineCount.ToString())
+                            CmbLyricLines.SelectedItem = item;
+                _lyricAlignment = AppSettings.GetString("LyricAlignment", "center");
+                if (_lyricAlignment is not ("left" or "center" or "right")) _lyricAlignment = "center";
+                if (CmbLyricAlignment != null)
+                    foreach (ComboBoxItem item in CmbLyricAlignment.Items)
+                        if (item.Tag?.ToString() == _lyricAlignment)
+                            CmbLyricAlignment.SelectedItem = item;
+                RefreshLyricDisplay();
                 _wantAuto = AppSettings.GetBool("AutoMode", false);
                 if (BtnAutoSide != null)
                     BtnAutoSide.IsChecked = _wantAuto;
+                string translation = AppSettings.GetString("PreferredTranslation", "original");
+                _settingsPreferredTranslation = translation is "original" or "romanized" or "en" or "es" or "fr" or "pt" ? translation : "original";
+                keepOriginalWithTranslation = AppSettings.GetBool("KeepOriginalWithTranslation", false);
+                ChkKeepOriginal.IsChecked = keepOriginalWithTranslation;
                 string lang = AppSettings.GetString("AppLanguage", "en");
                 if (!uiStrings.ContainsKey(lang)) lang = "en";
                 currentAppLanguage = lang;
-                double opacity = AppSettings.GetDouble("BgOpacity", 0.8);
+                _showThemeBehindLyrics = AppSettings.GetBool("ShowThemeBehindLyrics", true);
+                ChkThemeBehindLyrics.IsChecked = _showThemeBehindLyrics;
+                double opacity = AppSettings.GetDouble("BgOpacity", 1.0);
                 if (SldBgOpacity != null)
                     SldBgOpacity.Value = Math.Clamp(opacity, SldBgOpacity.Minimum, SldBgOpacity.Maximum);
                 else
@@ -2472,6 +2995,9 @@ namespace FrontLineOverlay
                 if (SldFontSize != null)
                     AppSettings.SetDouble("FontSize", SldFontSize.Value);
                 AppSettings.SetDouble("BgOpacity", SldBgOpacity != null ? SldBgOpacity.Value : bgOpacity);
+                AppSettings.SetBool("ShowThemeBehindLyrics", _showThemeBehindLyrics);
+                AppSettings.SetDouble("LyricLineCount", _lyricLineCount);
+                AppSettings.SetString("LyricAlignment", _lyricAlignment);
                 AppSettings.SetBool("AutoMode", _wantAuto);
                 AppSettings.SetString("AppLanguage", currentAppLanguage);
                 PersistAppearance();

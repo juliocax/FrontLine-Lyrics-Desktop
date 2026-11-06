@@ -62,70 +62,110 @@ namespace FrontLineOverlay
             return age >= MinInterval || age < TimeSpan.FromHours(-1);
         }
 
-        private static string Clean(string? s, int max = 40)
+        internal static string SettingText(string? value, int max = 40)
         {
-            s = (s ?? "").Trim();
-            return s.Length <= max ? s : s.Substring(0, max);
+            value = (value ?? "").Trim();
+            return value.Length <= max ? value : value.Substring(0, max);
         }
 
-        private static string CurrentLyricColor(string fallback)
+        internal static string Flag(bool value) => value ? "yes" : "no";
+
+        internal static double SettingNumber(double value, double fallback = 0) =>
+            Math.Round(double.IsFinite(value) ? value : fallback, 2);
+
+        internal static string SeasonalThemeId(SeasonalTheme theme) => theme switch
         {
+            SeasonalTheme.Halloween => "halloween",
+            SeasonalTheme.Christmas => "christmas",
+            SeasonalTheme.NewYear => "newyear",
+            _ => "default"
+        };
+
+        internal static string FormatLockShortcut(uint key, uint modifiers)
+        {
+            if (key == 0 || key > 255) return "none";
+            var parts = new List<string>();
+            if ((modifiers & 2) != 0) parts.Add("Ctrl");
+            if ((modifiers & 1) != 0) parts.Add("Alt");
+            if ((modifiers & 4) != 0) parts.Add("Shift");
+            if ((modifiers & 8) != 0) parts.Add("Win");
+            parts.Add(System.Windows.Input.KeyInterop.KeyFromVirtualKey((int)key).ToString());
+            return SettingText(string.Join(" + ", parts));
+        }
+
+    
+        private static Dictionary<string, object> PersistedSettings(TelemetrySnapshot snap)
+        {
+            string selected = AppSettings.GetString("AppTheme", AppSettings.GetBool("SeasonalEnabled", true) ? "auto" : "default");
+            string theme = selected == "auto" ? SeasonalThemeId(SeasonalThemeProvider.GetCurrent()) : SettingText(selected);
+            double lines = AppSettings.GetDouble("LyricLineCount", 3);
+            string alignment = AppSettings.GetString("LyricAlignment", "center").ToLowerInvariant();
+            if (alignment != "left" && alignment != "right") alignment = "center";
+            string weight = AppSettings.GetString("LyricWeight", LyricWeights.DefaultId);
+            string style = AppSettings.GetString("LyricStyle", LyricStyles.DefaultId);
+            double savedKey = AppSettings.GetDouble("LockHotkeyVk", 0);
+            double savedMods = AppSettings.GetDouble("LockHotkeyMods", 0);
+            uint key = double.IsFinite(savedKey) && savedKey >= 0 && savedKey <= 255 ? (uint)savedKey : 0;
+            uint mods = double.IsFinite(savedMods) && savedMods >= 0 && savedMods <= uint.MaxValue ? (uint)savedMods : 0;
+            string shortcut = key != 0 ? FormatLockShortcut(key, mods) :
+                string.IsNullOrWhiteSpace(snap.LockShortcut) ? "none" : SettingText(snap.LockShortcut);
+            return new Dictionary<string, object>
+            {
+                ["settings_schema"] = 2,
+                ["theme"] = string.IsNullOrWhiteSpace(theme) ? SettingText(snap.Theme) : theme,
+                ["theme_mode"] = selected == "auto" ? "auto" : "manual",
+                ["theme_selected"] = SettingText(selected),
+                ["lyric_font"] = SettingText(AppSettings.GetString("LyricFont", snap.LyricFont)),
+                ["lyric_color"] = SettingText(AppSettings.GetString("LyricColor", snap.LyricColor)),
+                ["lyric_weight"] = SettingText(weight),
+                ["lyric_style"] = SettingText(style),
+                ["lyric_bold"] = Flag(LyricWeights.Resolve(weight).ToOpenTypeWeight() >= FontWeights.Bold.ToOpenTypeWeight()),
+                ["lyric_italic"] = Flag(LyricStyles.Resolve(style) == FontStyles.Italic),
+                ["lyric_font_size"] = SettingNumber(AppSettings.GetDouble("FontSize", 26), 26),
+                ["lyric_lines"] = lines == 0 ? "all" : lines == 1 || lines == 5 ? ((int)lines).ToString(CultureInfo.InvariantCulture) : "3",
+                ["lyric_alignment"] = alignment,
+                ["background_opacity"] = Math.Clamp(SettingNumber(AppSettings.GetDouble("BgOpacity", 1.0), 1.0), 0, 1),
+                ["show_theme_behind_lyrics"] = Flag(AppSettings.GetBool("ShowThemeBehindLyrics", true)),
+                ["translation_language"] = SettingText(AppSettings.GetString("PreferredTranslation", "original")),
+                ["show_original_lyrics"] = Flag(AppSettings.GetBool("KeepOriginalWithTranslation", false)),
+                ["auto_mode"] = Flag(AppSettings.GetBool("AutoMode", false)),
+                ["manual_sync_mode"] = "no",
+                ["overlay_locked"] = Flag(AppSettings.GetBool("OverlayLocked", false)),
+                ["ui_language"] = SettingText(AppSettings.GetString("AppLanguage", snap.UiLanguage), 8),
+                ["lock_shortcut_set"] = shortcut == "none" ? "no" : "yes",
+                ["lock_shortcut"] = shortcut,
+                ["telemetry_enabled"] = Flag(Enabled),
+                ["window_width"] = SettingNumber(AppSettings.GetDouble("WindowWidth", 700), 700),
+                ["window_height"] = SettingNumber(AppSettings.GetDouble("WindowHeight", 300), 300),
+                ["window_left"] = SettingNumber(AppSettings.GetDouble("WindowLeft", 0)),
+                ["window_top"] = SettingNumber(AppSettings.GetDouble("WindowTop", 0)),
+                ["window_state"] = "unknown",
+            };
+        }
+
+        private static Dictionary<string, object> CurrentSettings(TelemetrySnapshot snap)
+        {
+            var properties = PersistedSettings(snap);
             try
             {
                 var app = Application.Current;
-                if (app == null) return fallback;
-                return app.Dispatcher.Invoke(() =>
+                if (app == null || app.Dispatcher.HasShutdownStarted || app.Dispatcher.HasShutdownFinished) return properties;
+                var live = app.Dispatcher.Invoke(() =>
                 {
                     var window = app.Windows.OfType<MainWindow>().FirstOrDefault();
-                    if (window?.CmbLyricColor?.SelectedItem is ComboBoxItem option)
-                    {
-                        if (option.Tag is string tag && !string.IsNullOrWhiteSpace(tag)) return Clean(tag);
-                        if (option.Content is string label && !string.IsNullOrWhiteSpace(label)) return Clean(label);
-                    }
-                    if (window?.LblPreviewCurrent?.Foreground is SolidColorBrush brush)
-                        return brush.Color.ToString();
-                    return fallback;
+                    return window?.CaptureSettingsTelemetry();
                 });
+                if (live != null)
+                    foreach (var item in live)
+                        if (properties.ContainsKey(item.Key)) properties[item.Key] = item.Value;
             }
-            catch { return fallback; }
-        }
-
-        private static (string Theme, string Mode) CurrentTheme(string fallback)
-        {
-            string selected = AppSettings.GetString("AppTheme",
-                AppSettings.GetBool("SeasonalEnabled", true) ? "auto" : "default");
-            try
+            catch (Exception ex)
             {
-                var app = Application.Current;
-                if (app != null)
-                {
-                    selected = app.Dispatcher.Invoke(() =>
-                    {
-                        var window = app.Windows.OfType<MainWindow>().FirstOrDefault();
-                        return window?.CmbUserTheme?.SelectedItem is ComboBoxItem item
-                               && item.Tag is string id && !string.IsNullOrWhiteSpace(id)
-                            ? id : selected;
-                    });
-                }
+#if DEBUG
+                System.Diagnostics.Debug.WriteLine("[Telemetry] settings fallback: " + ex.GetType().Name);
+#endif
             }
-            catch { /*  */ }
-
-            if (string.Equals(selected, "auto", StringComparison.OrdinalIgnoreCase))
-            {
-                string seasonal = SeasonalThemeProvider.GetCurrent() switch
-                {
-                    SeasonalTheme.Halloween => "halloween",
-                    SeasonalTheme.Christmas => "christmas",
-                    SeasonalTheme.NewYear => "newyear",
-                    _ => "default"
-                };
-                return (seasonal, "auto");
-            }
-
-            if (string.Equals(selected, "default", StringComparison.OrdinalIgnoreCase))
-                return ("default", "manual");
-
-            return (!string.IsNullOrWhiteSpace(selected) ? Clean(selected) : Clean(fallback), "manual");
+            return properties;
         }
 
         public static async Task SendSnapshotIfDueAsync(TelemetrySnapshot snap)
@@ -140,11 +180,12 @@ namespace FrontLineOverlay
 
             try
             {
+                if (!Enabled || !WelcomeShown || !IsDue()) return;
                 long epoch = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
                 string sessionId = (epoch * 100_000_000L + Random.Shared.NextInt64(0, 100_000_000L))
                     .ToString(CultureInfo.InvariantCulture);
 
-                var currentTheme = CurrentTheme(snap.Theme);
+                var currentSettings = CurrentSettings(snap);
 
                 var evt = new
                 {
@@ -163,16 +204,7 @@ namespace FrontLineOverlay
                         appVersion = AppVersion,
                         sdkVersion = SdkVersion
                     },
-                    props = new Dictionary<string, object>
-                    {
-                        ["theme"] = currentTheme.Theme,
-                        ["theme_mode"] = currentTheme.Mode,
-                        ["lyric_font"] = Clean(snap.LyricFont),
-                        ["lyric_color"] = Clean(CurrentLyricColor(snap.LyricColor)),
-                        ["ui_language"] = Clean(snap.UiLanguage, 8),
-                        ["lock_shortcut_set"] = snap.LockShortcut == null ? "no" : "yes",
-                        ["lock_shortcut"] = snap.LockShortcut == null ? "none" : Clean(snap.LockShortcut)
-                    }
+                    props = currentSettings
                 };
 
                 var json = JsonSerializer.Serialize(new[] { evt });
@@ -182,6 +214,7 @@ namespace FrontLineOverlay
                 };
                 req.Headers.Add("App-Key", AppKey);
 
+                if (!Enabled || !WelcomeShown) return;
                 using var res = await Http.SendAsync(req).ConfigureAwait(false);
 #if DEBUG
                 System.Diagnostics.Debug.WriteLine("[Telemetry] " + (int)res.StatusCode + " " + json);

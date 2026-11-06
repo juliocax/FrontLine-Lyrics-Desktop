@@ -1,0 +1,55 @@
+name: frontline-lyrics
+version: '1.0.0'
+title: FrontLine Lyrics
+summary: Synchronized desktop lyrics with song recognition
+website: https://github.com/juliocax/FrontLine-Lyrics-Desktop
+source-code: https://github.com/juliocax/FrontLine-Lyrics-Desktop
+issues: https://github.com/juliocax/FrontLine-Lyrics-Desktop/issues
+license: GPL-3.0
+description: |
+  FrontLine Lyrics displays synchronized song lyrics with recognition,
+  manual searching, configurable typography and optional translation.
+  The application bundles an Avalonia interface and local Python engine.
+base: core26
+grade: stable
+confinement: strict
+platforms:
+  amd64:
+    build-on: [amd64]
+    build-for: [amd64]
+
+apps:
+  frontline-lyrics:
+    command: bin/frontline-lyrics-snap
+    desktop: usr/share/applications/frontline-lyrics.desktop
+    plugs:
+      - desktop
+      - desktop-legacy
+      - x11
+      - wayland
+      - opengl
+      - home
+      - network
+      - network-bind
+      - audio-playback
+      - audio-record
+      - mpris
+
+parts:
+  packaged-app:
+    plugin: dump
+    source: payload
+    stage-packages:
+      - playerctl
+      - pulseaudio-utils
+      - libx11-6
+      - libxcb1
+      - libxrender1
+      - libfontconfig1
+      - libfreetype6
+      - libgl1
+      - libpulse0
+      - libdbus-1-3
+      - libicu78
+      - libice6
+      - libsm6

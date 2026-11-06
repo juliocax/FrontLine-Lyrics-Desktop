@@ -57,6 +57,10 @@ class ShazamRecognizer:
             logging.error(f"Shazam recognition error: {e}")
             return None, None, 0.0, ""
 
+    async def close(self) -> None:
+        """Encerra o cliente HTTP utilizado pelo Shazam."""
+        await self.shazam.close()
+
 
 def live_fingerprint_drift(elapsed: float, now: float, record_start: float, offset: float) -> float:
     """Current elapsed time vs. the position implied by a fresh Shazam offset."""

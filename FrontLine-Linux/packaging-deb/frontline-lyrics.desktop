@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=FrontLine Lyrics
+Comment=Live synchronized desktop lyrics
+Exec=/usr/bin/frontline-lyrics
+Icon=frontline-lyrics
+Terminal=false
+Categories=AudioVideo;Audio;
+StartupNotify=true

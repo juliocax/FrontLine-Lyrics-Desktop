@@ -23,6 +23,7 @@ async def background_verification_worker(manager):
     """Continuously captures audio and tries to identify what's playing."""
     loop = asyncio.get_event_loop()
     shazam_no_match_count = 0
+    last_attempt_session = None
     while manager.server_running:
         if (not manager.is_listening or manager.search_completed
                 or manager.manual_mode or manager._media_busy):
@@ -30,6 +31,9 @@ async def background_verification_worker(manager):
             continue
 
         current_session = manager.session_id
+        if current_session != last_attempt_session:
+            shazam_no_match_count = 0
+            last_attempt_session = current_session
         record_start_time = time.time()
         snippet_s = (
             tuning.SHAZAM_LIVE_SECONDS if manager._listen_use_shazam else tuning.SHAZAM_QUICK_SECONDS
@@ -71,16 +75,27 @@ async def background_verification_worker(manager):
             continue
 
         if not new_song and getattr(manager.recognizer, "last_connection_error", False):
-            service_health.debug("Shazam network failure, returning to menu")
+            # A network failure is not a normal Shazam no-match. Stop the
+            # current attempt for BOTH manual and Auto, return to the home menu
+            # and keep the connectivity notice visible there. Auto holds this
+            # track until it changes; the user can still retry with LISTEN.
+            manager.finish_failed_lyrics_lookup(
+                expected_session=current_session, reason="connection_error"
+            )
+            logging.info("Shazam: falha de conexão; voltando ao menu")
             continue
 
         if not new_song:
             shazam_no_match_count += 1
+            manager.recognition_notice = "no_match"
             if shazam_no_match_count >= 2:
                 shazam_no_match_count = 0
                 reachable = await loop.run_in_executor(None, service_health.connectivity_after_failed_recognition)
                 if not reachable:
-                    service_health.debug("Shazam gave no match and network check failed; returning to menu")
+                    manager.finish_failed_lyrics_lookup(
+                        expected_session=current_session, reason="connection_error"
+                    )
+                    logging.info("Shazam: internet indisponível; voltando ao menu")
                     continue
             manager.pending_candidate = None
             manager.pending_candidate_count = 0
@@ -94,6 +109,7 @@ async def background_verification_worker(manager):
             continue
 
         shazam_no_match_count = 0
+        manager.recognition_notice = None
         candidate = (new_song, new_artist)
 
         if manager.auto_mode and not manager._listen_use_shazam:

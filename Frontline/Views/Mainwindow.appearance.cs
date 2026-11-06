@@ -272,6 +272,7 @@ namespace FrontLineOverlay
             if (CmbLyricFont != null) SelectCombo(CmbLyricFont, _lyricFontId);
             if (CmbLyricWeight != null) SelectCombo(CmbLyricWeight, _lyricWeightId);
             if (CmbLyricStyle != null) SelectCombo(CmbLyricStyle, _lyricStyleId);
+            SyncSettingsTypography();
         }
 
         private void LyricCombo_DropDownOpened(object sender, EventArgs e)
@@ -281,7 +282,7 @@ namespace FrontLineOverlay
 
         private void LyricCombo_DropDownClosed(object sender, EventArgs e)
         {
-            if (SettingsPopup != null) SettingsPopup.StaysOpen = false;
+            if (SettingsPopup != null) SettingsPopup.StaysOpen = true;
         }
 
         private void CmbLyricFont_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -374,6 +375,28 @@ namespace FrontLineOverlay
                 FestivalHubPanel.IsVisibleChanged += (_, _) => RefreshSeasonalChrome();
         }
 
+        private readonly Dictionary<ContentControl, (HorizontalAlignment Horizontal, VerticalAlignment Vertical)> _ambientHostAlignment = new();
+
+        private void UpdateAmbientHostAlignment(bool enabled)
+        {
+            foreach (ContentControl? host in new[] { UserThemeGround, UserThemeLayer })
+            {
+                if (host == null) continue;
+                if (enabled)
+                {
+                    if (!_ambientHostAlignment.ContainsKey(host))
+                        _ambientHostAlignment[host] = (host.HorizontalContentAlignment, host.VerticalContentAlignment);
+                    host.HorizontalContentAlignment = HorizontalAlignment.Stretch;
+                    host.VerticalContentAlignment = VerticalAlignment.Stretch;
+                }
+                else if (_ambientHostAlignment.Remove(host, out var previous))
+                {
+                    host.HorizontalContentAlignment = previous.Horizontal;
+                    host.VerticalContentAlignment = previous.Vertical;
+                }
+            }
+        }
+
         private const double SeasonGroundHeight = 52;
         private const double SeasonVeilBottom = 42;
 
@@ -382,26 +405,65 @@ namespace FrontLineOverlay
             if (element != null) element.Visibility = on ? Visibility.Visible : Visibility.Collapsed;
         }
 
+        private void PlaceThemeForegroundBehindLyrics(bool behindLyrics)
+        {
+            if (SeasonalLayer == null || ThemeBackgroundLayer == null || RootGrid == null) return;
+            if (behindLyrics && RootGrid.Children.Contains(SeasonalLayer))
+            {
+                RootGrid.Children.Remove(SeasonalLayer);
+                ThemeBackgroundLayer.Children.Add(SeasonalLayer);
+            }
+            else if (!behindLyrics && ThemeBackgroundLayer.Children.Contains(SeasonalLayer))
+            {
+                ThemeBackgroundLayer.Children.Remove(SeasonalLayer);
+                RootGrid.Children.Add(SeasonalLayer);
+            }
+            Panel.SetZIndex(SeasonalLayer, 35);
+        }
+
         private void RefreshSeasonalChrome()
         {
             var theme = _appliedTheme ?? SeasonalTheme.None;
-            bool lyricsOnly = isGhostMode || isResizing;
+            bool lyricsOnly = currentAppStatus != "IDLE"
+                && SearchInputPanel?.Visibility != Visibility.Visible
+                && FestivalHubPanel?.Visibility != Visibility.Visible
+                && SettingsPopup?.IsOpen != true
+                && (isGhostMode || isLocked || isResizing);
             var user = ActiveUserTheme(theme);
             var adorn = AdornThemeFor(theme, user);
             _appliedAdornTheme = adorn;
             EnsureUserThemeContent(user, adorn);
             RefreshUserThemeSlots();
-            bool themed = (theme != SeasonalTheme.None || user != null) && !lyricsOnly;
+            bool hasTheme = theme != SeasonalTheme.None || user != null;
+            bool themeInLyrics = lyricsOnly && _showThemeBehindLyrics && hasTheme;
+            bool themed = hasTheme && (!lyricsOnly || (themeInLyrics && bgOpacity > 0));
+            PlaceThemeForegroundBehindLyrics(themeInLyrics);
+            if (ThemeBackgroundLayer != null)
+            {
+                ThemeBackgroundLayer.Opacity = themeInLyrics ? Math.Clamp(bgOpacity, 0, 1) : 1;
+                ThemeBackgroundLayer.Visibility = themed ? Visibility.Visible : Visibility.Collapsed;
+            }
+            SetLayer(ThemeLyricsBase, themeInLyrics && themed);
+            SetLayer(ThemeLyricsShade, themeInLyrics && themed);
+            if (lyricsOnly && MainBorder != null)
+                MainBorder.Background = themeInLyrics ? Brushes.Transparent
+                    : new SolidColorBrush(Color.FromArgb((byte)(255 * Math.Clamp(bgOpacity, 0, 1)), 5, 5, 5));
+            bool fullCanvasTheme = user?.Id is "neonnights" or "citylights" or "cozycats";
+            UpdateAmbientHostAlignment(fullCanvasTheme);
 
             SetLayer(SeasonalLayer, themed);
             SetLayer(UserThemeGround, themed && user != null);
             SetLayer(UserThemeLayer, themed && user != null);
+            if (UserThemeGround != null)
+                UserThemeGround.Margin = fullCanvasTheme
+                    ? new Thickness(-20) : new Thickness(-20, -20, -20, -SeasonGroundHeight);
             SetLayer(ChristmasSnowLayer, themed && theme == SeasonalTheme.Christmas);
             SetLayer(HalloweenGround, themed && theme == SeasonalTheme.Halloween);
             SetLayer(NewYearGround, themed && theme == SeasonalTheme.NewYear);
 
             bool veilOpen = SearchInputPanel?.Visibility == Visibility.Visible || FestivalHubPanel?.Visibility == Visibility.Visible;
             int groundZ = veilOpen ? 10 : 0;
+            if (ThemeBackgroundLayer != null) Panel.SetZIndex(ThemeBackgroundLayer, groundZ);
             if (ChristmasSnowLayer != null) Panel.SetZIndex(ChristmasSnowLayer, groundZ);
             if (HalloweenGround != null) Panel.SetZIndex(HalloweenGround, groundZ);
             if (NewYearGround != null) Panel.SetZIndex(NewYearGround, groundZ);
@@ -418,15 +480,14 @@ namespace FrontLineOverlay
                 MainBorder.Padding = new Thickness(20); // The ground is decorative and must not move the menu.
 
             if (SeasonalLayer != null)
-                SeasonalLayer.Margin = new Thickness(0);
+                SeasonalLayer.Margin = themeInLyrics ? new Thickness(-20) : new Thickness(0);
 
             var veilMargin = themed ? new Thickness(-20, -20, -20, SeasonVeilBottom - SeasonGroundHeight) : new Thickness(-20);
             var veil = user?.PageVeil ?? PageVeil(theme);
             if (SearchInputPanel != null) { SearchInputPanel.Margin = veilMargin; SearchInputPanel.Background = veil; }
             if (FestivalHubPanel != null) { FestivalHubPanel.Margin = veilMargin; FestivalHubPanel.Background = veil; }
 
-            // Support actions follow the actual theme contrast, without affecting main buttons.
-            // The Christmas ground is light; all other currently supplied themes are dark.
+
             Brush supportColor = themed && theme == SeasonalTheme.Christmas
                 ? Brushes.Black : Brushes.White;
             if (BtnDonate != null) BtnDonate.Foreground = supportColor;
@@ -487,7 +548,7 @@ namespace FrontLineOverlay
         {
             SeasonalTheme.Halloween => Color.FromRgb(160, 106, 224),
             SeasonalTheme.Christmas => Color.FromRgb(208, 228, 245),
-            SeasonalTheme.NewYear => Color.FromRgb(224, 197, 106),
+            SeasonalTheme.NewYear => Color.FromRgb(0xFF, 0xD2, 0x3F),
             _ => Color.FromRgb(255, 255, 255)
         };
 
@@ -508,7 +569,111 @@ namespace FrontLineOverlay
             return GetSeasonalLogoColor(_appliedTheme ?? SeasonalTheme.None);
         }
 
-        private static BitmapSource TintBitmap(BitmapSource source, Color tintColor)
+        private static Color ShadeLogoPixel(byte red, byte green, byte blue, Color themeColor, Color? backdrop, bool whiteHighlights)
+        {
+
+            double peak = Math.Max(red, Math.Max(green, blue)) / 255.0;
+            double luminance = (0.2126 * red + 0.7152 * green + 0.0722 * blue) / 255.0;
+            double light = 0.75 * peak + 0.25 * luminance;
+            double shade = Math.Pow(light, 0.90);
+            double highlight = whiteHighlights ? Math.Clamp((light - 0.78) / 0.22, 0.0, 1.0) * 0.32 : 0.0;
+
+            byte Channel(byte channel)
+            {
+                double value = channel * shade;
+                return (byte)Math.Clamp(Math.Round(value + (255.0 - value) * highlight), 0.0, 255.0);
+            }
+            Color shaded = Color.FromRgb(Channel(themeColor.R), Channel(themeColor.G), Channel(themeColor.B));
+            if (backdrop is not Color background) return shaded;
+
+            double coverage = Math.Clamp((light - 0.08) / 0.20, 0.0, 1.0);
+            coverage = coverage * coverage * (3.0 - 2.0 * coverage);
+            byte Blend(byte dark, byte lit) => (byte)Math.Clamp(
+                Math.Round(dark + (lit - dark) * coverage), 0.0, 255.0);
+            return Color.FromRgb(Blend(background.R, shaded.R),
+                Blend(background.G, shaded.G), Blend(background.B, shaded.B));
+        }
+
+        private static LinearGradientBrush ThemeLogoGradient(params (uint argb, double offset)[] stops)
+        {
+            var brush = new LinearGradientBrush { StartPoint = new Point(0, 0), EndPoint = new Point(1, 1) };
+            foreach (var (argb, offset) in stops)
+                brush.GradientStops.Add(new GradientStop(Color.FromArgb(
+                    (byte)(argb >> 24), (byte)(argb >> 16), (byte)(argb >> 8), (byte)argb), offset));
+            brush.Freeze();
+            return brush;
+        }
+
+        private Brush ResolveLogoBrush()
+        {
+            var seasonal = _appliedTheme ?? SeasonalTheme.None;
+            if (seasonal == SeasonalTheme.NewYear)
+                return new SolidColorBrush(Color.FromRgb(0xFF, 0xD2, 0x3F));
+            if (seasonal == SeasonalTheme.Christmas)
+                return new SolidColorBrush(Color.FromRgb(0x16, 0x84, 0x3C));
+            if (_appliedUserTheme?.Id == "goldenedition")
+                return ThemeLogoGradient(
+                    (0xFF80520C, 0.00), (0xFFD49A1B, 0.22), (0xFFFFD63D, 0.45),
+                    (0xFFFFF1B1, 0.58), (0xFFEFB72A, 0.78), (0xFF986510, 1.00));
+            return _appliedUserTheme?.LogoColor ?? new SolidColorBrush(GetThemeLogoColor());
+        }
+
+        private Color? ResolveLogoBackdrop()
+        {
+            switch (_appliedTheme ?? SeasonalTheme.None)
+            {
+                case SeasonalTheme.Christmas: return Color.FromRgb(0x0B, 0x10, 0x1C);
+                case SeasonalTheme.Halloween:
+                case SeasonalTheme.NewYear: return Colors.Black;
+            }
+            return _appliedUserTheme?.Id switch
+            {
+                "citylights" => Color.FromRgb(0x05, 0x0D, 0x1C),
+                "cozycats" => Color.FromRgb(0x18, 0x12, 0x1D),
+                "neonnights" => Color.FromRgb(0x18, 0x08, 0x12),
+                "backstage" => Color.FromRgb(0x1C, 0x1C, 0x1F),
+                "goldenedition" => Color.FromRgb(0x14, 0x0E, 0x07),
+                "mainstage" => Color.FromRgb(0x14, 0x05, 0x08),
+                _ => null
+            };
+        }
+
+        private readonly Dictionary<string, BitmapSource> _themeLogoBitmaps = new();
+        private string? _themeLogoAssetStamp;
+
+        private BitmapSource GetThemeLogoBitmap(string path, bool menu)
+        {
+            var info = new FileInfo(path);
+            string stamp = $"{path}|{info.Length}|{info.LastWriteTimeUtc.Ticks}";
+            if (_themeLogoAssetStamp != stamp)
+            {
+                _themeLogoBitmaps.Clear();
+                _themeLogoAssetStamp = stamp;
+            }
+            string key = $"{menu}|{_appliedUserTheme?.Id ?? "default"}|{_appliedTheme ?? SeasonalTheme.None}";
+            if (_themeLogoBitmaps.TryGetValue(key, out var cached)) return cached;
+
+            var uri = new Uri(path, UriKind.Absolute);
+            BitmapSource source = menu ? LoadSharpLogo(uri) : DecodeBitmap(uri, null);
+            BitmapSource result;
+            Brush logoBrush = ResolveLogoBrush();
+            Color? backdrop = ResolveLogoBackdrop();
+            var logoSeason = _appliedTheme ?? SeasonalTheme.None;
+            bool whiteHighlights = logoSeason != SeasonalTheme.Christmas && logoSeason != SeasonalTheme.NewYear;
+            if (logoBrush is LinearGradientBrush gradient)
+                result = TintBitmap(source, gradient, backdrop, whiteHighlights);
+            else
+            {
+                Color color = logoBrush is SolidColorBrush solid ? solid.Color : GetThemeLogoColor();
+                result = color == Color.FromRgb(255, 255, 255) ? source : TintBitmap(source, color, backdrop, whiteHighlights);
+            }
+            if (result.CanFreeze && !result.IsFrozen) result.Freeze();
+            if (_themeLogoBitmaps.Count >= 32) _themeLogoBitmaps.Clear();
+            _themeLogoBitmaps[key] = result;
+            return result;
+        }
+
+        private static BitmapSource TintBitmap(BitmapSource source, Color tintColor, Color? backdrop = null, bool whiteHighlights = true)
         {
             BitmapSource bgra = source.Format == PixelFormats.Bgra32
                 ? source
@@ -521,12 +686,11 @@ namespace FrontLineOverlay
 
             for (int i = 0; i < pixels.Length; i += 4)
             {
-                if (pixels[i + 3] > 0)
-                {
-                    pixels[i] = tintColor.B; // Blue
-                    pixels[i + 1] = tintColor.G; // Green
-                    pixels[i + 2] = tintColor.R; // Red
-                }
+                if (pixels[i + 3] == 0) continue;
+                Color shaded = ShadeLogoPixel(pixels[i + 2], pixels[i + 1], pixels[i], tintColor, backdrop, whiteHighlights);
+                pixels[i] = shaded.B;
+                pixels[i + 1] = shaded.G;
+                pixels[i + 2] = shaded.R;
             }
 
             var wb = new WriteableBitmap(w, h, bgra.DpiX, bgra.DpiY, PixelFormats.Bgra32, null);
@@ -535,9 +699,9 @@ namespace FrontLineOverlay
             return wb;
         }
 
-        private static BitmapSource TintBitmap(BitmapSource source, Brush brush)
+        private static BitmapSource TintBitmap(BitmapSource source, Brush brush, Color? backdrop = null, bool whiteHighlights = true)
         {
-            if (brush is SolidColorBrush solid) return TintBitmap(source, solid.Color);
+            if (brush is SolidColorBrush solid) return TintBitmap(source, solid.Color, backdrop, whiteHighlights);
             if (brush is not LinearGradientBrush grad || grad.GradientStops.Count == 0) return source;
 
             BitmapSource bgra = source.Format == PixelFormats.Bgra32
@@ -584,7 +748,7 @@ namespace FrontLineOverlay
 
                     double px = (x + 0.5) / w, py = (y + 0.5) / h;
                     double t = ((px - sx) * dx + (py - sy) * dy) / len2;
-                    Color c = Sample(t);
+                    Color c = ShadeLogoPixel(pixels[i + 2], pixels[i + 1], pixels[i], Sample(t), backdrop, whiteHighlights);
                     pixels[i] = c.B;
                     pixels[i + 1] = c.G;
                     pixels[i + 2] = c.R;
@@ -604,18 +768,7 @@ namespace FrontLineOverlay
                 string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "assets", "logo.png");
                 if (!File.Exists(path)) return;
 
-                BitmapSource baseLogo = DecodeBitmap(new Uri(path, UriKind.Absolute), null);
-                if (_appliedUserTheme?.LogoColor is LinearGradientBrush gradient)
-                {
-                    Icon = TintBitmap(baseLogo, gradient);
-                }
-                else
-                {
-                    Color themeColor = GetThemeLogoColor();
-                    Icon = themeColor == Color.FromRgb(255, 255, 255)
-                        ? BitmapFrame.Create(new Uri(path, UriKind.Absolute), BitmapCreateOptions.None, BitmapCacheOption.OnLoad)
-                        : TintBitmap(baseLogo, themeColor);
-                }
+                Icon = GetThemeLogoBitmap(path, menu: false);
             }
             catch (Exception ex) { CrashReporter.Log(ex, "LoadAppIcon"); }
         }
@@ -638,20 +791,8 @@ namespace FrontLineOverlay
                     return;
                 }
 
-                BitmapSource baseLogo = LoadSharpLogo(new Uri(path, UriKind.Absolute));
-                if (_appliedUserTheme?.LogoColor is LinearGradientBrush gradient)
-                {
-                    AlbumCoverImg.Source = TintBitmap(baseLogo, gradient);
-                }
-                else
-                {
-                    Color themeColor = GetThemeLogoColor();
-                    AlbumCoverImg.Source = themeColor == Color.FromRgb(255, 255, 255)
-                        ? baseLogo
-                        : TintBitmap(baseLogo, themeColor);
-                }
+                AlbumCoverImg.Source = GetThemeLogoBitmap(path, menu: true);
 
-                // Mostra a decoração do tema apenas quando a logo padrão está presente.
                 if (AlbumCoverImg.Source is BitmapSource logo)
                     UpdateLogoAdornSpace(logo.PixelWidth, logo.PixelHeight);
             }
@@ -793,7 +934,7 @@ namespace FrontLineOverlay
 
     internal static class LyricFonts
     {
-        public const string DefaultId = "segoe";
+        public const string DefaultId = "poppins";
 
         private static readonly (string Id, string Name, string Group, string File)[] Bundled =
         {

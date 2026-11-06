@@ -1,0 +1,11 @@
+# Linux backend dependencies
+shazamio
+deep-translator
+translators
+anyascii
+requests
+websockets
+dbus-next
+audioop-lts; python_version >= "3.13"
+pyinstaller
+# Ubuntu: sudo apt install pulseaudio-utils playerctl

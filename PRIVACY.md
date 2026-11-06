@@ -1,81 +1,112 @@
 # Privacy Policy
 
-_Last updated: October 28, 2026_
+_Last updated: November 5, 2026_
 
-FrontLine Lyrics is designed to work with minimal data collection. This document explains what data the app handles, what it doesn't, and which third-party services it talks to in order to work.
+FrontLine Lyrics displays song lyrics and translations in a desktop overlay. It can follow information from compatible media players or identify a song from system audio. This policy explains the information used for those features and the optional settings statistics.
 
 ## Summary
 
-- The app does **not** record, save, or upload your system audio.
-- The app does **not** collect personal information (name, email, account data, there is no account).
-- The app only sends short audio snippets to a song-recognition service to identify what's playing, and text (artist/song name) to lyrics and translation services.
-- The app can send **optional, anonymous usage statistics** (which theme, lyric font and language you use, for example). It is explained on a welcome screen at first launch and can be turned off at any time. It never includes songs, lyrics or anything that identifies you. See [Anonymous Usage Statistics](#anonymous-usage-statistics-optional).
-- All communication between the two parts of the app (the overlay and the background engine) stays on your own machine.
+- No account or login is required. The app does not ask for your name or email to use its features.
+- Song recognition uses a short sample of system audio and an external recognition service. This is separate from usage statistics.
+- Song information is sent to a lyrics service when looking up lyrics. Lyrics text is sent to a translation provider when you use translation.
+- Optional usage statistics describe app settings and basic technical context. They do not include your songs, lyrics, searches, or audio recordings.
+- Communication between the desktop interface and its background engine stays on the same computer through localhost.
 
-## Data We Collect
+## Song Recognition, Lyrics, and Translation
 
-### Audio fingerprint for song recognition
-To identify what's playing, the app captures a short snippet of your system's audio output (via Windows WASAPI loopback — the same audio you're already hearing through your speakers/headphones) and sends it to Shazam's recognition service to get a match. This snippet is used only for identification and is not stored by the app afterward.
+### System audio and player information
 
-### Artist and song title
-Once a song is identified (or entered manually via Manual Search), the artist and song title are sent to:
-- **LRCLib**: to fetch synchronized lyrics
-- A translation provider (Google Translate, MyMemory, or Bing, depending on availability): only if you choose to translate the lyrics into another language
+In Listen mode, the app captures a short sample of the audio playing on your computer to identify the song. On Windows, this uses WASAPI loopback. The Linux version uses its platform-specific audio integration. Recognition uses Shazam through `shazamio`, sending audio-derived recognition data to the service to obtain a match.
 
-## Data We Do NOT Collect
+The app does not keep audio recordings as a listening history. Capturing audio for recognition is separate from the optional statistics described below; audio recordings are not included in those reports.
 
-- We do not record or store your system audio.
-- We do not track what songs you listen to over time — nothing is logged to a server or account.
-- We do not collect your name, email, or any account information (the app has no login/account system).
-- We do not use advertising SDKs or third-party tracking SDKs. The only analytics is the optional, anonymous report described [below](#anonymous-usage-statistics-optional), which you can turn off.
+When a compatible player provides track information, the app can use that information to follow playback. On Linux, this includes MPRIS. Track information can include the artist, title, playback state, and position needed to show and synchronize lyrics.
 
-## Anonymous Usage Statistics (optional)
+### Lyrics lookup and manual search
 
-To understand how the app is used and decide what to improve (for example, which themes are popular), FrontLine Lyrics can send a small, anonymous report about how the app is set up.
+The artist and song title, whether obtained from recognition, a compatible player, or a manual search, are sent to **LRCLIB** to find lyrics. This information is needed for the lookup; it is not included in usage statistics.
 
-- **On by default, but never hidden.** A welcome screen on first launch explains it, and you can opt out right there.
-- **You can turn it off at any time** in **Settings (App tab)**. When it is off, nothing is sent.
-- **At most once every 24 hours**, as a single event named `settings_snapshot`.
+### Translation
 
-**What is sent:**
+If you choose to translate lyrics, the lyrics text is sent to a translation provider. Depending on availability and the build, providers include Google Translate, MyMemory, or Bing, accessed through the app's translation libraries.
 
-| Field | Example |
-|---|---|
-| `theme`: the theme you selected | `default` |
-| `lyric_font`: the lyric font you selected | `segoe` |
-| `ui_language`: the app language | `pt` |
-| `lock_shortcut_set` / `lock_shortcut`: whether an overlay lock shortcut is set, and which keys | `yes` / `Ctrl+Alt+L` |
-| App version, OS name and your system language | `1.4.2`, `Windows`, `pt-BR` |
+Turning off usage statistics does not disable the external requests needed for song recognition, lyrics lookup, or translation when you use those features.
 
-**What is never sent:** songs, artists, lyrics, searches, your name, e-mail, or any ID that identifies you. No persistent identifier is created or stored: each report uses a new random session value.
+## Optional Usage Statistics
 
-The data is sent to [Aptabase](https://aptabase.com), a privacy-focused analytics service. As with any internet request, the service receives your connection's IP address; how Aptabase handles data on its servers is described in its own privacy policy. The full implementation is open source in [`Telemetry.cs`](Frontline/Telemetry.cs), so you can check exactly what leaves your PC.
+The app can send a configuration report to **Aptabase** to help identify which settings and features are used.
 
-Builds compiled from source do not include the analytics key, so they never send anything.
+The statistics option is enabled by default in the supplied Windows welcome screen and can be switched off there before continuing. You can also change it later in **Settings → General**. A settings report is not sent before the welcome screen has been completed. Available controls and reported fields depend on the platform and build; the list below describes the expanded Windows report.
+
+When enabled and configured, the report is sent as a `settings_snapshot` event, at most once every 24 hours after a successful send. It is a snapshot of settings, rather than a record of every click or setting change. If a request fails, the app may try again later.
+
+### Settings included in the report
+
+| Category | Information |
+| --- | --- |
+| Themes and background | Selected theme, active theme, automatic or manual theme mode, background opacity, and whether the theme appears behind lyrics |
+| Lyric appearance | Font, font size, color, weight, style, bold and italic settings |
+| Lyric layout | Number of lines or full-lyrics mode, and left, center, or right alignment |
+| Language and translation | App language, translation language, and whether original lyrics are shown with a translation |
+| Controls | Automatic mode, manual synchronization mode, overlay lock state, and the configured lock shortcut keys |
+| Window | Width, height, position, and window state |
+| Report details | Statistics setting and settings-schema version |
+
+### Technical details included with the event
+
+Each event also includes a timestamp, app version, operating-system name, system language/locale, telemetry implementation version, and whether it is a debug build. Each report uses a newly generated session value; the sender does not create a permanent user identifier for these reports.
+
+### Information excluded from statistics
+
+Settings reports do **not** include:
+
+- Song titles, artists, lyrics, or translations.
+- Search terms, playlists, or listening history.
+- Audio recordings or song-recognition data.
+- API keys or credentials.
+- Your name, email address, or account details.
+
+The configured shortcut is the combination of keys you selected in settings. It is not a recording of your keyboard activity.
+
+### Recipient and controls
+
+Reports go to [Aptabase](https://aptabase.com). As with other internet requests, the receiving service can see the connection's IP address. Its handling of requests and server-side data is governed by its own policies. The exclusions above describe the contents of the app's statistics report, not information automatically visible to a network service.
+
+Disabling statistics stops future reports. It does not undo reports already sent. The sender also requires an analytics key and endpoint to be configured; a build without that configuration does not send statistics. Building from source alone does not determine whether statistics are enabled or configured.
+
+The implementation is available in the [project's source code](https://github.com/juliocax/FrontLine-Lyrics-Desktop), including `Telemetry.cs` and `MainWindow.TelemetrySettings.cs`.
+
+## Local Settings and Communication
+
+The app saves preferences on your computer so they can be restored between sessions. These include appearance, lyric layout, languages, controls, window placement, the statistics preference, and the time of the last successful statistics report.
+
+The desktop interface and Python background engine communicate through a local WebSocket connection bound to localhost. That connection does not send their messages to a remote server. The engine makes separate external requests for the features described above.
+
+The app has no advertising-based tracking. Optional settings statistics are separate from its music-recognition and lyrics features.
 
 ## Third-Party Services
 
-Because the app relies on external services to identify songs and fetch lyrics, some data leaves your machine as described above. Each of these services has its own privacy policy, which governs how they handle the data sent to them:
+| Service | Information used or sent | Purpose |
+| --- | --- | --- |
+| Shazam, through `shazamio` | Recognition data derived from a short system-audio sample | Identify a song |
+| [LRCLIB](https://lrclib.net/) | Artist and song title | Retrieve lyrics |
+| Google Translate, MyMemory, or Bing | Lyrics text selected for translation | Translate lyrics |
+| [Aptabase](https://aptabase.com) | Settings and event details listed above | Optional usage statistics |
 
-| Service | What's sent | Purpose |
-|---|---|---|
-| Shazam (via `shazamio`) | Short audio snippet | Song recognition |
-| [LRCLib](https://lrclib.net/) | Artist + song title | Fetching synchronized lyrics |
-| Google Translate / MyMemory / Bing (via `deep-translator` / `translators`) | Lyrics text | On-the-fly translation (only if you use this feature) |
-| [Aptabase](https://aptabase.com) | Theme, lyric font, app language, lock shortcut, app version, Windows language (see above) | Optional anonymous usage statistics (can be turned off) |
+These services receive the requests needed for their features and may receive connection metadata such as an IP address. Their own policies govern how they handle information on their servers. This policy describes what FrontLine Lyrics does; it does not set retention periods or other practices for those services.
 
-## Local-Only Communication
+## Distribution and Platform Diagnostics
 
-The C# overlay (`FrontLineOverlay.exe`) and the Python background engine (`FrontlineServer.exe`) communicate over a WebSocket that only listens on localhost. This connection never leaves your machine and is not accessible from your network or the internet.
+FrontLine Lyrics is distributed for Windows through the Microsoft Store and for Linux through the Snap Store and a `.deb` package in the GitHub repository.
 
-## Microsoft Store Diagnostic Data
+Store, operating-system, and package-distribution services may handle download, update, crash, or diagnostic information under their own settings and privacy policies. These processes are separate from the app's optional settings report. Turning off that report does not change your operating system's or store's diagnostics settings.
 
-Because the app is distributed through the Microsoft Store, Microsoft automatically collects basic crash and performance diagnostics (e.g. crash reports, hang reports) as part of the standard Store platform, independent of anything the app itself does. This is governed by [Microsoft's Privacy Statement](https://privacy.microsoft.com/), not by this document. You can review or adjust your Windows diagnostic data settings in **Settings > Privacy & security > Diagnostics & feedback**.
+For Microsoft services, see [Microsoft's Privacy Statement](https://privacy.microsoft.com/). For Linux installations, review the privacy and diagnostics settings of your distribution and the package service you use.
 
 ## Changes to This Policy
 
-This policy may be updated as the app evolves. Changes will be reflected in this file, with the "Last updated" date above.
+This document will be updated when the app's data handling changes. The date at the top identifies the latest revision.
 
 ## Contact
 
-Questions about this policy can be opened as a GitHub Discussion, or sent to jcaxavier2@gmail.com
+Questions can be raised through the [GitHub repository](https://github.com/juliocax/FrontLine-Lyrics-Desktop) or sent to **jcaxavier2@gmail.com**.

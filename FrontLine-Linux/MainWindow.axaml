@@ -1,0 +1,346 @@
+<Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+ xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
+ x:Class="FrontLine_Linux.MainWindow" Title="FrontLine Lyrics 1.0.0"
+ Width="1100" Height="570" MinWidth="550" MinHeight="275"
+ CanResize="True" Topmost="True" WindowDecorations="None"
+ TransparencyLevelHint="Transparent" Background="Transparent" KeyDown="Window_KeyDown">
+ <Window.Styles>
+  <Style Selector="Button">
+   <Setter Property="Background" Value="#202020"/><Setter Property="Foreground" Value="White"/>
+   <Setter Property="BorderBrush" Value="#434343"/><Setter Property="BorderThickness" Value="1"/>
+   <Setter Property="CornerRadius" Value="10"/><Setter Property="Padding" Value="14,9"/>
+  </Style>
+ </Window.Styles>
+ <Grid x:Name="Root" Background="Transparent" PointerPressed="Root_PointerPressed"
+       PointerEntered="Root_PointerEntered" PointerExited="Root_PointerExited">
+  <Border x:Name="WindowBackground" Background="#090909" CornerRadius="18" BorderThickness="0"/>
+  <Grid x:Name="MenuPanel" Margin="20" ColumnDefinitions="0.9*,1.5*" RowDefinitions="*,Auto">
+   <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20">
+    <Image x:Name="MenuLogo" Width="260" Height="250" Source="avares://FrontLine-Linux/assets/logo.png" Stretch="Uniform"/>
+    <TextBlock Text="Ready." Foreground="#999999" HorizontalAlignment="Center"/>
+   </StackPanel>
+   <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10">
+   <Viewbox Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Center"><Border BorderBrush="#454545" BorderThickness="1" CornerRadius="40" Padding="18">
+    <StackPanel Orientation="Horizontal" Spacing="12">
+     <Button x:Name="ReleaseNotesButton" Background="Transparent" BorderThickness="0" Padding="4,2" Click="ReleaseNotes_Click" ToolTip.Tip="release" Tag="tip:release">
+      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"><TextBlock Text="FRONTLINE LYRICS" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center" TextAlignment="Center"/><TextBlock Text="v1.0.0" Foreground="#A99BD4" FontSize="11" HorizontalAlignment="Center" TextAlignment="Center"/></StackPanel>
+     </Button>
+     <Button x:Name="MenuListenButton" Click="Listen_Click" ToolTip.Tip="listen" Tag="tip:listen"><StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center"><svg:Svg Path="/assets/icon_listen.svg" Width="17" Height="17" IsHitTestVisible="False"/><TextBlock x:Name="MenuListenLabel" Text="LISTEN" VerticalAlignment="Center"/></StackPanel></Button>
+     <Button x:Name="MenuSearchButton" Click="OpenSearch_Click" ToolTip.Tip="search" Tag="tip:search"><StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center"><svg:Svg Path="/assets/icon_search.svg" Width="17" Height="17" IsHitTestVisible="False"/><TextBlock x:Name="MenuSearchLabel" Text="SEARCH" VerticalAlignment="Center"/></StackPanel></Button>
+     <Button Click="Help_Click" ToolTip.Tip="help" Tag="tip:help"><svg:Svg Path="/assets/icon_help.svg" Width="17" Height="17" IsHitTestVisible="False"/></Button>
+    </StackPanel>
+   </Border></Viewbox>
+   <Border x:Name="LyricsServiceNotice" IsVisible="False" MaxWidth="420"
+           HorizontalAlignment="Center" Background="#ED211B25"
+           BorderBrush="#795B6274" BorderThickness="1" CornerRadius="10"
+           Padding="13,9" Margin="0,3,0,0">
+    <TextBlock x:Name="LyricsServiceMessage" TextWrapping="Wrap" TextAlignment="Center"
+               HorizontalAlignment="Center" FontSize="12" Foreground="#F3EAF1"/>
+   </Border>
+   </StackPanel>
+   <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Spacing="8"
+               HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,14,5,2">
+    <TextBlock x:Name="EnjoyingAppLabel" Text="Enjoying the app?" Foreground="#8F8F98"
+               FontSize="12" VerticalAlignment="Center" Margin="0,0,9,0"/>
+    <Border Width="1" Height="21" Background="#47434D" Margin="0,0,5,0" VerticalAlignment="Center"/>
+    <Button x:Name="SupportButton" Click="Support_Click" ToolTip.Tip="Support development"
+            Background="Transparent" BorderThickness="0" Padding="7,6" Tag="tip:support">
+     <StackPanel Orientation="Horizontal" Spacing="6">
+      <svg:Svg Path="/assets/bmc-logo.svg" Width="17" Height="17" IsHitTestVisible="False" VerticalAlignment="Center"/>
+      <TextBlock x:Name="SupportLabel" Text="Support" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+     </StackPanel>
+    </Button>
+    <Button x:Name="RateButton" IsVisible="False" IsEnabled="False" ToolTip.Tip="Available after publication in the Ubuntu store"
+            Background="Transparent" BorderThickness="0" Padding="7,6">
+     <StackPanel Orientation="Horizontal" Spacing="6">
+      <svg:Svg Path="/assets/rate.svg" Width="18" Height="18" IsHitTestVisible="False" VerticalAlignment="Center"/>
+      <TextBlock x:Name="RateLabel" Text="Rate" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+     </StackPanel>
+    </Button>
+    <Button x:Name="FeedbackButton" Click="Feedback_Click" ToolTip.Tip="Send feedback" Tag="tip:feedback"
+            Background="Transparent" BorderThickness="0" Padding="7,6">
+     <StackPanel Orientation="Horizontal" Spacing="6">
+      <svg:Svg Path="/assets/feedback.svg" Width="17" Height="17" IsHitTestVisible="False" VerticalAlignment="Center"/>
+      <TextBlock x:Name="FeedbackLabel" Text="Feedback" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+     </StackPanel>
+    </Button>
+   </StackPanel>
+  </Grid>
+  <Grid x:Name="LoadingPanel" IsVisible="False" Margin="16" ColumnDefinitions="0.8*,1.5*" RowDefinitions="*,Auto">
+   <Image x:Name="LoadingLogo" Width="220" Height="220" Source="avares://FrontLine-Linux/assets/logo.png" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+   <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="18">
+    <ProgressBar Width="150" Height="6" IsIndeterminate="True" Foreground="#A182FB"/>
+    <TextBlock x:Name="LoadingText" Text="Listening..." FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+    <TextBlock x:Name="RecognitionNotice" Text="Song not identified yet. Still listening…"
+               IsVisible="False" Foreground="#C8BCE3" FontSize="12"
+               TextAlignment="Center" TextWrapping="Wrap" MaxWidth="360"
+               HorizontalAlignment="Center"/>
+    <TextBlock x:Name="LyricsWaitHint" Text="The lyrics server may be having issues. Still trying…"
+               IsVisible="False" Foreground="#C8BCE3" FontSize="12"
+               TextAlignment="Center" TextWrapping="Wrap" MaxWidth="360"
+               HorizontalAlignment="Center"/>
+   </StackPanel>
+   <Viewbox x:Name="LoadingControls" Grid.Row="1" Grid.ColumnSpan="2" Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Right" MaxHeight="53" Margin="0,0,16,10"><StackPanel Orientation="Horizontal" Spacing="10">
+    <Button  Click="PreviousTrack_Click" ToolTip.Tip="prev_track" Tag="tip:prev_track"><svg:Svg Path="/assets/double_arrow_left.svg" Width="17" Height="17" IsHitTestVisible="False"/></Button><Button  Click="Listen_Click" ToolTip.Tip="listen" Tag="tip:listen"><StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center"><svg:Svg Path="/assets/icon_listen.svg" Width="17" Height="17" IsHitTestVisible="False"/><TextBlock x:Name="LoadingListenLabel" Text="LISTEN" VerticalAlignment="Center"/></StackPanel></Button><TextBlock x:Name="LoadingAutoLabel" Text="AUTO" VerticalAlignment="Center"/>
+    <ToggleSwitch x:Name="LoadingAutoSwitch" Click="AutoSwitch_Changed" ToolTip.Tip="auto" Tag="tip:auto"/><Button x:Name="LoadingClearButton" Content="CLEAR" Click="Clear_Click" ToolTip.Tip="clear" Tag="tip:clear"/>
+    <Button  Click="OpenSearch_Click" ToolTip.Tip="search" Tag="tip:search"><svg:Svg Path="/assets/icon_search.svg" Width="17" Height="17" IsHitTestVisible="False"/></Button><Button  Click="NextTrack_Click" ToolTip.Tip="next_track" Tag="tip:next_track"><svg:Svg Path="/assets/double_arrow_right.svg" Width="17" Height="17" IsHitTestVisible="False"/></Button>
+   </StackPanel></Viewbox>
+  </Grid>
+  <Grid x:Name="LyricsPanel" IsVisible="False" ColumnDefinitions="275,*" Margin="30,56,30,28" ColumnSpacing="12">
+   <Grid Grid.Column="0" RowDefinitions="*,Auto" RowSpacing="4">
+   <Viewbox Grid.Row="0" x:Name="CoverPanel" Stretch="Uniform" StretchDirection="Both" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="355" MaxHeight="390"><StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="12">
+    <Border Width="222" Height="222" CornerRadius="10" Background="#151515" BorderThickness="0" ClipToBounds="True">
+     <Grid>
+      <TextBlock x:Name="CoverFallback" Text="♪" FontSize="88" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#8E70D9"/>
+      <Image x:Name="CoverImage" Stretch="UniformToFill" IsVisible="False"/>
+     </Grid>
+    </Border>
+    <TextBlock x:Name="SongText" Text="Música" HorizontalAlignment="Center" TextWrapping="Wrap" FontSize="18" FontWeight="Bold"/>
+    <TextBlock x:Name="ArtistText" Text="Artista" HorizontalAlignment="Center" TextWrapping="Wrap" Foreground="#A0A0A0"/>
+   </StackPanel></Viewbox>
+   </Grid>
+   <Grid Grid.Column="1" RowDefinitions="*,Auto">
+    <Border x:Name="LyricsBackdrop" Background="Transparent" CornerRadius="12" Padding="16" PointerPressed="LyricsBackdrop_PointerPressed">
+     <StackPanel VerticalAlignment="Center" Spacing="18">
+      <TextBlock x:Name="Previous2Text" IsVisible="False" TextAlignment="Center" FontSize="15" Foreground="#747474" TextWrapping="Wrap">
+       <TextBlock.Effect><DropShadowEffect BlurRadius="17" Color="#FF000000" Opacity="1" OffsetX="0" OffsetY="0"/></TextBlock.Effect>
+      </TextBlock>
+      <TextBlock x:Name="PreviousText" Text="♪" TextAlignment="Center" FontSize="17" Foreground="#8C8C8C" TextWrapping="Wrap">
+       <TextBlock.Effect><DropShadowEffect BlurRadius="17" Color="#FF000000" Opacity="1" OffsetX="0" OffsetY="0"/></TextBlock.Effect>
+      </TextBlock>
+      <TextBlock x:Name="CurrentText" Text="♪" TextAlignment="Center" FontSize="29" FontWeight="Bold" Foreground="#FFD132" TextWrapping="Wrap">
+       <TextBlock.Effect><DropShadowEffect BlurRadius="17" Color="#FF000000" Opacity="1" OffsetX="0" OffsetY="0"/></TextBlock.Effect>
+      </TextBlock>
+      <TextBlock x:Name="OriginalText" IsVisible="False" TextAlignment="Center" FontSize="15" Foreground="#BEBEBE" TextWrapping="Wrap">
+       <TextBlock.Effect><DropShadowEffect BlurRadius="17" Color="#FF000000" Opacity="1" OffsetX="0" OffsetY="0"/></TextBlock.Effect>
+      </TextBlock>
+      <TextBlock x:Name="NextText" Text="♪" TextAlignment="Center" FontSize="17" Foreground="#8C8C8C" TextWrapping="Wrap">
+       <TextBlock.Effect><DropShadowEffect BlurRadius="17" Color="#FF000000" Opacity="1" OffsetX="0" OffsetY="0"/></TextBlock.Effect>
+      </TextBlock>
+      <TextBlock x:Name="Next2Text" IsVisible="False" TextAlignment="Center" FontSize="15" Foreground="#747474" TextWrapping="Wrap">
+       <TextBlock.Effect><DropShadowEffect BlurRadius="17" Color="#FF000000" Opacity="1" OffsetX="0" OffsetY="0"/></TextBlock.Effect>
+      </TextBlock>
+     </StackPanel>
+    </Border>
+    <StackPanel x:Name="ShazamSyncTools" Grid.Row="0" Orientation="Vertical" Spacing="8"
+                HorizontalAlignment="Right" VerticalAlignment="Center" IsVisible="False" Margin="0,0,0,0">
+     <Button Content="↑" Click="SyncPrevious_Click" Padding="9" ToolTip.Tip="sync_prev" Tag="tip:sync_prev"/>
+     <Button Content="↓" Click="SyncNext_Click" Padding="9" ToolTip.Tip="sync_next" Tag="tip:sync_next"/>
+    </StackPanel>
+    <Viewbox Grid.Row="1" Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Center" MaxHeight="55"><StackPanel x:Name="LyricsControls" Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center" Margin="0,8,0,0">
+     <Button  Click="PreviousTrack_Click" ToolTip.Tip="prev_track" Tag="tip:prev_track"><svg:Svg Path="/assets/double_arrow_left.svg" Width="17" Height="17" IsHitTestVisible="False"/></Button><Button x:Name="ListenButton" Click="Listen_Click" ToolTip.Tip="listen" Tag="tip:listen"><StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center"><svg:Svg Path="/assets/icon_listen.svg" Width="17" Height="17" IsHitTestVisible="False"/><TextBlock x:Name="LyricsListenLabel" Text="LISTEN" VerticalAlignment="Center"/></StackPanel></Button>
+     <TextBlock x:Name="LyricsAutoLabel" Text="AUTO" VerticalAlignment="Center" FontSize="11"/>
+     <ToggleSwitch x:Name="AutoSwitch" Click="AutoSwitch_Changed" ToolTip.Tip="auto" Tag="tip:auto"/><Button x:Name="ClearButton" Content="CLEAR" Click="Clear_Click" ToolTip.Tip="clear" Tag="tip:clear"/>
+     <Button  Click="OpenSearch_Click" ToolTip.Tip="search" Tag="tip:search"><svg:Svg Path="/assets/icon_search.svg" Width="17" Height="17" IsHitTestVisible="False"/></Button><Button  Click="NextTrack_Click" ToolTip.Tip="next_track" Tag="tip:next_track"><svg:Svg Path="/assets/double_arrow_right.svg" Width="17" Height="17" IsHitTestVisible="False"/></Button>
+    </StackPanel></Viewbox>
+   </Grid>
+  </Grid>
+  <Border x:Name="SearchPanel" IsVisible="False" Background="#FA07070A" CornerRadius="18" Padding="30,58,30,30">
+   <Viewbox Stretch="Uniform" StretchDirection="DownOnly" VerticalAlignment="Center" HorizontalAlignment="Center">
+    <Grid Width="850" Height="345" ColumnDefinitions="*,1.05*" ColumnSpacing="22">
+     <Border Background="#101014" BorderBrush="#302C3A" BorderThickness="1" CornerRadius="18" Padding="24">
+      <StackPanel Spacing="16" VerticalAlignment="Center">
+       <TextBlock x:Name="SearchTitle" Text="MANUAL SEARCH" FontWeight="Bold" FontSize="23" Foreground="#F7F5FF"/>
+       <TextBlock x:Name="SearchDescription" Text="Find a song by artist and title" Foreground="#AAA5BE" FontSize="13"/>
+       <TextBox x:Name="SearchArtist" KeyDown="SearchInput_KeyDown" PlaceholderText="Artist" MinHeight="42"/>
+       <TextBox x:Name="SearchSong" KeyDown="SearchInput_KeyDown" PlaceholderText="Song" MinHeight="42"/>
+       <StackPanel Orientation="Horizontal" Spacing="10" Margin="0,7,0,0">
+        <Button x:Name="SearchSubmit" Content="SEARCH" Click="DoSearch_Click" ToolTip.Tip="find" Tag="tip:find" Background="#6854B0"/>
+        <Button x:Name="SearchBack" Content="BACK" Click="CloseSearch_Click" ToolTip.Tip="back" Tag="tip:back"/>
+       </StackPanel>
+      </StackPanel>
+     </Border>
+     <Border Grid.Column="1" Background="#0D0D12" BorderBrush="#302C3A" BorderThickness="1" CornerRadius="18" Padding="20">
+      <Grid RowDefinitions="Auto,Auto,*" RowSpacing="12">
+       <Grid ColumnDefinitions="*,Auto">
+        <TextBlock x:Name="SearchHistoryTitle" Text="RECENT SEARCHES" FontSize="19" FontWeight="Bold" VerticalAlignment="Center"/>
+        <Button x:Name="SearchHistoryClear" Grid.Column="1" Content="CLEAR" Padding="10,6" Click="ClearSearchHistory_Click" ToolTip.Tip="clear_history" Tag="tip:clear_history"/>
+       </Grid>
+       <TextBlock x:Name="SearchHistoryHint" Grid.Row="1" Text="Click to search this song again" Foreground="#AAA5BE" FontSize="12"/>
+       <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+       <ItemsControl x:Name="SearchHistoryList">
+        <ItemsControl.ItemTemplate>
+         <DataTemplate x:CompileBindings="False">
+          <Grid ColumnDefinitions="*,Auto" Margin="2,4" ColumnSpacing="8">
+           <Button Tag="{Binding}" Click="OpenHistoryEntry_Click" Background="#17141F" Padding="12,7"
+                   BorderBrush="#302A3B" HorizontalContentAlignment="Stretch" ToolTip.Tip="Search this song">
+            <StackPanel VerticalAlignment="Center" Spacing="2">
+             <TextBlock Text="{Binding Song}" Foreground="White" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+             <TextBlock Text="{Binding Artist}" Foreground="#AAA5BE" FontSize="11" TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+           </Button>
+           <Button Grid.Column="1" Content="×" Width="31" Height="31" Padding="0"
+                   Click="DeleteHistoryEntry_Click" Tag="{Binding}" ToolTip.Tip="Remove this search"
+                   Background="#211B29" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center"/>
+          </Grid>
+         </DataTemplate>
+        </ItemsControl.ItemTemplate>
+       </ItemsControl>
+       </ScrollViewer>
+      </Grid>
+     </Border>
+    </Grid>
+   </Viewbox>
+  </Border>
+  <Popup x:Name="SettingsPopup" Placement="Right" HorizontalOffset="-10"
+         IsLightDismissEnabled="False" ShouldUseOverlayLayer="False" WindowManagerAddShadowHint="True">
+  <Border x:Name="SettingsPanel" Background="#FC080808" CornerRadius="15"
+          Width="360" MaxHeight="535" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+          BorderBrush="Transparent" BorderThickness="0"
+          BoxShadow="0 12 34 0 #AA000000">
+   <Grid x:Name="SettingsContentGrid" VerticalAlignment="Stretch" HorizontalAlignment="Stretch"
+         RowDefinitions="Auto,Auto,*" RowSpacing="10" Margin="14,13,14,14">
+    <Grid ColumnDefinitions="32,*,32">
+     <TextBlock x:Name="SettingsHeader" Grid.Column="1" Text="SETTINGS" FontWeight="Normal" FontSize="14" HorizontalAlignment="Center" TextAlignment="Center" VerticalAlignment="Center" Foreground="#BDBDBD"/>
+     <Button Grid.Column="2" Click="CloseSettings_Click" ToolTip.Tip="close_settings" Tag="tip:close_settings"
+             Width="32" Height="32" Padding="0" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" VerticalAlignment="Center" Background="#1B1B1B" BorderBrush="#353535"><TextBlock Text="×" FontSize="20" FontWeight="Normal" VerticalAlignment="Center" HorizontalAlignment="Center"/></Button>
+    </Grid>
+    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="9" HorizontalAlignment="Left">
+     <Button x:Name="SettingsLyricsTab" Content="LYRICS" Click="SettingsLyricsTab_Click" ToolTip.Tip="tab_lyrics" Tag="tip:tab_lyrics"/>
+     <Button x:Name="SettingsTranslateTab" Content="TRANSLATION" Click="SettingsTranslateTab_Click" ToolTip.Tip="tab_translation" Tag="tip:tab_translation"/>
+     <Button x:Name="SettingsGeneralTab" Content="GENERAL" Click="SettingsGeneralTab_Click" ToolTip.Tip="tab_general" Tag="tip:tab_general"/>
+    </StackPanel>
+    <Border Grid.Row="2" Background="#0D0D0D" BorderBrush="#252525" BorderThickness="1"
+            CornerRadius="13" Padding="12,12" MinHeight="100">
+     <Grid>
+      <ScrollViewer x:Name="LyricsSettingsScroll" MaxHeight="324" VerticalScrollBarVisibility="Auto">
+       <Grid x:Name="LyricsSettingsContent" ColumnDefinitions="*" RowDefinitions="Auto,Auto,Auto,Auto" RowSpacing="10" Margin="2,2,8,4">
+        <Border Background="#151515" CornerRadius="14" Padding="17" BorderBrush="#292929" BorderThickness="1">
+         <StackPanel Spacing="14">
+          <TextBlock x:Name="OpacityLabel" Text="BACKGROUND OPACITY" FontSize="13" FontWeight="SemiBold" Foreground="#EFEFEF"/>
+          <TextBlock x:Name="OpacityDescription" Text="Background outside the window" FontSize="11" Foreground="#AAAAAA"/>
+          <Slider x:Name="OpacitySlider" Tag="tip:opacity" ToolTip.Tip="Background opacity" Minimum="0" Maximum="1" Value="0.4" ValueChanged="OpacitySlider_Changed"/>
+         </StackPanel>
+        </Border>
+        <Border Grid.Row="1" Background="#151515" CornerRadius="14" Padding="17" BorderBrush="#292929" BorderThickness="1">
+         <StackPanel Spacing="14">
+          <TextBlock x:Name="FontSizeLabel" Text="LYRIC FONT SIZE" FontSize="13" FontWeight="SemiBold" Foreground="#EFEFEF"/>
+          <TextBlock x:Name="FontSizeDescription" Text="Keep the highlight readable" FontSize="11" Foreground="#AAAAAA"/>
+          <Slider x:Name="FontSizeSlider" Tag="tip:font_size" ToolTip.Tip="Lyric font size" Minimum="14" Maximum="70" Value="29" ValueChanged="FontSizeSlider_Changed"/>
+         </StackPanel>
+        </Border>
+        <Border Grid.Row="2" Background="#151515" CornerRadius="14" Padding="17" BorderBrush="#292929" BorderThickness="1">
+         <StackPanel Spacing="12">
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+           <TextBlock x:Name="LinesLabel" Grid.Column="0" Text="VISIBLE LYRIC LINES" FontSize="12" FontWeight="SemiBold" Foreground="#EFEFEF" TextWrapping="Wrap"/>
+           <TextBlock x:Name="AlignmentLabel" Grid.Column="1" Text="LYRIC ALIGNMENT" FontSize="12" FontWeight="SemiBold" Foreground="#EFEFEF" TextWrapping="Wrap"/>
+          </Grid>
+          <ComboBox IsVisible="False" x:Name="LinesCombo" Tag="tip:lines" ToolTip.Tip="Number of visible lyric lines" SelectedIndex="1" SelectionChanged="LinesCombo_Changed">
+           <ComboBoxItem Tag="1" Content="1 line"/><ComboBoxItem Tag="3" Content="3 lines"/><ComboBoxItem Tag="5" Content="5 lines"/>
+          </ComboBox>
+          <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+           <StackPanel x:Name="LinesSegment" Grid.Column="0" Orientation="Horizontal" Spacing="5">
+            <Button Content="1" Tag="1" Click="LineChoice_Click" Width="38" Height="34" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="0" ToolTip.Tip="1 line"/>
+            <Button Content="3" Tag="3" Click="LineChoice_Click" Width="38" Height="34" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="0" ToolTip.Tip="3 lines"/>
+            <Button Content="5" Tag="5" Click="LineChoice_Click" Width="38" Height="34" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="0" ToolTip.Tip="5 lines"/>
+           </StackPanel>
+           <StackPanel x:Name="AlignmentSegment" Grid.Column="1" Orientation="Horizontal" Spacing="5">
+            <Button Tag="left" Click="AlignmentChoice_Click" MinWidth="38" Padding="8,7" ToolTip.Tip="Left"><svg:Svg Path="/assets/align_left.svg" Width="17" Height="17" IsHitTestVisible="False"/></Button>
+            <Button Tag="center" Click="AlignmentChoice_Click" MinWidth="38" Padding="8,7" ToolTip.Tip="Center"><svg:Svg Path="/assets/align_center.svg" Width="17" Height="17" IsHitTestVisible="False"/></Button>
+            <Button Tag="right" Click="AlignmentChoice_Click" MinWidth="38" Padding="8,7" ToolTip.Tip="Right"><svg:Svg Path="/assets/align_right.svg" Width="17" Height="17" IsHitTestVisible="False"/></Button>
+           </StackPanel>
+          </Grid>
+         </StackPanel>
+        </Border>
+        <Border Grid.Row="3" Background="#151515" CornerRadius="14" Padding="17" BorderBrush="#292929" BorderThickness="1">
+         <StackPanel Spacing="12">
+          <TextBlock x:Name="ColorLabel" Text="CURRENT LYRIC COLOR" FontSize="13" FontWeight="SemiBold" Foreground="#EFEFEF"/>
+          <ComboBox x:Name="LyricColorCombo" Tag="tip:color" ToolTip.Tip="Highlighted lyric color" SelectedIndex="0" SelectionChanged="LyricColorCombo_Changed">
+           <ComboBoxItem Tag="#FFD132" Content="Yellow"/><ComboBoxItem Tag="#FFFFFF" Content="White"/>
+           <ComboBoxItem Tag="#89D9FF" Content="Blue"/><ComboBoxItem Tag="#B59BFF" Content="Purple"/>
+           <ComboBoxItem Tag="#7CE0A3" Content="Green"/>
+           <ComboBoxItem Tag="#FF718B" Content="Coral"/><ComboBoxItem Tag="#FF9E42" Content="Orange"/>
+           <ComboBoxItem Tag="#FF87CE" Content="Sky"/><ComboBoxItem Tag="#FF7DE1" Content="Pink"/>
+           <ComboBoxItem Tag="#B5FF8A" Content="Lime"/><ComboBoxItem Tag="#FFE8A3" Content="Cream"/>
+           <ComboBoxItem Tag="grad:sunset" Content="Gradient · Sunset"/>
+           <ComboBoxItem Tag="grad:ocean" Content="Gradient · Ocean"/>
+           <ComboBoxItem Tag="grad:aurora" Content="Gradient · Aurora"/>
+           <ComboBoxItem Tag="grad:neon" Content="Gradient · Neon"/>
+          </ComboBox>
+          <TextBlock x:Name="FontFamilyLabel" Text="LYRIC FONT" FontSize="12" Foreground="#EFEFEF"/>
+          <ComboBox x:Name="LyricFontCombo" Tag="tip:font" SelectionChanged="LyricFontCombo_Changed" ToolTip.Tip="Lyric font family" MinWidth="170"/>
+          <StackPanel Orientation="Horizontal" Spacing="8">
+           <ToggleSwitch x:Name="LyricBoldToggle" Tag="tip:bold" Content="Bold" Click="LyricTypography_Changed" IsChecked="True"/>
+           <ToggleSwitch x:Name="LyricItalicToggle" Tag="tip:italic" Content="Italic" Click="LyricTypography_Changed"/>
+          </StackPanel>
+         </StackPanel>
+        </Border>
+       </Grid>
+      </ScrollViewer>
+      <ScrollViewer x:Name="TranslateSettingsScroll" MaxHeight="324" VerticalScrollBarVisibility="Auto" IsVisible="False"><StackPanel x:Name="TranslateSettingsContent" Spacing="18" HorizontalAlignment="Stretch">
+       <TextBlock x:Name="TranslateLabel" Text="TRANSLATE LYRICS / ROMANIZATION" Foreground="#CDCDCD" TextWrapping="Wrap"/>
+       <ComboBox IsVisible="False" x:Name="TranslationCombo" Tag="tip:translation" ToolTip.Tip="Lyric translation language" SelectedIndex="0" SelectionChanged="TranslationCombo_Changed">
+        <ComboBoxItem Tag="original" Content="Original"/>
+        <ComboBoxItem Tag="romanized" Content="Romanization"/>
+        <ComboBoxItem Tag="en" Content="English"/>
+        <ComboBoxItem Tag="es" Content="Español"/>
+        <ComboBoxItem Tag="fr" Content="Français"/>
+        <ComboBoxItem Tag="pt" Content="Português"/>
+       </ComboBox>
+       <WrapPanel x:Name="TranslationSegment" Orientation="Horizontal" ItemWidth="150" ItemHeight="43">
+        <Button Content="Original" Tag="original" Click="TranslationChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
+        <Button Content="Romanization" Tag="romanized" Click="TranslationChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
+        <Button Content="English" Tag="en" Click="TranslationChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
+        <Button Content="Español" Tag="es" Click="TranslationChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
+        <Button Content="Français" Tag="fr" Click="TranslationChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
+        <Button Content="Português" Tag="pt" Click="TranslationChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
+       </WrapPanel>
+       <ToggleSwitch x:Name="ShowOriginalToggle" Content="Show original below translation" Click="ShowOriginal_Changed" ToolTip.Tip="show_original" Tag="tip:show_original"/>
+       <Border x:Name="TranslationNoticeCard" Background="#161616" CornerRadius="10" Padding="12" IsVisible="False">
+        <StackPanel Orientation="Horizontal" Spacing="10">
+         <ProgressBar x:Name="SettingsTranslationProgress" Width="45" Height="4" IsIndeterminate="True" VerticalAlignment="Center" Foreground="#E5E5E5"/>
+         <TextBlock x:Name="TranslationNotice" IsVisible="False" Foreground="#E0E0E0" TextWrapping="Wrap" FontSize="12"/>
+        </StackPanel>
+       </Border>
+      </StackPanel>
+      </ScrollViewer>
+      <ScrollViewer x:Name="GeneralSettingsScroll" MaxHeight="324" VerticalScrollBarVisibility="Auto" IsVisible="False"><StackPanel x:Name="GeneralSettingsContent" Spacing="18" HorizontalAlignment="Stretch">
+       <TextBlock x:Name="LanguageLabel" Text="APP LANGUAGE" Foreground="#CDCDCD"/>
+       <ComboBox IsVisible="False" x:Name="AppLanguageCombo" Tag="tip:app_language" ToolTip.Tip="Application language" SelectedIndex="0" SelectionChanged="AppLanguageCombo_Changed">
+        <ComboBoxItem Tag="en" Content="English"/><ComboBoxItem Tag="pt" Content="Português"/>
+        <ComboBoxItem Tag="es" Content="Español"/><ComboBoxItem Tag="id" Content="Bahasa Indonesia"/>
+       </ComboBox>
+       <WrapPanel x:Name="LanguageSegment" Orientation="Horizontal" ItemWidth="150" ItemHeight="43">
+        <Button Content="English" Tag="en" Click="LanguageChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
+        <Button Content="Português" Tag="pt" Click="LanguageChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
+        <Button Content="Español" Tag="es" Click="LanguageChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
+        <Button Content="Bahasa Indonesia" Tag="id" Click="LanguageChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
+       </WrapPanel>
+       <Border x:Name="SnapPermissionsSection" Background="#151515" CornerRadius="10" Padding="12" IsVisible="False">
+        <StackPanel Spacing="9">
+         <TextBlock x:Name="SnapPermissionsHeader" Text="MUSIC AND AUDIO PERMISSIONS" FontSize="12" FontWeight="SemiBold" Foreground="#EEEEEE" TextWrapping="Wrap"/>
+         <TextBlock x:Name="SnapPermissionsDescription" Text="Allow FrontLine to recognize system sound and control your music player." FontSize="11" Foreground="#AAAAAA" TextWrapping="Wrap"/>
+         <TextBlock x:Name="SnapMusicPermissionStatus" Text="Music player: checking…" FontSize="11" Foreground="#AAAAAA" TextWrapping="Wrap"/>
+         <TextBlock x:Name="SnapAudioPermissionStatus" Text="Audio recognition: checking…" FontSize="11" Foreground="#AAAAAA" TextWrapping="Wrap"/>
+         <Button x:Name="OpenSnapPermissionsButton" Content="View permissions and instructions" Click="OpenSnapPermissions_Click" HorizontalAlignment="Left" Padding="9,7"/>
+        </StackPanel>
+       </Border>
+       <Border Background="#151515" CornerRadius="10" Padding="12" Margin="0,6,0,0">
+        <StackPanel Spacing="9">
+         <TextBlock x:Name="TelemetryHeading" Text="ANONYMOUS SETTINGS STATISTICS" FontSize="12" FontWeight="SemiBold" Foreground="#EEEEEE" TextWrapping="Wrap"/>
+         <TextBlock x:Name="TelemetryDescription" Text="Optional. Send selected settings, app version and system language to Aptabase at most once per day. Never sends songs, lyrics or searches." FontSize="11" Foreground="#AAAAAA" TextWrapping="Wrap"/>
+         <ToggleSwitch x:Name="TelemetryToggle" Content="Share anonymous statistics" Click="TelemetryToggle_Click" IsChecked="True" Tag="tip:telemetry"/>
+        </StackPanel>
+       </Border>
+      </StackPanel></ScrollViewer>
+     </Grid>
+    </Border>
+   </Grid>
+  </Border>
+  </Popup>
+  <Border x:Name="ResizeGrip" Width="30" Height="30" Background="Transparent"
+          HorizontalAlignment="Right" VerticalAlignment="Bottom"
+          PointerPressed="ResizeGrip_PointerPressed" ToolTip.Tip="resize" Tag="tip:resize"/>
+  <TextBlock x:Name="ResizeHint" Text="◢" FontSize="20" FontWeight="Bold" Foreground="#888888"
+             HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,8,6"
+             IsHitTestVisible="False"/>
+  <Grid x:Name="TopControls" Height="45" VerticalAlignment="Top" ColumnDefinitions="*,Auto" Margin="15,8,14,0">
+   <Border Background="Transparent" PointerPressed="DragHandle_PointerPressed"/>
+   <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="5">
+    <Button Click="Settings_Click" Padding="10,6" ToolTip.Tip="settings" Tag="tip:settings"><svg:Svg Path="/assets/settings.svg" Width="18" Height="18" IsHitTestVisible="False"/></Button>
+    <Button Content="—" Click="Minimize_Click" Padding="10,6" ToolTip.Tip="minimize" Tag="tip:minimize"/>
+    <Button Content="×" Click="Close_Click" Padding="10,6" ToolTip.Tip="close" Tag="tip:close"/>
+   </StackPanel>
+  </Grid>
+ </Grid>
+</Window>

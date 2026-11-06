@@ -9,7 +9,6 @@ test and easy to swap for another lyrics provider later.
 import logging
 import time
 import re
-import time
 import unicodedata
 from typing import Any, Dict, List, Optional, Tuple
 

@@ -24,9 +24,8 @@ import engine.cover_art as cover_art
 import engine.lyrics as lyrics_mod
 from engine import service_health
 import engine.tuning as tuning
-from engine.audio_capture import AudioCapture
 from engine.recognition import ShazamRecognizer
-from engine.media_session import MediaSessionWatcher
+from engine.media_provider import MediaSessionWatcher
 from engine.smtc_policy import sane_media_position, should_trust_smtc_clock
 from engine.translation import (
     apply_translation_in_background,
@@ -89,8 +88,13 @@ class MusicManager:
     headless server.
     """
 
-    def __init__(self):
-        self.audio = AudioCapture()
+    def __init__(self, *, enable_audio: bool = True):
+
+        if enable_audio:
+            from engine.audio_provider import AudioCapture
+            self.audio = AudioCapture()
+        else:
+            self.audio = None
         self.recognizer = ShazamRecognizer()
         self.server_running = True
         self.overlay_font_size = 26
@@ -176,6 +180,8 @@ class MusicManager:
         self._media_busy = False
         self._lyrics_lookup_failed_at = None
         self.lyrics_lookup_notice = None
+        self.recognition_failure_reason = None
+        self.recognition_notice = None
         self._next_live_fingerprint = 0.0
         self._live_fp_busy = False
         self._live_fp_drift_hits = 0
@@ -978,10 +984,13 @@ class MusicManager:
         # following track changes when the provider recovers.
 
         current_line, previous_line, next_line = "", "", ""
+        current_lyric_index = -1
         current_line_original = ""
         overlay_msg, status = "", ""
 
-        if not self.is_listening:
+        if self.recognition_failure_reason:
+            status = "NOT_FOUND"
+        elif not self.is_listening:
             status = "IDLE"
         elif self.is_listening and not self.current_song:
             # Spotify/SMTC already identified the track, but LRCLIB may be
@@ -1019,6 +1028,7 @@ class MusicManager:
             else:
                 for i, item in enumerate(self.synced_lyrics):
                     if elapsed_time >= item['timestamp']:
+                        current_lyric_index = i
                         current_line = item['text'] if item['text'].strip() else "♫"
                         previous_line = self.synced_lyrics[i-1]['text'] if i > 0 else ""
                         next_line = self.synced_lyrics[i+1]['text'] if i + 1 < len(self.synced_lyrics) else ""
@@ -1056,9 +1066,12 @@ class MusicManager:
             "status": status,
             "lyrics_service_status": ("ok" if status == "NOT_FOUND" else service_health.status()),
             "lyrics_lookup_notice": self.lyrics_lookup_notice,
+            "recognition_failure": self.recognition_failure_reason,
+            "recognition_notice": self.recognition_notice,
             "auto_mode": self.auto_mode,
             "is_translating": self.is_translating,
             "current_lyrics": current_line,
+            "current_lyric_index": current_lyric_index if status == "SYNCED" else -1,
             "previous_lyrics": previous_line,
             "next_lyrics": next_line,
             "current_lyrics_original": current_line_original,

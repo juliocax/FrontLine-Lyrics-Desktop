@@ -1,0 +1,11 @@
+Free fonts included in FrontLine Lyrics (commercial use permitted, redistribution permitted).
+
+SIL Open Font License 1.1 (https://openfontlicense.org):
+Poppins, Montserrat, Inter, Nunito, Quicksand, Raleway, Lora, Playfair Display, Cinzel,
+Oswald, Bebas Neue, Anton, Orbitron, Bangers, Pacifico, Lobster, Dancing Script, Caveat
+
+Apache License 2.0 (https://www.apache.org/licenses/LICENSE-2.0):
+Permanent Marker
+
+Source: Google Fonts (via @expo-google-fonts packages). The .ttf files contain the
+copyright notice and the license for each font.

@@ -368,6 +368,17 @@ _site/
 
 # local telemetry key
 TelemetryKey.Local.cs
+LinuxTelemetryKey.local.cs
 
 # Visual Studio Code settings
 launchSettings.json
+
+# Linux build outputs
+FrontLine-Linux/dist-linux/
+
+# Snapcraft generated files
+FrontLine-Linux/packaging-snap/payload/
+FrontLine-Linux/packaging-snap/parts/
+FrontLine-Linux/packaging-snap/stage/
+FrontLine-Linux/packaging-snap/prime/
+FrontLine-Linux/packaging-snap/*.snap

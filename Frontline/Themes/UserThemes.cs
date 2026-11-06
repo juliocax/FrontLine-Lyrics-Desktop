@@ -81,6 +81,53 @@ namespace FrontLineOverlay
 
             new UserThemeDef
             {
+                Id = "citylights",
+                Names = N("City Lights", "Luzes da Cidade", "Luces de la Ciudad", "Cahaya Kota"),
+                CreateGround = () => new CityLightsGroundView(),
+                CreateLayer = () => new AmbientThemeFrameView(Color.FromRgb(80, 148, 195), Color.FromRgb(139, 106, 190)),
+                PageVeil = Solid(0xF5, 0x05, 0x0D, 0x1C),
+                CardBackground = Solid(0xFA, 0x0C, 0x15, 0x2A),
+                CardBorder = Solid(0x80, 0x6A, 0x8C, 0xC7),
+                LogoColor = LogoGradient(new System.Windows.Point(0, 0), new System.Windows.Point(1, 0),
+                    (0xFF35D9FA, 0.00), (0xFF3A8FF4, 0.35), (0xFF6559EF, 0.65), (0xFFC35FF5, 1.00)),
+                DockBackground = Solid(0xFA, 0x07, 0x10, 0x1F),
+                DockBorder = LogoGradient(new System.Windows.Point(0, 0), new System.Windows.Point(1, 0),
+                    (0xFF5094C3, 0.00), (0xFF8B6ABE, 1.00)),
+                DockCornerRadius = new System.Windows.CornerRadius(25),
+            },
+            new UserThemeDef
+            {
+                Id = "cozycats",
+                Names = N("Cat Lovers", "Cat Lovers", "Amantes de los Gatos", "Pencinta Kucing"),
+                CreateGround = () => new CozyCatsGroundView(),
+                CreateLayer = () => new AmbientThemeFrameView(Color.FromRgb(167, 126, 177), Color.FromRgb(190, 149, 177)),
+                PageVeil = Solid(0xF5, 0x18, 0x12, 0x1D),
+                CardBackground = Solid(0xFA, 0x25, 0x1B, 0x2C),
+                CardBorder = Solid(0x80, 0xBE, 0x95, 0xB1),
+                LogoColor = LogoGradient(new System.Windows.Point(0, 0), new System.Windows.Point(1, 0),
+                    (0xFFBA9AEE, 0.00), (0xFFCBACF1, 0.32), (0xFFE3AECD, 0.68), (0xFFFFC6A4, 1.00)),
+                DockBackground = Solid(0xFA, 0x25, 0x19, 0x2B),
+                DockBorder = Solid(0xD0, 0xB7, 0x88, 0xB8),
+                DockCornerRadius = new System.Windows.CornerRadius(25),
+            },
+
+            new UserThemeDef
+            {
+                Id = "neonnights",
+                Names = N("Neon Nights", "Neon Nights", "Noches Neón", "Malam Neon"),
+                CreateGround = () => new NeonNightsGroundView(),
+                CreateLayer = () => new NeonNightsFrameView(),
+                PageVeil = Solid(0xF2, 0x10, 0x08, 0x10),
+                CardBackground = Solid(0xFA, 0x16, 0x0A, 0x12),
+                CardBorder = Solid(0x70, 0xFF, 0x14, 0x93),
+                LogoColor = Solid(0xFF, 0xFF, 0x14, 0x93),
+                DockBackground = Solid(0xFA, 0x10, 0x09, 0x0F),
+                DockBorder = Solid(0xFF, 0xFF, 0x14, 0x93),
+                DockCornerRadius = new System.Windows.CornerRadius(25),
+            },
+
+            new UserThemeDef
+            {
                 Id = "goldenedition",
                 Names = N("Golden Edition", "Edição de Ouro", "Edición Dorada", "Edisi Emas"),
                 CreateGround = () => new GoldVinylGroundView(),
@@ -101,7 +148,7 @@ namespace FrontLineOverlay
             new UserThemeDef
             {
                 Id = "backstage",
-                Names = N("Backstage", "Bastidores", "Backstage", "Belakang Panggung"),
+                Names = N("Backstage", "Bastidores", "Tras bambalinas", "Belakang Panggung"),
                 CreateGround = () => new GrungeGroundView(),
                 CreateLayer = () => new GrungeLayerView(),
                 PageVeil = Solid(0x88, 0x10, 0x10, 0x12),
@@ -133,8 +180,6 @@ namespace FrontLineOverlay
 
         };
 
-        // Tema sazonal de Natal: NÃO está em "All", portanto não aparece no ComboBox
-        // nem pode ser salvo como AppTheme. É usado só pelo modo Automático (gorro, logo e dock).
         private static readonly UserThemeDef SantaSeasonal =
         new UserThemeDef
             {
