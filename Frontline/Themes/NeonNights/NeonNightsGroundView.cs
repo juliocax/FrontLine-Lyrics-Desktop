@@ -7,7 +7,6 @@ using System.Windows.Threading;
 
 namespace FrontLineOverlay
 {
-    // Native WPF drawing: one 30 FPS clock, no bitmap/video assets or audio polling.
     public sealed class NeonNightsGroundView : UserControl
     {
         private readonly DispatcherTimer _timer;
@@ -130,7 +129,6 @@ namespace FrontLineOverlay
                 dc.DrawGeometry(null, _soft, _waves[wave]);
                 dc.DrawGeometry(null, wave == 0 ? _line : _faint, _waves[wave]);
             }
-            // Pulses move along the SAME analytic curves used by the cached wave geometry.
             for (int pulse = 0; pulse < 3; pulse++)
             {
                 int wave = pulse % 2;
@@ -152,7 +150,6 @@ namespace FrontLineOverlay
                 double x = particle.X * _width + Math.Sin(seconds * 0.3 + particle.Phase * 9) * 5;
                 double y = _height * (0.87 - phase * 0.79);
                 double opacity = Math.Sin(phase * Math.PI) * 0.65;
-                // The center/right toolbar stays visually quiet.
                 if (x > _width * 0.40 && x < _width * 0.93 && y > _height * 0.28 && y < _height * 0.67)
                     opacity *= 0.08;
                 dc.PushOpacity(opacity);
@@ -187,7 +184,6 @@ namespace FrontLineOverlay
         }
     }
 
-    // Separate foreground layer: an inset pink rim without intercepting mouse input.
     public sealed class NeonNightsFrameView : UserControl
     {
         private readonly Pen _rim = MakePen(190, 1);
