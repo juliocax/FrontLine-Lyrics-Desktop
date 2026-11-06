@@ -17,8 +17,6 @@ FRONTLINE_PACKAGE_VERSION="${VERSION}-1" "$LINUX/packaging-deb/build-deb.sh"
 echo '==> Preparing Snap payload'
 "$HERE/prepare-snap.sh" "$DEB"
 [[ -x "$HERE/payload/bin/frontline-lyrics-snap" ]] || { echo 'Snap payload launcher missing' >&2; exit 1; }
-# Update only the version field; preserve the rest of snapcraft.yaml.
-# grade remains devel unless the maintainer deliberately changes it.
 python3 - "$HERE/snap/snapcraft.yaml" "$VERSION" <<'PYVERSION'
 import pathlib, re, sys
 p=pathlib.Path(sys.argv[1]); s=p.read_text(); v=sys.argv[2]

@@ -2,8 +2,6 @@
 
 <img src="Frontline/assets/featured_banner.png" alt="FrontLine Lyrics" width="700" />
 
-**Real-time, synchronized lyrics for the music playing on your computer.**
-
 [![Microsoft Store](https://img.shields.io/badge/Windows-Microsoft%20Store-0078D4?logo=microsoft&logoColor=white)](https://apps.microsoft.com/detail/9P6LNJCL8ZCC)
 ![Linux](https://img.shields.io/badge/Linux-Ubuntu-E95420?logo=ubuntu&logoColor=white)
 ![C#](https://img.shields.io/badge/Frontend-C%23%20%2F%20.NET-512BD4?logo=dotnet&logoColor=white)
@@ -85,7 +83,7 @@ The Linux version is being prepared for distribution. Until it is published, you
 <table align="center">
   <tr>
     <td align="center"><img src="docs/img/v1.6.0/intro.png" alt="Home screen" width="320"/><br/><b>Home screen</b><br/>The initial screen when you open the overlay</td>
-    <td align="center"><img src="docs/img/imagem5.png" alt="Listening to a song" width="320"/><br/><b>Listening</b><br/>Recognizing what's currently playing</td>
+    <td align="center"><img src="docs/img/v1.6.0/overlay-lock.png" alt="Listening to a song" width="320"/><br/><b>Listening</b><br/>Recognizing what's currently playing</td>
   </tr>
   <tr>
     <td align="center"><img src="docs/img/imagem3.png" alt="Synced lyrics" width="320"/><br/><b>Synced lyrics</b><br/>Lyrics scrolling in sync with the music</td>

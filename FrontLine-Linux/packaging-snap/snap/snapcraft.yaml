@@ -11,7 +11,7 @@ description: |
   manual searching, configurable typography and optional translation.
   The application bundles an Avalonia interface and local Python engine.
 base: core26
-grade: devel
+grade: stable
 confinement: strict
 platforms:
   amd64:
