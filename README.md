@@ -3,7 +3,7 @@
 <img src="Frontline/assets/featured_banner.png" alt="FrontLine Lyrics" width="700" />
 
 [![Microsoft Store](https://img.shields.io/badge/Windows-Microsoft%20Store-0078D4?logo=microsoft&logoColor=white)](https://apps.microsoft.com/detail/9P6LNJCL8ZCC)
-![Linux](https://img.shields.io/badge/Linux-Ubuntu-E95420?logo=ubuntu&logoColor=white)
+[![frontline-lyrics](https://snapcraft.io/frontline-lyrics/badge.svg)](https://snapcraft.io/frontline-lyrics)
 ![C#](https://img.shields.io/badge/Frontend-C%23%20%2F%20.NET-512BD4?logo=dotnet&logoColor=white)
 ![Python](https://img.shields.io/badge/Backend-Python-3776AB?logo=python&logoColor=white)
 [![Contributors](https://img.shields.io/badge/Contributors-2-orange)](CONTRIBUTORS.md)
