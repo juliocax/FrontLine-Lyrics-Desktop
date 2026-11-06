@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="Frontline/assets/banner.jpg" alt="FrontLine Lyrics" width="700" />
+<img src="Frontline/assets/featured_banner.png" alt="FrontLine Lyrics" width="700" />
 
 **Real-time, synchronized lyrics for the music playing on your computer.**
 
@@ -139,7 +139,8 @@ Requires **.NET 10 SDK**, **Python**, **Git**, `pulseaudio-utils`, and `playerct
 sudo apt install -y pulseaudio-utils playerctl
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r FrontlineServer/requirements-linux.txt
+python -m pip install -r FrontlineServer/requirements-linux.txtgit config pull.rebase false
+git pull
 dotnet restore FrontLine-Linux/FrontLine-Linux.csproj
 ```
 

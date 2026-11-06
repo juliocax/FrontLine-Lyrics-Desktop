@@ -5,7 +5,7 @@ summary: Synchronized desktop lyrics with song recognition
 website: https://github.com/juliocax/FrontLine-Lyrics-Desktop
 source-code: https://github.com/juliocax/FrontLine-Lyrics-Desktop
 issues: https://github.com/juliocax/FrontLine-Lyrics-Desktop/issues
-license: MIT
+license: GPL-3.0
 description: |
   FrontLine Lyrics displays synchronized song lyrics with recognition,
   manual searching, configurable typography and optional translation.
