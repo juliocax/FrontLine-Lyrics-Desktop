@@ -8,7 +8,6 @@
         FontFamily="Segoe UI" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType" SnapsToDevicePixels="True" UseLayoutRounding="True"
         MouseLeftButtonDown="Window_MouseLeftButtonDown" PreviewKeyDown="Window_PreviewKeyDown">
 
-    <!-- Remove chrome nativo extra sem voltar à janela em camadas. -->
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="0" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
     </shell:WindowChrome.WindowChrome>
@@ -44,7 +43,7 @@
             <TextBlock Grid.Row="1" x:Name="TxtTitle" FontSize="22" FontWeight="Bold" Foreground="White"
                        TextWrapping="Wrap" Margin="0,12,0,0"/>
 
-            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
+            <ScrollViewer Grid.Row="2" MaxHeight="480" VerticalScrollBarVisibility="Auto" Margin="0,12,0,0">
                 <StackPanel Margin="0,0,8,0">
 
                     <TextBlock x:Name="TxtThanks" FontSize="13.5" Foreground="#E6FFFFFF" TextWrapping="Wrap" LineHeight="20"/>

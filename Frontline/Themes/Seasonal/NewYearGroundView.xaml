@@ -1,6 +1,4 @@
-<UserControl x:Class="FrontLineOverlay.NewYearGroundView"
- xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
- xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" IsHitTestVisible="False">
+<UserControl xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" x:Class="FrontLineOverlay.NewYearGroundView" IsHitTestVisible="False">
  <Grid ClipToBounds="True">
   <Viewbox Height="126" Stretch="Fill" HorizontalAlignment="Stretch" VerticalAlignment="Bottom">
    <Canvas Width="1280" Height="126" ClipToBounds="True">
@@ -14,6 +12,12 @@
     <Path Data="M-10,109 C158,45 277,133 440,110 C606,87 666,43 812,52 C966,63 1050,126 1290,51" Stroke="#EAB04F" StrokeThickness="5" Opacity="0.32"><Path.Effect><BlurEffect Radius="7"/></Path.Effect></Path>
     <Path Data="M-10,109 C158,45 277,133 440,110 C606,87 666,43 812,52 C966,63 1050,126 1290,51" Stroke="#EAB04F" StrokeThickness="1.45" Opacity="0.76" StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
     <Path Data="M-10,116 C201,105 307,131 487,113 C667,90 777,128 918,111 C1111,88 1162,94 1290,79" Stroke="#D19A52" StrokeThickness="0.8" Opacity="0.55"/>
+    <Path x:Name="GoldPulseAHalo" Data="M-30,43 C165,125 247,127 403,90 C543,54 606,8 744,46 C901,97 1017,25 1309,61" Stroke="#00FFD23F" StrokeThickness="18" Opacity="0.14" StrokeStartLineCap="Round" StrokeEndLineCap="Round" IsHitTestVisible="False"/>
+    <Path x:Name="GoldPulseAGlow" Data="M-30,43 C165,125 247,127 403,90 C543,54 606,8 744,46 C901,97 1017,25 1309,61" Stroke="#00FFD23F" StrokeThickness="9" Opacity="0.38" StrokeStartLineCap="Round" StrokeEndLineCap="Round" IsHitTestVisible="False"/>
+    <Path x:Name="GoldPulseACore" Data="M-30,43 C165,125 247,127 403,90 C543,54 606,8 744,46 C901,97 1017,25 1309,61" Stroke="#00FFD23F" StrokeThickness="3.8" Opacity="0.98" StrokeStartLineCap="Round" StrokeEndLineCap="Round" IsHitTestVisible="False"/>
+    <Path x:Name="GoldPulseBHalo" Data="M-10,109 C158,45 277,133 440,110 C606,87 666,43 812,52 C966,63 1050,126 1290,51" Stroke="#00FFD23F" StrokeThickness="18" Opacity="0.14" StrokeStartLineCap="Round" StrokeEndLineCap="Round" IsHitTestVisible="False"/>
+    <Path x:Name="GoldPulseBGlow" Data="M-10,109 C158,45 277,133 440,110 C606,87 666,43 812,52 C966,63 1050,126 1290,51" Stroke="#00FFD23F" StrokeThickness="9" Opacity="0.38" StrokeStartLineCap="Round" StrokeEndLineCap="Round" IsHitTestVisible="False"/>
+    <Path x:Name="GoldPulseBCore" Data="M-10,109 C158,45 277,133 440,110 C606,87 666,43 812,52 C966,63 1050,126 1290,51" Stroke="#00FFD23F" StrokeThickness="3.8" Opacity="0.98" StrokeStartLineCap="Round" StrokeEndLineCap="Round" IsHitTestVisible="False"/>
     <Ellipse Canvas.Left="25" Canvas.Top="85.3" Width="1.5" Height="1.5" Fill="#FFCF78" Opacity="0.32"/>
     <Ellipse Canvas.Left="284" Canvas.Top="119.5" Width="2.2" Height="2.2" Fill="#FFCF78" Opacity="0.37"/>
     <Ellipse Canvas.Left="301" Canvas.Top="121.7" Width="0.7" Height="0.7" Fill="#FFCF78" Opacity="0.59"/>

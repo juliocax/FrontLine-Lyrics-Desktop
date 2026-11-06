@@ -84,7 +84,7 @@ The Linux version is being prepared for distribution. Until it is published, you
 
 <table align="center">
   <tr>
-    <td align="center"><img src="docs/img/menu.png" alt="Home screen" width="320"/><br/><b>Home screen</b><br/>The initial screen when you open the overlay</td>
+    <td align="center"><img src="docs/img/v1.6.0/intro.png" alt="Home screen" width="320"/><br/><b>Home screen</b><br/>The initial screen when you open the overlay</td>
     <td align="center"><img src="docs/img/imagem5.png" alt="Listening to a song" width="320"/><br/><b>Listening</b><br/>Recognizing what's currently playing</td>
   </tr>
   <tr>

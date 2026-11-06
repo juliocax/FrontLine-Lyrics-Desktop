@@ -7,7 +7,6 @@
         Background="#FF141418" ResizeMode="NoResize" Topmost="True" ShowInTaskbar="False"
         FontFamily="Segoe UI" TextOptions.TextFormattingMode="Display" TextOptions.TextRenderingMode="ClearType" SnapsToDevicePixels="True" UseLayoutRounding="True" MouseLeftButtonDown="Window_MouseLeftButtonDown"
         PreviewKeyDown="Window_PreviewKeyDown">
-    <!-- Remove chrome nativo extra sem voltar à janela em camadas. -->
     <shell:WindowChrome.WindowChrome>
         <shell:WindowChrome CaptionHeight="0" ResizeBorderThickness="0" GlassFrameThickness="0" CornerRadius="0" UseAeroCaptionButtons="False"/>
     </shell:WindowChrome.WindowChrome>

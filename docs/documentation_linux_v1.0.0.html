@@ -3,55 +3,256 @@ layout: base
 title: "Linux v1.0.0 Tutorial — FrontLine Lyrics"
 nav_active: tutorial
 ---
-<style>
-.linux-doc-back{display:inline-flex;align-items:center;gap:6px;color:var(--muted,#a7a9b6);text-decoration:none;margin:0 0 18px}.linux-doc-back:hover{color:#fff}
-.linux-doc-hero-label{display:inline-flex;gap:8px;align-items:center;margin-bottom:14px;background:rgba(233,84,32,.13);border:1px solid rgba(233,84,32,.32);color:#ffae82;border-radius:999px;padding:6px 13px;font-weight:600;font-size:.84rem}
-.linux-settings{display:flex;flex-direction:column;gap:24px;padding:3.5rem 0;border-bottom:1px solid rgba(255,255,255,.08)}
-.linux-settings>.step-text{max-width:740px}
-.linux-subgroup{padding:24px;border-radius:22px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.025)}
-.linux-subgroup h3{display:flex;align-items:center;gap:9px;margin:0 0 20px;font-size:1.12rem}.linux-subgroup h3 .material-symbols-outlined{font-size:22px;color:#ef895a}
-.linux-setting-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-.linux-setting-card{min-width:0;border:1px solid rgba(255,255,255,.07);border-radius:16px;overflow:hidden;background:rgba(255,255,255,.025);padding:13px}
-.linux-setting-card h4{font-size:1rem;margin:15px 4px 7px}.linux-setting-card p{color:var(--muted,#a6a7b5);font-size:.9rem;line-height:1.6;margin:0 4px 5px}
-.linux-doc-shot{position:relative;min-height:175px;display:grid;place-items:center;overflow:hidden;background:linear-gradient(145deg,rgba(233,84,32,.09),rgba(82,42,106,.25))}
-.linux-setting-card .linux-doc-shot{min-height:150px;aspect-ratio:16/9;border-radius:10px}
-.linux-doc-shot .linux-shot-missing{min-width:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:6px;padding:20px;color:rgba(255,255,255,.65);text-align:center;font-size:.82rem;overflow-wrap:anywhere}
-.linux-shot-missing .material-symbols-outlined{font-size:29px;opacity:.6}.linux-shot-missing code{opacity:.75;font-size:.73rem}
-.linux-doc-shot>img{display:none;max-width:100%;width:100%;height:auto;object-fit:contain}
-.linux-doc-shot.has-image{min-height:0}.linux-doc-shot.has-image>img{display:block}.linux-doc-shot.has-image>.linux-shot-missing{display:none}
-@media(max-width:700px){.linux-setting-grid{grid-template-columns:1fr}.linux-subgroup{padding:15px}.linux-settings{padding:2rem 0}}
+<html><head><style>
+.doc-linux100 .linux100-settings { display: flex; flex-direction: column; gap: 4rem; }
+.doc-linux100 .linux100-settings-part { border-bottom: 1px solid rgba(255,255,255,.08); padding-bottom: 3rem; }
+.doc-linux100 .linux100-settings-part:last-child { border-bottom: 0; padding-bottom: 0; }
+.doc-linux100 .linux100-settings-part h3 { margin: 0 0 1rem; font-size: 1.1rem; }
+.doc-linux100 .marks > li[data-number]::before { content: attr(data-number); }
+.doc-linux100 .linux100-shot { margin: 0; overflow: hidden; }
+.doc-linux100 .linux100-shot img { display: block; width: 100%; height: auto; }
+.doc-linux100 .linux100-shot img[hidden] { display: none; }
+.doc-linux100 .linux100-shot figcaption { display: none; }
+.doc-linux100 .linux100-shot[data-missing] { display: grid; place-items: center; min-height: 240px; }
+.doc-linux100 .linux100-shot[data-missing] figcaption { display: block; padding: 2rem; text-align: center; opacity: .65; }
 </style>
-<main>
+<main class="doc-linux100">
   <section class="wrap doc-hero">
-    <a href="docs-index.html" class="linux-doc-back"><span class="material-symbols-outlined">arrow_back</span><span data-i18n="linux_doc.back">All documentation</span></a>
-    <div><span class="linux-doc-hero-label"><span class="material-symbols-outlined" style="font-size:19px">terminal</span>Linux · Ubuntu · v1.0.0</span></div>
-    <h1 data-i18n="linux_doc.title">FrontLine Lyrics for Linux</h1>
-    <p data-i18n="linux_doc.subtitle">A quick guide to listening, lyrics and customization on Linux.</p>
+    <span class="eyebrow pill" data-i18n="doc.eyebrow">Tutorial</span>
+    <h1 data-i18n="linux100.title">How to use FrontLine Lyrics for Linux 1.0.0</h1>
   </section>
-  <nav class="wrap doc-toc" aria-label="Table of contents"><div class="doc-toc-head"><h2 data-i18n="doc.toc.title">On this page</h2><p data-i18n="doc.toc.subtitle">Jump straight to any part of the tutorial.</p></div>
-    <div class="toc-grid">
-      <a class="toc-card" href="#step-home"><span class="toc-num">01</span><span class="toc-icon material-symbols-outlined">home</span><span class="toc-label" data-i18n="linux_doc.homeTitle">Home screen</span></a>
-      <a class="toc-card" href="#step-settings"><span class="toc-num">02</span><span class="toc-icon material-symbols-outlined">tune</span><span class="toc-label" data-i18n="linux_doc.settingsTitle">Settings</span></a>
-      <a class="toc-card" href="#step-listen"><span class="toc-num">03</span><span class="toc-icon material-symbols-outlined">mic</span><span class="toc-label" data-i18n="linux_doc.listenTitle">Listen</span></a>
-      <a class="toc-card" href="#step-identified"><span class="toc-num">04</span><span class="toc-icon material-symbols-outlined">music_note</span><span class="toc-label" data-i18n="linux_doc.identifiedTitle">Song identified</span></a>
-      <a class="toc-card" href="#step-sync"><span class="toc-num">05</span><span class="toc-icon material-symbols-outlined">sync_problem</span><span class="toc-label" data-i18n="linux_doc.syncTitle">Fix sync</span></a>
+
+  <section class="wrap doc-intro" id="intro">
+    <div class="doc-intro-inner glass">
+      <div class="doc-intro-text">
+        <span class="doc-intro-icon"><span class="material-symbols-outlined">waving_hand</span></span>
+        <h2 data-i18n="doc.introTitle">Welcome to FrontLine Lyrics</h2>
+        <p data-i18n="doc.introText">This app identifies whatever song is playing on your computer and shows the synced lyrics on screen. Works with Spotify, YouTube, or any other player. Just let the music play.</p>
+      </div>
+      <figure class="step-shot frame linux100-shot doc-intro-shot"><img src="img/linux/v1.0.0/intro.png" alt="FrontLine Lyrics for Linux home screen" loading="lazy" onerror="this.hidden = true; this.parentElement.setAttribute('data-missing', '');" onload="this.hidden = false; this.parentElement.removeAttribute('data-missing');"><figcaption data-i18n="linux100.imagePending">Screenshot coming soon</figcaption></figure>
     </div>
+  </section>
+
+  <nav class="wrap doc-toc" aria-label="Table of contents">
+    <div class="doc-toc-head">
+      <h2 data-i18n="doc.toc.title">On this page</h2>
+      <p data-i18n="doc.toc.subtitle">Jump straight to any part of the tutorial.</p>
+    </div>
+    <div class="toc-grid">
+      <a class="toc-card" href="#intro">
+        <span class="toc-icon"><span class="material-symbols-outlined">waving_hand</span></span>
+        <span class="toc-label" data-i18n="doc.toc.intro">Welcome</span>
+      </a>
+      <a class="toc-card" href="#step-1">
+        <span class="toc-num">01</span>
+        <span class="toc-icon"><span class="material-symbols-outlined">home</span></span>
+        <span class="toc-label" data-i18n="doc.toc.s1">Home screen</span>
+      </a>
+      <a class="toc-card" href="#step-2">
+        <span class="toc-num">02</span>
+        <span class="toc-icon"><span class="material-symbols-outlined">tune</span></span>
+        <span class="toc-label" data-i18n="doc.toc.s2">Settings menu</span>
+      </a>
+      <a class="toc-card" href="#step-3">
+        <span class="toc-num">03</span>
+        <span class="toc-icon"><span class="material-symbols-outlined">mic</span></span>
+        <span class="toc-label" data-i18n="doc.toc.s3">Clicking LISTEN</span>
+      </a>
+      <a class="toc-card" href="#step-4">
+        <span class="toc-num">04</span>
+        <span class="toc-icon"><span class="material-symbols-outlined">music_note</span></span>
+        <span class="toc-label" data-i18n="doc.toc.s4">Song identified</span>
+      </a>
+      <a class="toc-card" href="#step-5">
+        <span class="toc-num">05</span>
+        <span class="toc-icon"><span class="material-symbols-outlined">sync_problem</span></span>
+        <span class="toc-label" data-i18n="doc.toc.s5">Fix sync issues</span>
+      </a>
+      </div>
   </nav>
-  <div class="wrap steps">
-<section class="step " id="step-home"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step1_linux.png</code></span><img src="img/step1_linux.png" alt="Get to know the home screen" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><div class="step-text"><div class="step-kicker" data-i18n="linux_doc.step">STEP 1</div><h2 data-i18n="linux_doc.homeTitle">Get to know the home screen</h2><p data-i18n="linux_doc.homeDesc">Use Listen to identify a song, Search to find lyrics manually, Help for this tutorial, and the window controls to manage the app.</p></div></section><section class="linux-settings" id="step-settings"><div class="step-text"><div class="step-kicker" data-i18n="linux_doc.step">STEP 2</div><h2 data-i18n="linux_doc.settingsTitle">Customize FrontLine Lyrics</h2><p data-i18n="linux_doc.settingsDesc">Open Settings to adjust Lyrics, Translation and General preferences. Each group is explained below.</p></div>
-  <div class="linux-subgroup"><h3><span class="material-symbols-outlined">format_size</span> <span data-i18n="linux_doc.lyricsTab">Lyrics</span></h3><div class="linux-setting-grid"><article class="linux-setting-card"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step2_linux_background.png</code></span><img src="img/step2_linux_background.png" alt="Background opacity" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><h4 data-i18n="linux_doc.backgroundTitle">Background opacity</h4><p data-i18n="linux_doc.backgroundDesc">Adjust how transparent the background is.</p></article><article class="linux-setting-card"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step2_linux_size.png</code></span><img src="img/step2_linux_size.png" alt="Lyric size" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><h4 data-i18n="linux_doc.sizeTitle">Lyric size</h4><p data-i18n="linux_doc.sizeDesc">Make the lyrics larger or smaller.</p></article><article class="linux-setting-card"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step2_linux_lines.png</code></span><img src="img/step2_linux_lines.png" alt="Visible lines and alignment" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><h4 data-i18n="linux_doc.linesTitle">Visible lines and alignment</h4><p data-i18n="linux_doc.linesDesc">Choose 1, 3 or 5 lines and align text left, center or right.</p></article><article class="linux-setting-card"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step2_linux_color.png</code></span><img src="img/step2_linux_color.png" alt="Lyric color" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><h4 data-i18n="linux_doc.colorTitle">Lyric color</h4><p data-i18n="linux_doc.colorDesc">Pick the color or gradient used for the lyrics.</p></article><article class="linux-setting-card"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step2_linux_font.png</code></span><img src="img/step2_linux_font.png" alt="Lyric font" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><h4 data-i18n="linux_doc.fontTitle">Lyric font</h4><p data-i18n="linux_doc.fontDesc">Choose the typeface used to display lyrics.</p></article><article class="linux-setting-card"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step2_linux_style.png</code></span><img src="img/step2_linux_style.png" alt="Bold and italic" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><h4 data-i18n="linux_doc.styleTitle">Bold and italic</h4><p data-i18n="linux_doc.styleDesc">Turn bold or italic styling on or off.</p></article></div></div><div class="linux-subgroup"><h3><span class="material-symbols-outlined">translate</span> <span data-i18n="linux_doc.translationTab">Translation</span></h3><div class="linux-setting-grid"><article class="linux-setting-card"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step2_linux_translation.png</code></span><img src="img/step2_linux_translation.png" alt="Translation languages" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><h4 data-i18n="linux_doc.translateTitle">Translation languages</h4><p data-i18n="linux_doc.translateDesc">Switch between the original, available translations and romanization.</p></article><article class="linux-setting-card"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step2_linux_original.png</code></span><img src="img/step2_linux_original.png" alt="Original below translation" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><h4 data-i18n="linux_doc.originalTitle">Original below translation</h4><p data-i18n="linux_doc.originalDesc">Show the original line underneath its translated version.</p></article></div></div><div class="linux-subgroup"><h3><span class="material-symbols-outlined">settings</span> <span data-i18n="linux_doc.generalTab">General</span></h3><div class="linux-setting-grid"><article class="linux-setting-card"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step2_linux_language.png</code></span><img src="img/step2_linux_language.png" alt="App language" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><h4 data-i18n="linux_doc.appLangTitle">App language</h4><p data-i18n="linux_doc.appLangDesc">Choose the language used in menus and buttons.</p></article><article class="linux-setting-card"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step2_linux_permissions.png</code></span><img src="img/step2_linux_permissions.png" alt="Permissions" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><h4 data-i18n="linux_doc.permissionsTitle">Permissions</h4><p data-i18n="linux_doc.permissionsDesc">Check audio-recording and player-control access, and reopen the permission guide. For other music apps, authorize their compatible MPRIS connection when available.</p></article><article class="linux-setting-card"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step2_linux_telemetry.png</code></span><img src="img/step2_linux_telemetry.png" alt="Anonymous statistics" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><h4 data-i18n="linux_doc.telemetryTitle">Anonymous statistics</h4><p data-i18n="linux_doc.telemetryDesc">Enable or disable optional anonymous usage statistics.</p></article></div></div></section><section class="step " id="step-listen"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step4_linux.png</code></span><img src="img/step4_linux.png" alt="When you press Listen" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><div class="step-text"><div class="step-kicker" data-i18n="linux_doc.step">STEP 3</div><h2 data-i18n="linux_doc.listenTitle">When you press Listen</h2><p data-i18n="linux_doc.listenDesc">FrontLine listens to system audio to recognize a track. You can toggle Auto, clear the screen or search manually.</p></div></section><section class="step reverse" id="step-identified"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step5_linux.png</code></span><img src="img/step5_linux.png" alt="Song identified" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><div class="step-text"><div class="step-kicker" data-i18n="linux_doc.step">STEP 4</div><h2 data-i18n="linux_doc.identifiedTitle">Song identified</h2><p data-i18n="linux_doc.identifiedDesc">See synchronized lyrics, album art, song title and artist. Choose how many lyric lines are visible in Settings.</p></div></section><section class="step " id="step-sync"><div class="step-shot frame linux-doc-shot"><span class="linux-shot-missing" aria-hidden="true"><span class="material-symbols-outlined">add_photo_alternate</span><span data-i18n="linux_doc.imagePending">Screenshot coming soon</span><code>img/step6_linux.png</code></span><img src="img/step6_linux.png" alt="Lyrics out of sync?" loading="lazy" onload="this.parentNode.classList.add('has-image')" onerror="this.style.display='none'" /></div><div class="step-text"><div class="step-kicker" data-i18n="linux_doc.step">STEP 5</div><h2 data-i18n="linux_doc.syncTitle">Lyrics out of sync?</h2><p data-i18n="linux_doc.syncDesc">For Shazam-based synchronization, use the up/down arrows to adjust the current line. These arrows stay hidden when synchronization follows the player clock, such as Spotify.</p></div></section>
+
+  <section class="wrap steps">
+
+    <div class="step" id="step-1">
+      <figure class="step-shot frame linux100-shot"><img src="img/linux/v1.0.0/home.png" alt="Linux home screen with controls numbered 1 to 5" loading="lazy" onerror="this.hidden = true; this.parentElement.setAttribute('data-missing', '');" onload="this.hidden = false; this.parentElement.removeAttribute('data-missing');"><figcaption data-i18n="linux100.imagePending">Screenshot coming soon</figcaption></figure>
+      <div class="step-text">
+        <div class="step-kicker">STEP 1</div>
+        <h2 data-i18n="doc.step1t">Getting to know the home screen</h2>
+        <p class="note" data-i18n="doc.step1note">The numbers below match the markers on the screenshot.</p>
+        <ol class="marks">
+          <li data-i18n="doc.step1_i1">Identifies the song and shows the synced lyrics.</li>
+          <li data-i18n="doc.step1_i2">Manual search. Type the artist and song to find the lyrics.</li>
+          <li data-i18n="doc.step1_i4">Reopens this tutorial.</li>
+          <li data-i18n="linux100.homeControls">Settings, minimize, and close controls.</li>
+          <li data-i18n="linux100.homeSupport">Support and Feedback buttons: support the project or send a comment. If the Rate button is available in your build, it opens the store review page.</li>
+        </ol>
+      </div>
+    </div>
+
+<div id="step-2" class="linux100-settings">
+      <div class="step-text">
+        <div class="step-kicker">STEP 2</div>
+        <h2 data-i18n="linux_doc.settingsTitle">Customize FrontLine Lyrics</h2>
+      </div>
+      <div class="step reverse linux100-settings-part">
+        <div class="step-text"><p data-i18n="linux_doc.settingsDesc">Open Settings to adjust Lyrics, Translation and General preferences.</p></div>
+        <figure class="step-shot frame linux100-shot"><img src="img/linux/v1.0.0/settings-tabs.png" alt="Linux settings: Lyrics, Translation, and General tabs" loading="lazy" onerror="this.hidden = true; this.parentElement.setAttribute('data-missing', '');" onload="this.hidden = false; this.parentElement.removeAttribute('data-missing');"><figcaption data-i18n="linux100.imagePending">Screenshot coming soon</figcaption></figure>
+      </div>
+<div class="step reverse linux100-settings-part">
+        <div class="step-text">
+          <h3 data-i18n="linux_doc.lyricsTab">Lyrics</h3>
+          <ol class="marks" start="1"><li data-i18n="linux100.background" data-number="1" value="1">Background opacity: adjust how transparent or opaque the background behind the lyrics is.</li>
+<li data-i18n="linux_doc.sizeDesc" data-number="2" value="2">Make the lyrics larger or smaller.</li></ol>
+        </div>
+        <figure class="step-shot frame linux100-shot"><img src="img/linux/v1.0.0/settings-lyrics-background.png" alt="Linux lyric settings: background opacity and font size; markers 1 and 2" loading="lazy" onerror="this.hidden = true; this.parentElement.setAttribute('data-missing', '');" onload="this.hidden = false; this.parentElement.removeAttribute('data-missing');"><figcaption data-i18n="linux100.imagePending">Screenshot coming soon</figcaption></figure>
+      </div>
+<div class="step reverse linux100-settings-part">
+        <div class="step-text">
+          <h3 data-i18n="linux_doc.lyricsTab">Lyrics</h3>
+          <ol class="marks" start="3"><li data-i18n="linux100.layout" data-number="3" value="3">Lines and alignment: choose 1, 3, or 5 visible lines and align the text left, center, or right.</li>
+<li data-i18n="linux100.appearance" data-number="4" value="4">Lyric color and font: choose the text color and typeface, and turn bold or italic on or off.</li></ol>
+        </div>
+        <figure class="step-shot frame linux100-shot"><img src="img/linux/v1.0.0/settings-lyrics-layout.png" alt="Linux lyric settings: 1, 3, or 5 lines, alignment, color, font, bold, and italic; markers 3 and 4" loading="lazy" onerror="this.hidden = true; this.parentElement.setAttribute('data-missing', '');" onload="this.hidden = false; this.parentElement.removeAttribute('data-missing');"><figcaption data-i18n="linux100.imagePending">Screenshot coming soon</figcaption></figure>
+      </div>
+<div class="step reverse linux100-settings-part">
+        <div class="step-text">
+          <h3 data-i18n="linux_doc.translationTab">Translation</h3>
+          <ol class="marks" start="1"><li data-i18n="linux_doc.translateDesc" data-number="1" value="1">Switch between the original, available translations and romanization.</li>
+<li data-i18n="linux_doc.originalDesc" data-number="2" value="2">Show the original line underneath its translated version.</li></ol>
+        </div>
+        <figure class="step-shot frame linux100-shot"><img src="img/linux/v1.0.0/settings-translation.png" alt="Linux translation languages and original lyrics option; markers 1 and 2" loading="lazy" onerror="this.hidden = true; this.parentElement.setAttribute('data-missing', '');" onload="this.hidden = false; this.parentElement.removeAttribute('data-missing');"><figcaption data-i18n="linux100.imagePending">Screenshot coming soon</figcaption></figure>
+      </div>
+<div class="step reverse linux100-settings-part">
+        <div class="step-text">
+          <h3 data-i18n="linux_doc.generalTab">General</h3>
+          <ol class="marks" start="1"><li data-i18n="linux_doc.appLangDesc" data-number="1" value="1">Choose the language used in menus and buttons.</li>
+<li data-i18n="linux100.permissions" data-number="2" value="2">Permissions: in Snap installations, check access to system audio and your music player. Open View permissions and instructions for guidance. Different players may need separate MPRIS permissions.</li>
+</ol>
+        </div>
+        <figure class="step-shot frame linux100-shot"><img src="img/linux/v1.0.0/settings-general.png" alt="Linux general settings: app language and Snap audio/player permissions; markers 1 and 2" loading="lazy" onerror="this.hidden = true; this.parentElement.setAttribute('data-missing', '');" onload="this.hidden = false; this.parentElement.removeAttribute('data-missing');"><figcaption data-i18n="linux100.imagePending">Screenshot coming soon</figcaption></figure>
+      </div>
+<div class="step reverse linux100-settings-part">
+        <div class="step-text">
+          <h3 data-i18n="linux_doc.generalTab">General</h3>
+          <ol class="marks" start="3"><li data-i18n="linux_doc.telemetryDesc" data-number="3" value="3">Enable or disable optional anonymous usage statistics.</li></ol>
+        </div>
+        <figure class="step-shot frame linux100-shot"><img src="img/linux/v1.0.0/settings-general-statistics.png" alt="Linux general settings: anonymous statistics; marker 3" loading="lazy" onerror="this.hidden = true; this.parentElement.setAttribute('data-missing', '');" onload="this.hidden = false; this.parentElement.removeAttribute('data-missing');"><figcaption data-i18n="linux100.imagePending">Screenshot coming soon</figcaption></figure>
+      </div>
+    </div>
+
+    <div class="step" id="step-3">
+      <figure class="step-shot frame linux100-shot"><img src="img/linux/v1.0.0/listen.png" alt="Linux controls after pressing Listen; markers 1 to 6" loading="lazy" onerror="this.hidden = true; this.parentElement.setAttribute('data-missing', '');" onload="this.hidden = false; this.parentElement.removeAttribute('data-missing');"><figcaption data-i18n="linux100.imagePending">Screenshot coming soon</figcaption></figure>
+      <div class="step-text">
+        <div class="step-kicker">STEP 3</div>
+        <h2 data-i18n="doc.step3t">When you click LISTEN</h2>
+        <p data-i18n="doc.step3intro">The screen switches to show:</p>
+        <ol class="marks">
+          <li data-i18n="doc.step3_i1">The waiting area, showing "Listening..." while the app captures the audio.</li>
+          <li data-i18n="doc.step3_i2">Next and previous track buttons.</li>
+          <li data-i18n="doc.step3_i3">The LISTEN button, to identify the song.</li>
+          <li data-i18n="doc.step3_i4">The AUTO mode switch.</li>
+          <li data-i18n="doc.step3_i5">The button that clears the screen and returns to the start.</li>
+          <li data-i18n="doc.step3_i6">The manual search button.</li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="step reverse" id="step-4">
+      <div class="step-text">
+        <div class="step-kicker">STEP 4</div>
+        <h2 data-i18n="doc.step4t">Song identified!</h2>
+        <p data-i18n="doc.step4intro">The lyrics appear on screen, along with:</p>
+        <ol class="marks">
+          <li data-i18n="linux100.lyricDisplay">The synced lyrics, using the number of lines and alignment selected in Settings → Lyrics. This screenshot shows three lines.</li>
+          <li data-i18n="doc.step4_i2">The album cover.</li>
+          <li data-i18n="doc.step4_i3">The song name and, right below it, the artist or band name.</li>
+        </ol>
+      </div>
+      <figure class="step-shot frame linux100-shot"><img src="img/linux/v1.0.0/identified.png" alt="Linux song identified: lyrics, cover, title and artist; markers 1 to 3" loading="lazy" onerror="this.hidden = true; this.parentElement.setAttribute('data-missing', '');" onload="this.hidden = false; this.parentElement.removeAttribute('data-missing');"><figcaption data-i18n="linux100.imagePending">Screenshot coming soon</figcaption></figure>
+    </div>
+
+    <div class="step" id="step-5">
+      <figure class="step-shot frame linux100-shot"><img src="img/linux/v1.0.0/sync.png" alt="Linux manual sync arrows for audio-based recognition" loading="lazy" onerror="this.hidden = true; this.parentElement.setAttribute('data-missing', '');" onload="this.hidden = false; this.parentElement.removeAttribute('data-missing');"><figcaption data-i18n="linux100.imagePending">Screenshot coming soon</figcaption></figure>
+      <div class="step-text">
+        <div class="step-kicker">STEP 5</div>
+        <h2 data-i18n="doc.step5t">Lyrics out of sync?</h2>
+        <p data-i18n="linux100.sync">For songs identified from audio, use the up/down arrows to move the current lyric line forward or back until it matches the singer. These arrows stay hidden when synchronization follows a compatible player’s playback position, such as Spotify through MPRIS.</p>
+      </div>
+    </div>
+
+    </section>
+
+  <section class="wrap doc-cta">
+    <h3 data-i18n="doc.ctaTitle">Haven't installed it yet?</h3>
+    <div class="cta-row">
+      <a class="action-btn action-btn--lg" href="https://github.com/juliocax/FrontLine-Lyrics-Desktop/releases" data-i18n="linux100.download">Download for Linux on GitHub</a></div>
+  </section>
+
+  <div class="img-lightbox" id="imgLightbox" aria-hidden="true">
+    <button class="img-lightbox-close" type="button" aria-label="Close">
+      <span class="material-symbols-outlined">close</span>
+    </button>
+    <img src="" alt="" id="imgLightboxImg">
   </div>
-  <section class="wrap doc-cta"><h3 data-i18n="linux_doc.helpTitle">Need help?</h3><p data-i18n="linux_doc.helpDesc">Check the README for installation and Snap permissions, or report an issue on GitHub.</p><div class="cta-row"><a class="action-btn action-btn--lg" href="https://github.com/juliocax/FrontLine-Lyrics-Desktop" target="_blank" rel="noopener noreferrer"><span class="material-symbols-outlined">open_in_new</span><span data-i18n="linux_doc.github">Open GitHub repository</span></a></div></section>
-  <div class="img-lightbox" id="imgLightbox" aria-hidden="true"><button class="img-lightbox-close" type="button" aria-label="Close"><span class="material-symbols-outlined">close</span></button><img src="" alt="" id="imgLightboxImg" /></div>
 </main>
+
 <script>
-document.addEventListener('DOMContentLoaded',function(){
- const box=document.getElementById('imgLightbox'), preview=document.getElementById('imgLightboxImg');
- document.querySelectorAll('.linux-doc-shot.has-image img').forEach(function(img){img.setAttribute('tabindex','0');img.setAttribute('role','button')});
- document.addEventListener('click',function(e){const img=e.target.closest('.linux-doc-shot.has-image img');if(img){preview.src=img.src;preview.alt=img.alt;box.classList.add('is-open');box.setAttribute('aria-hidden','false');document.body.classList.add('no-scroll')}});
- function close(){box.classList.remove('is-open');box.setAttribute('aria-hidden','true');document.body.classList.remove('no-scroll')}
- box.addEventListener('click',close);box.querySelector('.img-lightbox-close').addEventListener('click',close);
- document.addEventListener('keydown',function(e){if(e.key==='Escape')close();if((e.key==='Enter'||e.key===' ')&&e.target.matches('.linux-doc-shot.has-image img')){e.preventDefault();e.target.click()}});
- document.querySelectorAll('.toc-card[href^="#"]').forEach(function(a){a.addEventListener('click',function(e){let el=document.querySelector(a.getAttribute('href'));if(!el)return;e.preventDefault();window.scrollTo({top:el.getBoundingClientRect().top+window.scrollY-96,behavior:'smooth'})})})
-});
-</script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var headerOffset = 96;
+    document.querySelectorAll(".toc-card[href^='#']").forEach(function (link) {
+      link.addEventListener("click", function (event) {
+        var target = document.getElementById(link.getAttribute("href").slice(1));
+        if (!target) return;
+        event.preventDefault();
+        var top = target.getBoundingClientRect().top + window.pageYOffset - headerOffset;
+        window.scrollTo({ top: top, behavior: "smooth" });
+      });
+    });
+
+    var lightbox = document.getElementById("imgLightbox");
+    var lightboxImg = document.getElementById("imgLightboxImg");
+
+    function openLightbox(img) {
+      if (img.hidden || !img.naturalWidth) return;
+      lightboxImg.src = img.currentSrc || img.src;
+      lightboxImg.alt = img.alt || "";
+      lightbox.classList.add("is-open");
+      lightbox.setAttribute("aria-hidden", "false");
+      document.body.classList.add("no-scroll");
+    }
+
+    function closeLightbox() {
+      lightbox.classList.remove("is-open");
+      lightbox.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("no-scroll");
+    }
+
+    document.querySelectorAll(".step-shot img").forEach(function (img) {
+      function updateImageAccess() {
+        if (img.hidden || (img.complete && !img.naturalWidth)) {
+          img.removeAttribute("tabindex");
+          img.removeAttribute("role");
+        } else {
+          img.setAttribute("tabindex", "0");
+          img.setAttribute("role", "button");
+        }
+      }
+      img.addEventListener("error", updateImageAccess);
+      img.addEventListener("load", updateImageAccess);
+      updateImageAccess();
+      img.addEventListener("click", function () { openLightbox(img); });
+      img.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openLightbox(img);
+        }
+      });
+    });
+
+    lightbox.addEventListener("click", closeLightbox);
+    document.querySelector(".img-lightbox-close").addEventListener("click", closeLightbox);
+    document.addEventListener("keydown", function (event) {
+      if (event.key === "Escape") closeLightbox();
+    });
+  });
+</script></head></html>

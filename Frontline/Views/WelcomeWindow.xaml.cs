@@ -14,7 +14,6 @@ namespace FrontLineOverlay
 {
     public partial class WelcomeWindow : Window
     {
-        // Prefere cantos arredondados nativos no Windows 11, sem usar janela em camadas.
         [DllImport("dwmapi.dll", PreserveSig = true)]
         private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attribute, ref int value, int size);
 
@@ -68,22 +67,19 @@ namespace FrontLineOverlay
                 TutorialsLead = "New here? ",
                 TutorialsLink = "See the tutorials",
                 TelHeader = "Anonymous usage statistics",
-                TelIntro = "To know what to improve, FrontLine can send a small anonymous report about how it's set up. It's sent at most once a day.",
+                TelIntro = "This is optional. With this option enabled, FrontLine sends a small report about your app settings, at most once every 24 hours. It helps decide which features to improve; it does not track what you listen to.",
                 SentLabel = "WHAT IS SENT",
                 Sent = new[]
                 {
-                    "The theme you picked",
-                    "The lyric font",
-                    "The lyric color",
-                    "The app language",
-                    "Whether a lock shortcut is set, and which keys",
-                    "The app version and your Windows language",
+                    "Appearance and lyrics: theme, background opacity and scenery, font, color, size, style, lines and alignment.",
+                    "Languages and controls: translation, original lyrics, operating modes, window lock and shortcut keys.",
+                    "Window and technical details: size, position, state, app version and Windows language.",
                 },
-                NeverSent = "NEVER sent: songs, artists, lyrics, searches, your name, e-mail, or any ID that identifies you.",
-                Provider = "Data goes to Aptabase, a privacy-focused analytics service. You can turn this off any time in Settings (App tab).",
+                NeverSent = "These statistics do NOT include songs, artists, lyrics, searches, listening history, audio recordings, API keys, your name or email. They do not include a permanent personal identifier.",
+                Provider = "The report goes to Aptabase. You can turn it off at any time in Settings → General; disabling it stops future statistics reports. This choice controls statistics only, not the audio recognition needed by Listen.",
                 Toggle = "Send anonymous usage statistics",
                 Start = "Get started",
-                Source = "Open source: see exactly what is sent in the code (Telemetry.cs) and the README",
+                Source = "Open source: view the project code and documentation",
             },
             ["pt"] = new Texts
             {
@@ -92,22 +88,19 @@ namespace FrontLineOverlay
                 TutorialsLead = "Primeira vez por aqui? ",
                 TutorialsLink = "Veja os tutoriais",
                 TelHeader = "Estatísticas de uso anônimas",
-                TelIntro = "Para saber o que melhorar, o FrontLine pode enviar um pequeno relatório anônimo sobre como ele está configurado. O envio acontece no máximo uma vez por dia.",
+                TelIntro = "A participação é opcional. Com esta opção ativada, o FrontLine envia um pequeno relatório das configurações do aplicativo, no máximo uma vez a cada 24 horas. Isso ajuda a decidir o que melhorar, sem acompanhar o que você ouve.",
                 SentLabel = "O QUE É ENVIADO",
                 Sent = new[]
                 {
-                    "O tema escolhido",
-                    "A fonte da letra",
-                    "A cor da letra",
-                    "O idioma do app",
-                    "Se há atalho de bloqueio configurado e quais teclas",
-                    "A versão do app e o idioma do Windows",
+                    "Aparência e letras: tema, opacidade e cenário, fonte, cor, tamanho, estilo, linhas e alinhamento.",
+                    "Idiomas e controles: tradução, letra original, modos de uso, bloqueio e teclas do atalho.",
+                    "Janela e dados técnicos: tamanho, posição, estado, versão do app e idioma do Windows.",
                 },
-                NeverSent = "NUNCA é enviado: músicas, artistas, letras, buscas, seu nome, e-mail ou qualquer identificador que aponte para você.",
-                Provider = "Os dados vão para o Aptabase, um serviço de análise focado em privacidade. Você pode desativar quando quiser em Configurações (aba App).",
+                NeverSent = "Essas estatísticas NÃO incluem músicas, artistas, letras, buscas, histórico do que você ouve, gravações de áudio, chaves de API, seu nome ou e-mail. Também não incluem um identificador pessoal permanente.",
+                Provider = "O relatório é enviado ao Aptabase. Você pode desativar a opção quando quiser em Configurações → Geral; isso interrompe os próximos envios de estatísticas. A opção controla apenas as estatísticas, não o reconhecimento de áudio necessário ao modo Ouvir.",
                 Toggle = "Enviar estatísticas anônimas de uso",
                 Start = "Começar",
-                Source = "Open-source: veja exatamente o que é enviado no código (Telemetry.cs) e no README",
+                Source = "Código aberto: consulte o código e a documentação do projeto",
             },
             ["es"] = new Texts
             {
@@ -116,22 +109,19 @@ namespace FrontLineOverlay
                 TutorialsLead = "¿Primera vez por aquí? ",
                 TutorialsLink = "Mira los tutoriales",
                 TelHeader = "Estadísticas de uso anónimas",
-                TelIntro = "Para saber qué mejorar, FrontLine puede enviar un pequeño informe anónimo sobre cómo está configurada. Se envía como máximo una vez al día.",
+                TelIntro = "La participación es opcional. Al activar esta opción, FrontLine envía un pequeño informe de los ajustes de la aplicación, como máximo una vez cada 24 horas. Ayuda a decidir qué mejorar, sin registrar lo que escuchas.",
                 SentLabel = "QUÉ SE ENVÍA",
                 Sent = new[]
                 {
-                    "El tema elegido",
-                    "La fuente de la letra",
-                    "El color de la letra",
-                    "El idioma de la app",
-                    "Si hay un atajo de bloqueo configurado y qué teclas",
-                    "La versión de la app y el idioma de Windows",
+                    "Apariencia y letras: tema, opacidad y fondo, fuente, color, tamaño, estilo, líneas y alineación.",
+                    "Idiomas y controles: traducción, letra original, modos de uso, bloqueo y teclas del atajo.",
+                    "Ventana y datos técnicos: tamaño, posición, estado, versión de la app e idioma de Windows.",
                 },
-                NeverSent = "NUNCA se envía: canciones, artistas, letras, búsquedas, tu nombre, correo ni ningún identificador que te señale.",
-                Provider = "Los datos van a Aptabase, un servicio de analítica centrado en la privacidad. Puedes desactivarlo cuando quieras en Configuración (pestaña App).",
+                NeverSent = "Estas estadísticas NO incluyen canciones, artistas, letras, búsquedas, historial de escucha, grabaciones de audio, claves API, tu nombre o correo. Tampoco incluyen un identificador personal permanente.",
+                Provider = "El informe se envía a Aptabase. Puedes desactivarlo en cualquier momento en Ajustes → General; esto detiene los próximos envíos de estadísticas. La opción solo controla las estadísticas, no el reconocimiento de audio necesario para Escuchar.",
                 Toggle = "Enviar estadísticas de uso anónimas",
                 Start = "Empezar",
-                Source = "Código abierto: mira exactamente qué se envía en el código (Telemetry.cs) y en el README",
+                Source = "Código abierto: consulta el código y la documentación del proyecto",
             },
             ["id"] = new Texts
             {
@@ -140,29 +130,26 @@ namespace FrontLineOverlay
                 TutorialsLead = "Baru di sini? ",
                 TutorialsLink = "Lihat tutorialnya",
                 TelHeader = "Statistik penggunaan anonim",
-                TelIntro = "Agar tahu apa yang perlu ditingkatkan, FrontLine dapat mengirim laporan anonim singkat tentang pengaturan aplikasi. Dikirim paling banyak sekali sehari.",
+                TelIntro = "Partisipasi bersifat opsional. Jika diaktifkan, FrontLine mengirim laporan singkat tentang pengaturan aplikasi paling banyak sekali setiap 24 jam. Ini membantu menentukan perbaikan tanpa melacak apa yang kamu dengarkan.",
                 SentLabel = "YANG DIKIRIM",
                 Sent = new[]
                 {
-                    "Tema yang dipilih",
-                    "Font lirik",
-                    "Warna lirik",
-                    "Bahasa aplikasi",
-                    "Apakah pintasan kunci diatur, dan tombolnya",
-                    "Versi aplikasi dan bahasa Windows",
+                    "Tampilan dan lirik: tema, opasitas dan latar, font, warna, ukuran, gaya, baris dan perataan.",
+                    "Bahasa dan kontrol: terjemahan, lirik asli, mode penggunaan, kunci jendela dan tombol pintasan.",
+                    "Jendela dan detail teknis: ukuran, posisi, status, versi aplikasi dan bahasa Windows.",
                 },
-                NeverSent = "TIDAK PERNAH dikirim: lagu, artis, lirik, pencarian, nama, e-mail, atau ID apa pun yang mengidentifikasi kamu.",
-                Provider = "Data dikirim ke Aptabase, layanan analitik yang mengutamakan privasi. Kamu bisa mematikannya kapan saja di Pengaturan (tab Aplikasi).",
+                NeverSent = "Statistik ini TIDAK menyertakan lagu, artis, lirik, pencarian, riwayat mendengarkan, rekaman audio, kunci API, nama atau email. Tidak ada pengenal pribadi permanen yang disertakan.",
+                Provider = "Laporan dikirim ke Aptabase. Kamu dapat mematikannya kapan saja di Pengaturan → Umum untuk menghentikan pengiriman statistik berikutnya. Opsi ini hanya mengontrol statistik, bukan pengenalan audio yang diperlukan oleh mode Dengar.",
                 Toggle = "Kirim statistik penggunaan anonim",
                 Start = "Mulai",
-                Source = "Open-source: lihat persis apa yang dikirim di kode (Telemetry.cs) dan README",
+                Source = "Open source: lihat kode dan dokumentasi proyek",
             },
         };
 
         public static string DetectSystemLanguage()
         {
             string two = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName.ToLowerInvariant();
-            if (two == "in") two = "id"; // código antigo do indonésio
+            if (two == "in") two = "id";
             return Array.IndexOf(Supported, two) >= 0 ? two : "en";
         }
 
@@ -223,14 +210,14 @@ namespace FrontLineOverlay
         private static void Open(string url)
         {
             try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
-            catch { /* sem navegador padrão: ignora */ }
+            catch { /*  */ }
         }
 
         private void BtnStart_Click(object sender, RoutedEventArgs e) => Close();
 
         private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Key == Key.Escape) Close(); // mesmo efeito de "Começar" (mantém o toggle como está)
+            if (e.Key == Key.Escape) Close(); 
         }
 
         private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)

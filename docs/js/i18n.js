@@ -1359,6 +1359,185 @@ FL_TRANSLATIONS.id.linux_doc = {
   "github": "Buka repositori GitHub"
 };
 
+// Windows 1.6.0 tutorial. Previous-version and Linux strings are unchanged.
+FL_TRANSLATIONS.en.doc160 = {
+  "title": "How to use FrontLine Lyrics 1.6.0",
+  "homeSupport": "Support, Rate, and Feedback buttons: support the project, open its Microsoft Store review page, or send feedback.",
+  "tocLock": "Lock the app window",
+  "settingsTitle": "The settings menu",
+  "tabsIntro": "The settings panel has three tabs: Lyrics, Translation, and General. Each tab groups its controls below.",
+  "lyricsTitle": "Lyrics settings",
+  "background": "Background opacity and theme: adjust the background from transparent to opaque. Enable Use theme behind lyrics to keep the selected theme visible behind the text.",
+  "fontSize": "Font size: make the lyrics larger or smaller.",
+  "layout": "Lines and alignment: choose 1, 3, or 5 lines, or the full lyrics, and align the text left, center, or right.",
+  "appearance": "Lyric color and font: choose the text color and typeface. Bold, italic, and advanced typography controls are also available here.",
+  "translationTitle": "Translation settings",
+  "translationLanguage": "Translation languages: choose the original lyrics, an available translation, or a romanized version.",
+  "original": "Show original lyrics: display the original line in smaller text below its translation.",
+  "generalTitle": "General settings",
+  "appLanguage": "App language: change the language used by menus and buttons.",
+  "shortcut": "Lock shortcut: set an optional global keyboard shortcut to lock or unlock the window. No shortcut is assigned by default.",
+  "theme": "Theme: choose the default background, automatic seasonal themes, or another available theme. Theme names follow the app language.",
+  "statistics": "Anonymous usage statistics: turn optional settings reports on or off. When enabled, a report is sent at most once every 24 hours; it does not include songs, lyrics, or searches.",
+  "lyricDisplay": "The synced lyrics, using the number of lines and alignment selected in Settings → Lyrics. This screenshot shows the three-line layout.",
+  "imagePending": "Screenshot coming soon"
+};
+FL_TRANSLATIONS.pt.doc160 = {
+  "title": "Como usar o FrontLine Lyrics 1.6.0",
+  "homeSupport": "Botões Apoie, Avalie e Feedback: apoie o projeto, abra a página de avaliação na Microsoft Store ou envie um comentário.",
+  "tocLock": "Trave a janela do app",
+  "settingsTitle": "O menu de configurações",
+  "tabsIntro": "O painel de configurações tem três abas: Letras, Tradução e Geral. Cada aba reúne suas opções logo abaixo.",
+  "lyricsTitle": "Configurações de letras",
+  "background": "Opacidade e tema de fundo: ajuste o fundo de transparente a opaco. Ative Usar tema atrás das letras para manter o tema escolhido visível atrás do texto.",
+  "fontSize": "Tamanho da fonte: aumente ou diminua as letras.",
+  "layout": "Linhas e alinhamento: escolha 1, 3 ou 5 linhas, ou a letra completa, e alinhe o texto à esquerda, ao centro ou à direita.",
+  "appearance": "Cor e fonte da letra: escolha a cor e a fonte do texto. Os controles de negrito, itálico e tipografia avançada também ficam aqui.",
+  "translationTitle": "Configurações de tradução",
+  "translationLanguage": "Idiomas da tradução: escolha a letra original, uma tradução disponível ou a versão romanizada.",
+  "original": "Mostrar a letra original: exiba a linha original em tamanho menor abaixo da tradução.",
+  "generalTitle": "Configurações gerais",
+  "appLanguage": "Idioma do app: mude o idioma dos menus e botões.",
+  "shortcut": "Atalho para travar: defina um atalho global opcional para travar ou destravar a janela. Nenhum atalho vem definido por padrão.",
+  "theme": "Tema: escolha o fundo padrão, os temas sazonais automáticos ou outro tema disponível. Os nomes acompanham o idioma do app.",
+  "statistics": "Estatísticas anônimas de uso: ative ou desative os relatórios opcionais de configurações. Quando ativados, são enviados no máximo uma vez a cada 24 horas, sem músicas, letras ou buscas.",
+  "lyricDisplay": "As letras sincronizadas, com a quantidade de linhas e o alinhamento escolhidos em Configurações → Letras. Esta imagem mostra o modo de três linhas.",
+  "imagePending": "Captura de tela em breve"
+};
+FL_TRANSLATIONS.es.doc160 = {
+  "title": "Cómo usar FrontLine Lyrics 1.6.0",
+  "homeSupport": "Botones de apoyo, valoración y comentarios: apoya el proyecto, abre su página de valoración en Microsoft Store o envía tus comentarios.",
+  "tocLock": "Bloquea la ventana de la app",
+  "settingsTitle": "El menú de ajustes",
+  "tabsIntro": "El panel tiene tres pestañas: Letras, Traducción y General. Cada pestaña reúne sus opciones debajo.",
+  "lyricsTitle": "Ajustes de letras",
+  "background": "Opacidad y tema de fondo: ajusta el fondo de transparente a opaco. Activa Usar tema detrás de las letras para mantener el tema elegido detrás del texto.",
+  "fontSize": "Tamaño de fuente: aumenta o reduce el tamaño de las letras.",
+  "layout": "Líneas y alineación: elige 1, 3 o 5 líneas, o la letra completa, y alinea el texto a la izquierda, al centro o a la derecha.",
+  "appearance": "Color y fuente: elige el color y la tipografía. Aquí también están los controles de negrita, cursiva y tipografía avanzada.",
+  "translationTitle": "Ajustes de traducción",
+  "translationLanguage": "Idiomas de traducción: elige la letra original, una traducción disponible o una versión romanizada.",
+  "original": "Mostrar la letra original: muestra la línea original con texto más pequeño debajo de la traducción.",
+  "generalTitle": "Ajustes generales",
+  "appLanguage": "Idioma de la app: cambia el idioma de los menús y botones.",
+  "shortcut": "Atajo de bloqueo: configura un atajo global opcional para bloquear o desbloquear la ventana. No hay ninguno asignado por defecto.",
+  "theme": "Tema: elige el fondo predeterminado, los temas estacionales automáticos u otro tema disponible. Los nombres siguen el idioma de la app.",
+  "statistics": "Estadísticas de uso anónimas: activa o desactiva los informes opcionales de ajustes. Si están activados, se envían como máximo una vez cada 24 horas, sin canciones, letras ni búsquedas.",
+  "lyricDisplay": "Las letras sincronizadas, con el número de líneas y la alineación elegidos en Ajustes → Letras. Esta imagen muestra el modo de tres líneas.",
+  "imagePending": "Captura de pantalla próximamente"
+};
+FL_TRANSLATIONS.fr.doc160 = {
+  "title": "Comment utiliser FrontLine Lyrics 1.6.0",
+  "homeSupport": "Boutons de soutien, de notation et de retour : soutenez le projet, ouvrez sa page de notation sur le Microsoft Store ou envoyez un commentaire.",
+  "tocLock": "Verrouiller la fenêtre",
+  "settingsTitle": "Le menu des paramètres",
+  "tabsIntro": "Le panneau propose trois onglets : Paroles, Traduction et Général. Chaque onglet regroupe ses options en dessous.",
+  "lyricsTitle": "Paramètres des paroles",
+  "background": "Opacité et thème du fond : réglez le fond de transparent à opaque. Activez Utiliser le thème derrière les paroles pour garder le thème choisi derrière le texte.",
+  "fontSize": "Taille de la police : agrandissez ou réduisez les paroles.",
+  "layout": "Lignes et alignement : choisissez 1, 3 ou 5 lignes, ou les paroles complètes, avec un alignement à gauche, au centre ou à droite.",
+  "appearance": "Couleur et police : choisissez la couleur et la police du texte. Les commandes de gras, italique et typographie avancée sont également disponibles ici.",
+  "translationTitle": "Paramètres de traduction",
+  "translationLanguage": "Langues de traduction : choisissez les paroles originales, une traduction disponible ou une version romanisée.",
+  "original": "Afficher les paroles originales : affichez la ligne originale en plus petit sous sa traduction.",
+  "generalTitle": "Paramètres généraux",
+  "appLanguage": "Langue de l’application : changez la langue des menus et des boutons.",
+  "shortcut": "Raccourci de verrouillage : définissez un raccourci global facultatif pour verrouiller ou déverrouiller la fenêtre. Aucun raccourci n’est défini par défaut.",
+  "theme": "Thème : choisissez le fond par défaut, les thèmes saisonniers automatiques ou un autre thème disponible. Les noms suivent la langue de l’application.",
+  "statistics": "Statistiques anonymes : activez ou désactivez les rapports facultatifs de paramètres. Ils sont envoyés au maximum une fois toutes les 24 heures, sans chansons, paroles ni recherches.",
+  "lyricDisplay": "Les paroles synchronisées, avec le nombre de lignes et l’alignement choisis dans Paramètres → Paroles. Cette capture montre le mode à trois lignes.",
+  "imagePending": "Capture d’écran à venir"
+};
+FL_TRANSLATIONS.id.doc160 = {
+  "title": "Cara menggunakan FrontLine Lyrics 1.6.0",
+  "homeSupport": "Tombol Dukungan, Nilai, dan Masukan: dukung proyek, buka halaman ulasannya di Microsoft Store, atau kirim masukan.",
+  "tocLock": "Kunci jendela aplikasi",
+  "settingsTitle": "Menu pengaturan",
+  "tabsIntro": "Panel memiliki tiga tab: Lirik, Terjemahan, dan Umum. Setiap tab mengelompokkan pengaturannya di bawah.",
+  "lyricsTitle": "Pengaturan lirik",
+  "background": "Opasitas dan tema latar: atur latar dari transparan hingga opak. Aktifkan Gunakan tema di belakang lirik agar tema pilihan tetap terlihat di belakang teks.",
+  "fontSize": "Ukuran font: perbesar atau perkecil teks lirik.",
+  "layout": "Baris dan perataan: pilih 1, 3, atau 5 baris, atau seluruh lirik, lalu ratakan teks ke kiri, tengah, atau kanan.",
+  "appearance": "Warna dan font lirik: pilih warna dan jenis huruf. Kontrol tebal, miring, dan tipografi lanjutan juga tersedia di sini.",
+  "translationTitle": "Pengaturan terjemahan",
+  "translationLanguage": "Bahasa terjemahan: pilih lirik asli, terjemahan yang tersedia, atau versi romanisasi.",
+  "original": "Tampilkan lirik asli: tampilkan baris asli dengan teks lebih kecil di bawah terjemahan.",
+  "generalTitle": "Pengaturan umum",
+  "appLanguage": "Bahasa aplikasi: ubah bahasa menu dan tombol.",
+  "shortcut": "Pintasan kunci: atur pintasan global opsional untuk mengunci atau membuka kunci jendela. Tidak ada pintasan bawaan.",
+  "theme": "Tema: pilih latar bawaan, tema musiman otomatis, atau tema lain yang tersedia. Nama tema mengikuti bahasa aplikasi.",
+  "statistics": "Statistik penggunaan anonim: aktifkan atau nonaktifkan laporan pengaturan opsional. Jika aktif, laporan dikirim paling banyak sekali setiap 24 jam, tanpa lagu, lirik, atau pencarian.",
+  "lyricDisplay": "Lirik tersinkron dengan jumlah baris dan perataan yang dipilih di Pengaturan → Lirik. Gambar ini menunjukkan tata letak tiga baris.",
+  "imagePending": "Tangkapan layar segera tersedia"
+};
+
+// Detailed five-step Linux 1.0.0 tutorial.
+FL_TRANSLATIONS.en.linux100 = {
+  "title": "How to use FrontLine Lyrics for Linux 1.0.0",
+  "homeSupport": "Support and Feedback buttons: support the project or send a comment. If the Rate button is available in your build, it opens the store review page.",
+  "homeControls": "Settings, minimize, and close controls.",
+  "background": "Background opacity: adjust how transparent or opaque the background behind the lyrics is.",
+  "layout": "Lines and alignment: choose 1, 3, or 5 visible lines and align the text left, center, or right.",
+  "appearance": "Lyric color and font: choose the text color and typeface, and turn bold or italic on or off.",
+  "permissions": "Permissions: in Snap installations, check access to system audio and your music player. Open View permissions and instructions for guidance. Different players may need separate MPRIS permissions.",
+  "sync": "For songs identified from audio, use the up/down arrows to move the current lyric line forward or back until it matches the singer. These arrows stay hidden when synchronization follows a compatible player’s playback position, such as Spotify through MPRIS.",
+  "lyricDisplay": "The synced lyrics, using the number of lines and alignment selected in Settings → Lyrics. This screenshot shows three lines.",
+  "download": "Download for Linux on GitHub",
+  "imagePending": "Screenshot coming soon"
+};
+FL_TRANSLATIONS.pt.linux100 = {
+  "title": "Como usar o FrontLine Lyrics para Linux 1.0.0",
+  "homeSupport": "Botões de apoio e feedback: apoie o projeto ou envie um comentário. Se o botão Avaliar estiver disponível na sua versão, ele abre a página de avaliação na loja.",
+  "homeControls": "Controles de configurações, minimizar e fechar.",
+  "background": "Opacidade do fundo: ajuste a transparência do fundo atrás das letras.",
+  "layout": "Linhas e alinhamento: escolha 1, 3 ou 5 linhas visíveis e alinhe o texto à esquerda, ao centro ou à direita.",
+  "appearance": "Cor e fonte da letra: escolha a cor e a fonte do texto e ative ou desative negrito e itálico.",
+  "permissions": "Permissões: em instalações Snap, confira o acesso ao áudio do sistema e ao seu reprodutor. Abra Ver permissões e instruções para consultar as orientações. Cada reprodutor pode precisar de uma permissão MPRIS própria.",
+  "sync": "Para músicas reconhecidas pelo áudio, use as setas para cima e para baixo para avançar ou recuar a linha atual até acompanhar o cantor. As setas ficam ocultas quando a sincronização segue a posição de um reprodutor compatível, como o Spotify via MPRIS.",
+  "lyricDisplay": "As letras sincronizadas, com a quantidade de linhas e o alinhamento escolhidos em Configurações → Letras. Esta imagem mostra três linhas.",
+  "download": "Baixar para Linux no GitHub",
+  "imagePending": "Captura de tela em breve"
+};
+FL_TRANSLATIONS.es.linux100 = {
+  "title": "Cómo usar FrontLine Lyrics para Linux 1.0.0",
+  "homeSupport": "Botones de apoyo y comentarios: apoya el proyecto o envía un comentario. Si el botón de valoración está disponible en tu versión, abre la página de valoración en la tienda.",
+  "homeControls": "Controles de ajustes, minimizar y cerrar.",
+  "background": "Opacidad del fondo: ajusta la transparencia del fondo detrás de las letras.",
+  "layout": "Líneas y alineación: elige 1, 3 o 5 líneas visibles y alinea el texto a la izquierda, al centro o a la derecha.",
+  "appearance": "Color y fuente: elige el color y la tipografía y activa o desactiva la negrita y la cursiva.",
+  "permissions": "Permisos: en instalaciones Snap, comprueba el acceso al audio del sistema y al reproductor. Abre Ver permisos e instrucciones para consultar la guía. Cada reproductor puede necesitar su propio permiso MPRIS.",
+  "sync": "Para canciones identificadas por audio, usa las flechas arriba y abajo para adelantar o retroceder la línea actual hasta que coincida con el cantante. Las flechas se ocultan cuando la sincronización sigue la posición de un reproductor compatible, como Spotify mediante MPRIS.",
+  "lyricDisplay": "Las letras sincronizadas, con el número de líneas y la alineación elegidos en Ajustes → Letras. Esta imagen muestra tres líneas.",
+  "download": "Descargar para Linux en GitHub",
+  "imagePending": "Captura de pantalla próximamente"
+};
+FL_TRANSLATIONS.fr.linux100 = {
+  "title": "Comment utiliser FrontLine Lyrics pour Linux 1.0.0",
+  "homeSupport": "Boutons de soutien et de retour : soutenez le projet ou envoyez un commentaire. Si le bouton de notation est disponible dans votre version, il ouvre la page de notation de la boutique.",
+  "homeControls": "Commandes des paramètres, de réduction et de fermeture.",
+  "background": "Opacité du fond : réglez la transparence du fond derrière les paroles.",
+  "layout": "Lignes et alignement : choisissez 1, 3 ou 5 lignes visibles et alignez le texte à gauche, au centre ou à droite.",
+  "appearance": "Couleur et police : choisissez la couleur et la police du texte, puis activez ou désactivez le gras et l’italique.",
+  "permissions": "Autorisations : pour les installations Snap, vérifiez l’accès au son du système et au lecteur. Ouvrez Voir les autorisations et instructions pour consulter le guide. Chaque lecteur peut nécessiter sa propre autorisation MPRIS.",
+  "sync": "Pour les titres identifiés par le son, utilisez les flèches haut et bas pour avancer ou reculer la ligne actuelle jusqu’à suivre le chanteur. Les flèches restent masquées lorsque la synchronisation suit la position d’un lecteur compatible, comme Spotify via MPRIS.",
+  "lyricDisplay": "Les paroles synchronisées, avec le nombre de lignes et l’alignement choisis dans Paramètres → Paroles. Cette capture montre trois lignes.",
+  "download": "Télécharger pour Linux sur GitHub",
+  "imagePending": "Capture d’écran à venir"
+};
+FL_TRANSLATIONS.id.linux100 = {
+  "title": "Cara menggunakan FrontLine Lyrics untuk Linux 1.0.0",
+  "homeSupport": "Tombol Dukungan dan Masukan: dukung proyek atau kirim komentar. Jika tombol Nilai tersedia dalam versi yang kamu gunakan, tombol itu membuka halaman ulasan di toko.",
+  "homeControls": "Kontrol pengaturan, perkecil, dan tutup.",
+  "background": "Opasitas latar: atur transparansi latar di belakang lirik.",
+  "layout": "Baris dan perataan: pilih 1, 3, atau 5 baris yang terlihat dan ratakan teks ke kiri, tengah, atau kanan.",
+  "appearance": "Warna dan font lirik: pilih warna dan jenis huruf, lalu aktifkan atau nonaktifkan tebal dan miring.",
+  "permissions": "Izin: untuk instalasi Snap, periksa akses ke audio sistem dan pemutar musik. Buka Lihat izin dan petunjuk untuk panduan. Setiap pemutar mungkin memerlukan izin MPRIS tersendiri.",
+  "sync": "Untuk lagu yang dikenali melalui audio, gunakan panah atas dan bawah untuk memajukan atau memundurkan baris aktif hingga sesuai dengan penyanyi. Panah disembunyikan jika sinkronisasi mengikuti posisi pemutaran pemutar yang kompatibel, seperti Spotify melalui MPRIS.",
+  "lyricDisplay": "Lirik tersinkron dengan jumlah baris dan perataan yang dipilih di Pengaturan → Lirik. Gambar ini menunjukkan tiga baris.",
+  "download": "Unduh untuk Linux di GitHub",
+  "imagePending": "Tangkapan layar segera tersedia"
+};
+
 function flTranslate(lang, path) {
   const parts = path.split(".");
   let node = FL_TRANSLATIONS[lang] || FL_TRANSLATIONS.en;
