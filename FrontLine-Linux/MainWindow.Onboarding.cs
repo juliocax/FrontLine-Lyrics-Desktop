@@ -12,6 +12,7 @@ public partial class MainWindow
     private sealed class OnboardingState
     {
         public bool WelcomeShown { get; set; }
+        public bool SnapPermissionsExplained { get; set; }
         public bool TelemetryEnabled { get; set; } = true;
         public string LastSeenVersion { get; set; } = "";
         public DateTime LastTelemetryUtc { get; set; }
@@ -80,9 +81,15 @@ public partial class MainWindow
                 _onboarding.LastSeenVersion = LinuxAppVersion;
                 SaveOnboarding();
             }
+
             if (_onboarding.WelcomeShown && !string.IsNullOrEmpty(Environment.GetEnvironmentVariable("SNAP"))
-                && await SnapPermissionsDialog.AnyRequiredMissingAsync())
-                await new SnapPermissionsDialog(_appLanguage).ShowDialog(this);
+                && !_onboarding.SnapPermissionsExplained)
+            {
+                if (await SnapPermissionsDialog.AnyRequiredMissingAsync())
+                    await new SnapPermissionsDialog(_appLanguage).ShowDialog(this);
+                _onboarding.SnapPermissionsExplained = true;
+                SaveOnboarding();
+            }
             if (_onboarding.WelcomeShown) _ = LinuxTelemetry.SendIfDueAsync(_onboarding.TelemetryEnabled,
                 _onboarding.LastTelemetryUtc, _appLanguage, _lyricFont,
                 (LyricColorCombo.SelectedItem as Avalonia.Controls.ComboBoxItem)?.Tag?.ToString() ?? "default",

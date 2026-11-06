@@ -13,114 +13,151 @@ namespace FrontLine_Linux;
 internal sealed class SnapPermissionsDialog : Window
 {
     private readonly string _lang;
-    private readonly TextBlock _record = DialogUi.Text("");
-    private readonly TextBlock _mpris = DialogUi.Text("");
+    private readonly TextBlock _recordStatus = DialogUi.Text("");
+    private readonly TextBlock _mprisStatus = DialogUi.Text("");
+    private readonly StackPanel _audioHelp = new() { Spacing = 7 };
+    private readonly StackPanel _playerHelp = new() { Spacing = 7 };
+    private readonly TextBlock _feedback = DialogUi.Text("");
+    private readonly Button _refresh;
 
     internal SnapPermissionsDialog(string language)
     {
         _lang = language;
-        Title = DialogUi.L(_lang, "Permissions", "Permissões", "Permisos", "Izin");
-        Width = 645; Height = 630; MinWidth = 470; MinHeight = 430;
-        Background = new SolidColorBrush(Color.Parse("#101010"));
+        Title = L("Permissions", "Permissões", "Permisos", "Izin");
+        Width = 670;
+        Height = 650;
+        MinWidth = 440;
+        MinHeight = 440;
+        Background = Brush("#101010");
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        var root = new StackPanel { Margin = new Thickness(24), Spacing = 14 };
-        root.Children.Add(DialogUi.Text(DialogUi.L(_lang,
-            "Allow FrontLine Lyrics to access music players",
-            "Permita que o FrontLine Lyrics acesse os reprodutores",
-            "Permite que FrontLine Lyrics acceda a reproductores",
-            "Izinkan FrontLine Lyrics mengakses pemutar musik"), 19, true, "#FFFFFF"));
-        root.Children.Add(DialogUi.Text(DialogUi.L(_lang,
-            "Snap isolates apps. You control access, and can revoke it later in system settings.",
-            "O Snap isola aplicativos. Você controla o acesso e pode revogá-lo nas configurações do sistema.",
-            "Snap aísla las aplicaciones. Puedes revocar estos permisos en la configuración del sistema.",
-            "Snap mengisolasi aplikasi. Anda dapat mencabut izin nanti di pengaturan sistem.")));
-        root.Children.Add(DialogUi.Text(DialogUi.L(_lang,
-            "Music player connection (MPRIS)", "Conexão com reprodutores (MPRIS)",
-            "Conexión con reproductores (MPRIS)", "Koneksi pemutar musik (MPRIS)"), 15, true, "#FFFFFF"));
-        root.Children.Add(_mpris);
-        root.Children.Add(DialogUi.Text(DialogUi.L(_lang,
-            "Lets FrontLine read track information and send next/previous commands to an authorized player. Choose the player you use in your system's app permissions. Connecting Spotify does not automatically authorize Firefox or another player.",
-            "Permite identificar a faixa e avançar ou voltar músicas no reprodutor autorizado. Nas permissões do sistema, escolha o app que você usa. Autorizar o Spotify não libera automaticamente o Firefox ou outro reprodutor.",
-            "Permite leer las canciones y controlarlas en el reproductor autorizado. Selecciona tu reproductor en los permisos del sistema. Autorizar Spotify no autoriza automáticamente Firefox u otros reproductores.",
-            "Memungkinkan FrontLine membaca lagu dan mengontrol pemutar yang diizinkan. Pilih pemutar di izin sistem. Izin Spotify tidak otomatis berlaku untuk Firefox atau pemutar lain."), 12));
-        root.Children.Add(DialogUi.Text(DialogUi.L(_lang,
-            "Audio recognition (Shazam)", "Reconhecimento de áudio (Shazam)",
-            "Reconocimiento de audio (Shazam)", "Pengenalan audio (Shazam)"), 15, true, "#FFFFFF"));
-        root.Children.Add(_record);
-        root.Children.Add(DialogUi.Text(DialogUi.L(_lang,
-            "Allows music recognition from computer audio even when direct player control is unavailable.",
-            "Permite reconhecer a música pelo som do computador, mesmo quando não há controle direto do reprodutor.",
-            "Permite identificar música por el audio del equipo, incluso sin controlar directamente el reproductor.",
-            "Memungkinkan pengenalan musik dari audio komputer tanpa perlu mengontrol pemutar."), 12));
 
-        root.Children.Add(CommandRow("sudo snap connect frontline-lyrics:audio-record"));
-        root.Children.Add(DialogUi.Text(DialogUi.L(_lang,
-            "Spotify (only if installed as a Snap):", "Spotify (se instalado como Snap):",
-            "Spotify (si está instalado como Snap):", "Spotify (jika dipasang sebagai Snap):"), 12));
-        root.Children.Add(CommandRow("sudo snap connect frontline-lyrics:mpris spotify:spotify-mpris"));
-        root.Children.Add(DialogUi.Text(DialogUi.L(_lang,
-            "See available music-player connections:", "Consultar conexões de reprodutores disponíveis:",
-            "Consultar conexiones de reproductores disponibles:", "Lihat koneksi pemutar yang tersedia:"), 12));
-        root.Children.Add(CommandRow("snap connections --all | grep mpris"));
+        var root = new StackPanel { Margin = new Thickness(24), Spacing = 13 };
+        root.Children.Add(DialogUi.Text(L("Connect your music players", "Conecte seus reprodutores", "Conecta tus reproductores", "Hubungkan pemutar musik"), 20, true, "#FFFFFF"));
+        root.Children.Add(DialogUi.Text(L(
+            "FrontLine checks the Snap permissions already granted. Only missing connections need attention.",
+            "O FrontLine verifica as permissões já concedidas ao Snap. Só é preciso cuidar das conexões pendentes.",
+            "FrontLine comprueba los permisos ya concedidos a Snap. Solo debes revisar las conexiones pendientes.",
+            "FrontLine memeriksa izin Snap yang sudah diberikan. Hanya koneksi yang belum aktif yang perlu diperhatikan."), 12));
 
-        root.Children.Add(DialogUi.Text(DialogUi.L(_lang,
-            "In Ubuntu's app permissions, open FrontLine Lyrics and choose your music player under 'Control music and video players'. For a Snap player, its MPRIS slot may also be connected manually. The available players depend on what is installed, and changing the selected player may replace the previous connection. Paste only the command appropriate for your device into a terminal and confirm it yourself.",
-            "Nas permissões do Ubuntu, abra FrontLine Lyrics e escolha seu aplicativo em 'Controle reprodutores de música e vídeo'. Outros apps Snap podem oferecer sua própria conexão MPRIS. As opções dependem dos programas instalados, e trocar o reprodutor selecionado pode substituir a conexão anterior. Cole no terminal somente o comando adequado e confirme você mesmo.",
-            "En los permisos de Ubuntu, abre FrontLine Lyrics y elige el reproductor en 'Controlar reproductores de música y vídeo'. Otros Snap pueden ofrecer conexiones MPRIS diferentes. Cambiar el reproductor puede sustituir la conexión anterior. Ejecuta solo el comando que corresponda.",
-            "Buka izin FrontLine Lyrics di Ubuntu dan pilih pemutar pada kontrol musik dan video. Pemutar Snap lain dapat memiliki koneksi MPRIS sendiri. Memilih pemutar lain dapat mengganti koneksi sebelumnya. Jalankan hanya perintah yang sesuai."), 11));
-        var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, HorizontalAlignment = HorizontalAlignment.Right };
-        var refresh = DialogUi.Button(DialogUi.L(_lang, "Check again", "Verificar novamente", "Comprobar de nuevo", "Periksa lagi"));
-        refresh.Click += async (_, _) => await RefreshAsync();
-        var close = DialogUi.Button(DialogUi.L(_lang, "Continue", "Continuar", "Continuar", "Lanjut"));
+        root.Children.Add(DialogUi.Text(L("Music players · MPRIS", "Reprodutores · MPRIS", "Reproductores · MPRIS", "Pemutar · MPRIS"), 15, true, "#FFFFFF"));
+        root.Children.Add(_mprisStatus);
+        root.Children.Add(_playerHelp);
+
+        root.Children.Add(DialogUi.Text(L("Audio recognition · Shazam", "Reconhecimento de áudio · Shazam", "Reconocimiento de audio · Shazam", "Pengenalan audio · Shazam"), 15, true, "#FFFFFF"));
+        root.Children.Add(_recordStatus);
+        root.Children.Add(_audioHelp);
+
+        root.Children.Add(DialogUi.Text(L(
+            "You stay in control: commands are displayed for review and copying only. They are never executed automatically.",
+            "Você mantém o controle: os comandos são exibidos apenas para leitura e cópia. Nunca são executados automaticamente.",
+            "Tú tienes el control: los comandos solo se muestran para leerlos y copiarlos. Nunca se ejecutan automáticamente.",
+            "Anda tetap memegang kendali: perintah hanya ditampilkan untuk dibaca dan disalin, tidak dijalankan otomatis."), 11));
+        _feedback.Foreground = Brush("#8DDDA6");
+        root.Children.Add(_feedback);
+
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, HorizontalAlignment = HorizontalAlignment.Right };
+        _refresh = DialogUi.Button(L("Check again", "Verificar novamente", "Comprobar de nuevo", "Periksa lagi"));
+        _refresh.Click += async (_, _) => await RefreshAsync();
+        var close = DialogUi.Button(L("Continue", "Continuar", "Continuar", "Lanjut"));
         close.Click += (_, _) => Close();
-        actions.Children.Add(refresh); actions.Children.Add(close);
-        root.Children.Add(actions);
+        buttons.Children.Add(_refresh);
+        buttons.Children.Add(close);
+        root.Children.Add(buttons);
+
         Content = new ScrollViewer { Content = root };
         Opened += async (_, _) => await RefreshAsync();
     }
 
-    private Control CommandRow(string command)
+    private string L(string en, string pt, string es, string id) => DialogUi.L(_lang, en, pt, es, id);
+    private static IBrush Brush(string hex) => new SolidColorBrush(Color.Parse(hex));
+
+    private void CommandRow(StackPanel parent, string description, string command)
     {
+        parent.Children.Add(DialogUi.Text(description, 12));
         var row = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), ColumnSpacing = 8 };
         var code = new TextBox
         {
-            Text = command, IsReadOnly = true, IsTabStop = false,
-            MinHeight = 37, VerticalContentAlignment = VerticalAlignment.Center,
+            Text = command, IsReadOnly = true, MinHeight = 38,
+            VerticalContentAlignment = VerticalAlignment.Center,
             FontSize = 11, FontFamily = new FontFamily("monospace"),
-            Background = new SolidColorBrush(Color.Parse("#191919")),
-            Foreground = Brushes.White,
-            BorderBrush = new SolidColorBrush(Color.Parse("#454545")),
-            BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(8)
+            Background = Brush("#191919"), Foreground = Brushes.White,
+            BorderBrush = Brush("#454545"), BorderThickness = new Thickness(1),
+            CornerRadius = new CornerRadius(8)
         };
-        Grid.SetColumn(code, 0);
         row.Children.Add(code);
-        var copy = DialogUi.Button(DialogUi.L(_lang, "Copy", "Copiar", "Copiar", "Salin"));
+        var copy = DialogUi.Button(L("Copy", "Copiar", "Copiar", "Salin"));
         copy.MinWidth = 76;
-        copy.Click += async (_, _) => await CopyAsync(command);
+        copy.Click += async (_, _) =>
+        {
+            var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+            if (clipboard == null) return;
+            try
+            {
+                await clipboard.SetTextAsync(command);
+                _feedback.Text = L("Command copied.", "Comando copiado.", "Comando copiado.", "Perintah disalin.");
+            }
+            catch
+            {
+                _feedback.Text = L("Could not copy. Select the command manually.", "Não foi possível copiar. Selecione o comando manualmente.", "No se pudo copiar. Selecciona el comando manualmente.", "Tidak dapat menyalin. Pilih perintah secara manual.");
+            }
+        };
         Grid.SetColumn(copy, 1);
         row.Children.Add(copy);
-        return row;
-    }
-
-    private async Task CopyAsync(string command)
-    {
-        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
-        if (clipboard != null)
-            await clipboard.SetTextAsync(command);
+        parent.Children.Add(row);
     }
 
     private async Task RefreshAsync()
     {
-        bool mpris = await IsConnectedAsync("mpris");
-        bool record = await IsConnectedAsync("audio-record");
-        _mpris.Text = Status(mpris);
-        _record.Text = Status(record);
-        _mpris.Foreground = new SolidColorBrush(Color.Parse(mpris ? "#8DDDA6" : "#F5C779"));
-        _record.Foreground = new SolidColorBrush(Color.Parse(record ? "#8DDDA6" : "#F5C779"));
+        _refresh.IsEnabled = false;
+        try
+        {
+            bool mpris = await IsConnectedAsync("mpris");
+            bool audio = await IsConnectedAsync("audio-record");
+            _mprisStatus.Text = mpris
+                ? L("Connected. Player access depends on the player you selected.", "Conectado. O acesso depende do reprodutor selecionado.", "Conectado. El acceso depende del reproductor seleccionado.", "Terhubung. Akses bergantung pada pemutar yang dipilih.")
+                : L("Not connected. Choose the music player you use.", "Não conectado. Escolha o reprodutor que você usa.", "No conectado. Elige el reproductor que usas.", "Belum terhubung. Pilih pemutar yang digunakan.");
+            _recordStatus.Text = audio
+                ? L("Allowed. Audio recognition is available.", "Permitido. O reconhecimento de áudio está autorizado.", "Permitido. El reconocimiento de audio está autorizado.", "Diizinkan. Pengenalan audio tersedia.")
+                : L("Not allowed. Needed to recognize songs by sound.", "Não autorizado. Necessário para reconhecer músicas pelo áudio.", "No permitido. Necesario para reconocer canciones por audio.", "Belum diizinkan. Diperlukan untuk mengenali lagu dari audio.");
+            _mprisStatus.Foreground = Brush(mpris ? "#8DDDA6" : "#F5C779");
+            _recordStatus.Foreground = Brush(audio ? "#8DDDA6" : "#F5C779");
+            _playerHelp.Children.Clear();
+            _audioHelp.Children.Clear();
+
+            if (!mpris)
+            {
+                _playerHelp.Children.Add(DialogUi.Text(L(
+                    "Open Ubuntu's application permissions for FrontLine Lyrics and select the music player under 'Control music and video players'. The choices depend on your installed apps.",
+                    "Abra as permissões do FrontLine Lyrics no Ubuntu e selecione o player em 'Controlar reprodutores de música e vídeo'. As opções dependem dos apps instalados.",
+                    "Abre los permisos de FrontLine Lyrics en Ubuntu y elige el reproductor en 'Controlar reproductores de música y vídeo'.",
+                    "Buka izin FrontLine Lyrics di Ubuntu dan pilih pemutar musik/video."), 12));
+                CommandRow(_playerHelp, L(
+                    "If Spotify is installed as a Snap:", "Se o Spotify estiver instalado como Snap:",
+                    "Si Spotify está instalado como Snap:", "Jika Spotify terpasang sebagai Snap:"),
+                    "sudo snap connect frontline-lyrics:mpris spotify:spotify-mpris");
+                CommandRow(_playerHelp, L(
+                    "To inspect available player connections:", "Para consultar as conexões disponíveis:",
+                    "Para consultar las conexiones disponibles:", "Untuk memeriksa koneksi yang tersedia:"),
+                    "snap connections --all | grep mpris");
+            }
+            else
+            {
+                _playerHelp.Children.Add(DialogUi.Text(L(
+                    "A connected MPRIS interface does not guarantee access to every player. If another player is missing, change the selected player in Ubuntu permissions or inspect its Snap slot.",
+                    "Uma conexão MPRIS ativa não libera todos os players. Se outro player não aparecer, altere a seleção nas permissões do Ubuntu ou verifique o slot Snap dele.",
+                    "Una conexión MPRIS activa no autoriza todos los reproductores. Cambia el reproductor seleccionado o comprueba su slot Snap.",
+                    "Koneksi MPRIS tidak otomatis memberi akses ke semua pemutar. Ubah pilihan izin atau periksa slot Snap."), 11));
+            }
+
+            if (!audio)
+                CommandRow(_audioHelp, L(
+                    "Enable audio capture for recognition:", "Autorizar captura de áudio para reconhecimento:",
+                    "Permitir captura de audio para reconocimiento:", "Izinkan perekaman audio untuk pengenalan:"),
+                    "sudo snap connect frontline-lyrics:audio-record");
+            _feedback.Text = "";
+        }
+        finally { _refresh.IsEnabled = true; }
     }
-    private string Status(bool ok) => ok
-        ? DialogUi.L(_lang, "Connected", "Conectada", "Conectada", "Terhubung")
-        : DialogUi.L(_lang, "Not connected", "Não conectada", "No conectada", "Belum terhubung");
 
     internal static async Task<bool> AnyRequiredMissingAsync() =>
         !await IsConnectedAsync("mpris") || !await IsConnectedAsync("audio-record");
@@ -135,12 +172,13 @@ internal sealed class SnapPermissionsDialog : Window
                 UseShellExecute = false, CreateNoWindow = true,
                 RedirectStandardError = true, RedirectStandardOutput = true
             };
-            psi.ArgumentList.Add("is-connected"); psi.ArgumentList.Add(plug);
-            using var p = Process.Start(psi);
-            if (p == null) return false;
+            psi.ArgumentList.Add("is-connected");
+            psi.ArgumentList.Add(plug);
+            using var process = Process.Start(psi);
+            if (process == null) return false;
             using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(4));
-            await p.WaitForExitAsync(timeout.Token);
-            return p.ExitCode == 0;
+            await process.WaitForExitAsync(timeout.Token);
+            return process.ExitCode == 0;
         }
         catch { return false; }
     }
