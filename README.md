@@ -1,3 +1,7 @@
+
+
+
+
 <div align="center">
 
 <img src="Frontline/assets/featured_banner.png" alt="FrontLine Lyrics" width="700" />
@@ -20,7 +24,16 @@
 
 <br><br>
 
-https://github.com/user-attachments/assets/0a6f3278-49b2-43f0-9004-6709d65f74b9
+<table>
+  <tr>
+    <td>
+      <video src="https://github.com/user-attachments/assets/0a6f3278-49b2-43f0-9004-6709d65f74b9" width="100%" controls></video>
+    </td>
+    <td>
+      <video src="https://github.com/user-attachments/assets/309870ea-5cce-4721-bca8-81eaa913fbc6" width="100%" controls></video>
+    </td>
+  </tr>
+</table>
 
 </div>
 
@@ -72,10 +85,9 @@ FrontLine Lyrics has two parts: a **Python backend** that handles recognition, l
 
 Install the official Windows version from the [Microsoft Store](https://apps.microsoft.com/detail/9P6LNJCL8ZCC).
 
-
 ### Linux
 
-The Linux version is being prepared for distribution. Until it is published, you can [build a `.deb` or `.snap` locally](#building-from-source).
+Install the official Linux version from the [Snap Store](https://snapcraft.io/frontline-lyrics).
 
 ## Usage
 
