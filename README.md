@@ -52,6 +52,7 @@
 - [Running Tests](#running-tests)
 - [Contributing](#contributing)
 - [Support](#support)
+- [Star History](#star-history)
 - [License](#license)
 
 ## About
@@ -233,6 +234,19 @@ Contributions and bug reports are welcome. Please see [CONTRIBUTING.md](CONTRIBU
 
 If FrontLine Lyrics is useful to you, consider [supporting the project](https://www.buymeacoffee.com/juliocax).
 
+## Star History
+
+<a href="https://www.star-history.com/?repos=juliocax%2Ffrontline-lyrics-desktop&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=juliocax/frontline-lyrics-desktop&type=date&theme=dark&legend=bottom-right" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=juliocax/frontline-lyrics-desktop&type=date&legend=bottom-right" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=juliocax/frontline-lyrics-desktop&type=date&legend=bottom-right" />
+ </picture>
+</a>
+
 ## License
 
 See [LICENSE.txt](LICENSE.txt) for the repository's license terms.
+
+
+
