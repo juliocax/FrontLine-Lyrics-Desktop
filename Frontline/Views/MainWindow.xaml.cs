@@ -23,6 +23,8 @@ using System.Collections.ObjectModel;
 using System.Windows.Data;
 using System.Windows.Input;
 using System.ComponentModel;
+using Windows.ApplicationModel;
+using Windows.Services.Store;
 
 namespace FrontLineOverlay
 {
@@ -42,6 +44,9 @@ namespace FrontLineOverlay
 
         [DllImport("user32.dll")] private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
         [DllImport("user32.dll")] private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
+
+        [DllImport("kernel32.dll", ExactSpelling = true)]
+        private static extern int GetCurrentPackageFullName(ref uint packageFullNameLength, IntPtr packageFullName);
 
         private ImageSource? _icoLock;
         private ImageSource? _icoLockOpen;
@@ -72,6 +77,7 @@ namespace FrontLineOverlay
 
         private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v1.6.0.html";
         private const string FeedbackFormUrl = "https://forms.gle/bwV1xeKncmGPATDaA";
+        private const string StoreProductUrl = "ms-windows-store://pdp/?ProductId=9P6LNJCL8ZCC";
         private const string StoreReviewUrl = "ms-windows-store://review/?ProductId=9P6LNJCL8ZCC";
 
         [StructLayout(LayoutKind.Sequential)] public struct Win32Point { public int X; public int Y; }
@@ -181,7 +187,7 @@ namespace FrontLineOverlay
                 { "Listen", "LISTEN" }, { "ListenStarting", "STARTING" }, { "ListenStartingTip", "Starting audio service…" }, { "Search", "SEARCH" }, { "ManualSearch", "MANUAL SEARCH" },
                 { "Artist", "Artist:" }, { "Song", "Song:" }, { "Find", "FIND" }, { "Cancel", "CANCEL" },
                 { "Settings", "SETTINGS" }, { "SettingsTabLyrics", "Lyrics" }, { "SettingsTabTranslate", "Translate" }, { "SettingsTabApp", "General" }, { "ManualSync", "MANUAL SYNC" }, { "Translate", "TRANSLATE LYRICS" },
-                { "UILang", "APP LANGUAGE" }, { "Ready", "Ready." },
+                { "UILang", "APP LANGUAGE" },
                 { "Listening", "Listening..." }, { "Searching", "Searching lyrics..." },
                 { "SideListen", "LISTEN" }, { "SideClear", "CLEAR" }, { "Auto", "AUTO" },
                 { "KeepOriginal", "Also show original lyrics" }, { "PreviewLabel", "PREVIEW" },
@@ -189,6 +195,7 @@ namespace FrontLineOverlay
                 { "MockNext", "♪ next line preview ♪" }, { "MockCurrentOriginal", "(original) this is a preview line" },
                 { "DonateTip", "Leave an optional tip" }, { "ReleaseNotesButton", "VIEW RELEASE NOTES" }, { "ReleaseNotesHeading", "WHAT'S NEW" }, { "ReleaseNotesTooltip", "See what's new in this version" },
                 { "FeedbackLink", "Share your feedback" },
+                { "StoreUpdate", "New version available" }, { "StoreUpdateCompact", "Update" }, { "StoreUpdateOpenError", "Could not open the Microsoft Store." },
                 { "SupportPrompt", "Enjoying the app?" }, { "SupportDonate", "Support" }, { "SupportRate", "Rate" }, { "SupportFeedback", "Feedback" },
                 { "TipSupportDonate", "Leave an optional tip to support development." }, { "TipSupportRate", "Rate FrontLine Lyrics on the Store." }, { "TipSupportFeedback", "Report problems or suggest improvements." },
                 { "PrevTrack", "Previous track" }, { "NextTrack", "Next track" },
@@ -272,7 +279,7 @@ namespace FrontLineOverlay
                 { "Listen", "OUVIR" }, { "ListenStarting", "INICIANDO" }, { "ListenStartingTip", "Iniciando serviço de áudio…" }, { "Search", "BUSCAR" }, { "ManualSearch", "BUSCA MANUAL" },
                 { "Artist", "Artista:" }, { "Song", "Música:" }, { "Find", "BUSCAR" }, { "Cancel", "CANCELAR" },
                 { "Settings", "CONFIGURAÇÕES" }, { "SettingsTabLyrics", "Letra" }, { "SettingsTabTranslate", "Traduzir" }, { "SettingsTabApp", "Geral" }, { "ManualSync", "SINC. MANUAL" }, { "Translate", "TRADUZIR LETRAS" },
-                { "UILang", "IDIOMA DO APP" }, { "Ready", "Pronto." },
+                { "UILang", "IDIOMA DO APP" },
                 { "Listening", "Ouvindo..." }, { "Searching", "Buscando letra..." },
                 { "SideListen", "OUVIR" }, { "SideClear", "LIMPAR" }, { "Auto", "AUTO" },
                 { "KeepOriginal", "Também mostra a letra original" }, { "PreviewLabel", "PRÉVIA" },
@@ -280,6 +287,7 @@ namespace FrontLineOverlay
                 { "MockNext", "♪ próxima linha de exemplo ♪" }, { "MockCurrentOriginal", "(original) esta é uma linha de exemplo" },
                 { "DonateTip", "Deixe uma gorjeta opcional" }, { "ReleaseNotesButton", "VER NOVIDADES DA VERSÃO" }, { "ReleaseNotesHeading", "NOVIDADES" }, { "ReleaseNotesTooltip", "Veja as novidades desta versão" },
                 { "FeedbackLink", "Deixe seu feedback" },
+                { "StoreUpdate", "Nova versão disponível" }, { "StoreUpdateCompact", "Atualizar" }, { "StoreUpdateOpenError", "Não foi possível abrir a Microsoft Store." },
                 { "SupportPrompt", "Gostando do app?" }, { "SupportDonate", "Apoie" }, { "SupportRate", "Avalie" }, { "SupportFeedback", "Feedback" },
                 { "TipSupportDonate", "Deixe uma gorjeta opcional para apoiar o desenvolvimento." }, { "TipSupportRate", "Avalie o Frontline Lyrics na loja." }, { "TipSupportFeedback", "Relate problemas ou sugira melhorias." },
                 { "PrevTrack", "Faixa anterior" }, { "NextTrack", "Próxima faixa" },
@@ -363,7 +371,7 @@ namespace FrontLineOverlay
                 { "Listen", "ESCUCHAR" }, { "ListenStarting", "INICIANDO" }, { "ListenStartingTip", "Iniciando el servicio de audio…" }, { "Search", "BUSCAR" }, { "ManualSearch", "BÚSQUEDA MANUAL" },
                 { "Artist", "Artista:" }, { "Song", "Canción:" }, { "Find", "BUSCAR" }, { "Cancel", "CANCELAR" },
                 { "Settings", "AJUSTES" }, { "SettingsTabLyrics", "Letra" }, { "SettingsTabTranslate", "Traducir" }, { "SettingsTabApp", "General" }, { "ManualSync", "SINC. MANUAL" }, { "Translate", "TRADUCIR LETRAS" },
-                { "UILang", "IDIOMA DE LA APP" }, { "Ready", "Listo." },
+                { "UILang", "IDIOMA DE LA APP" },
                 { "Listening", "Escuchando..." }, { "Searching", "Buscando letra..." },
                 { "SideListen", "ESCUCHAR" }, { "SideClear", "LIMPIAR" }, { "Auto", "AUTO" },
                 { "KeepOriginal", "También muestra la letra original" }, { "PreviewLabel", "VISTA PREVIA" },
@@ -371,6 +379,7 @@ namespace FrontLineOverlay
                 { "MockNext", "♪ próxima línea de ejemplo ♪" }, { "MockCurrentOriginal", "(original) esta es una línea de ejemplo" },
                 { "DonateTip", "Deja una propina opcional" }, { "ReleaseNotesButton", "VER NOTAS DE LA VERSIÓN" }, { "ReleaseNotesHeading", "NOVEDADES" }, { "ReleaseNotesTooltip", "Ver las novedades de esta versión" },
                 { "FeedbackLink", "Deja tus comentarios" },
+                { "StoreUpdate", "Nueva versión disponible" }, { "StoreUpdateCompact", "Actualizar" }, { "StoreUpdateOpenError", "No se pudo abrir Microsoft Store." },
                 { "SupportPrompt", "¿Te gusta la app?" }, { "SupportDonate", "Apoya" }, { "SupportRate", "Valora" }, { "SupportFeedback", "Feedback" },
                 { "TipSupportDonate", "Deja una propina opcional para apoyar el desarrollo." }, { "TipSupportRate", "Valora FrontLine Lyrics en la tienda." }, { "TipSupportFeedback", "Informa de problemas o sugiere mejoras." },
                 { "PrevTrack", "Pista anterior" }, { "NextTrack", "Pista siguiente" },
@@ -454,7 +463,7 @@ namespace FrontLineOverlay
                 { "Listen", "DENGAR" }, { "ListenStarting", "MEMULAI" }, { "ListenStartingTip", "Memulai layanan audio…" }, { "Search", "CARI" }, { "ManualSearch", "PENCARIAN MANUAL" },
                 { "Artist", "Artis:" }, { "Song", "Lagu:" }, { "Find", "CARI" }, { "Cancel", "BATAL" },
                 { "Settings", "PENGATURAN" }, { "SettingsTabLyrics", "Lirik" }, { "SettingsTabTranslate", "Terjemah" }, { "SettingsTabApp", "Umum" }, { "ManualSync", "SINKRON MANUAL" }, { "Translate", "TERJEMAHKAN LIRIK" },
-                { "UILang", "BAHASA APLIKASI" }, { "Ready", "Siap." },
+                { "UILang", "BAHASA APLIKASI" },
                 { "Listening", "Mendengarkan..." }, { "Searching", "Mencari lirik..." },
                 { "SideListen", "DENGAR" }, { "SideClear", "HAPUS" }, { "Auto", "AUTO" },
                 { "KeepOriginal", "Tampilkan juga lirik asli" }, { "PreviewLabel", "PRATINJAU" },
@@ -462,6 +471,7 @@ namespace FrontLineOverlay
                 { "MockNext", "♪ baris berikutnya ♪" }, { "MockCurrentOriginal", "(asli) ini baris contoh" },
                 { "DonateTip", "Tinggalkan tip opsional" }, { "ReleaseNotesButton", "LIHAT CATATAN RILIS" }, { "ReleaseNotesHeading", "YANG BARU" }, { "ReleaseNotesTooltip", "Lihat yang baru di versi ini" },
                 { "FeedbackLink", "Berikan tanggapan Anda" },
+                { "StoreUpdate", "Versi baru tersedia" }, { "StoreUpdateCompact", "Perbarui" }, { "StoreUpdateOpenError", "Microsoft Store tidak dapat dibuka." },
                 { "SupportPrompt", "Suka aplikasinya?" }, { "SupportDonate", "Dukung" }, { "SupportRate", "Nilai" }, { "SupportFeedback", "Masukan" },
                 { "TipSupportDonate", "Tinggalkan tip opsional untuk mendukung pengembangan." }, { "TipSupportRate", "Beri nilai FrontLine Lyrics di toko." }, { "TipSupportFeedback", "Laporkan masalah atau sarankan perbaikan." },
                 { "PrevTrack", "Lagu sebelumnya" }, { "NextTrack", "Lagu berikutnya" },
@@ -1129,6 +1139,8 @@ namespace FrontLineOverlay
             TxtSupportPrompt.Visibility = showPrompt ? Visibility.Visible : Visibility.Collapsed;
             SupportDivider.Visibility = showPrompt ? Visibility.Visible : Visibility.Collapsed;
 
+            BtnStoreUpdate.ToolTip = t["StoreUpdate"];
+
             BtnDonate.Content = compact ? "" : t["SupportDonate"];
             BtnRate.Content = compact ? "" : t["SupportRate"];
             BtnFeedback.Content = compact ? "" : t["SupportFeedback"];
@@ -1446,10 +1458,44 @@ namespace FrontLineOverlay
             StartPythonServer();
             _ = Task.Run(() => ConnectWebSocket(), _shutdown.Token);
             InitTelemetry();
+            _ = CheckForStoreUpdateAsync(args);
             if (!_welcomeWasShownAtLaunch)
                 AppSettings.SetString("LastSeenReleaseNotesVersion", ReleaseNotesWindow.CurrentVersion);
             else
                 Dispatcher.BeginInvoke(new Action(ShowNewVersionNotesIfNeeded), DispatcherPriority.ApplicationIdle);
+        }
+
+        private async Task CheckForStoreUpdateAsync(string[] args)
+        {
+#if DEBUG
+            if (args.Contains("--simulate-update", StringComparer.OrdinalIgnoreCase))
+            {
+                BtnStoreUpdate.Visibility = Visibility.Visible;
+                return;
+            }
+#endif
+            try
+            {
+                // With a null buffer, Windows reports the required size only for a packaged app.
+                const int ErrorInsufficientBuffer = 122;
+                uint packageFullNameLength = 0;
+                if (GetCurrentPackageFullName(ref packageFullNameLength, IntPtr.Zero) != ErrorInsufficientBuffer)
+                    return;
+
+                string currentPackageFamily = Package.Current.Id.FamilyName;
+                var context = StoreContext.GetDefault();
+                WinRT.Interop.InitializeWithWindow.Initialize(context, new WindowInteropHelper(this).Handle);
+                var updates = await context.GetAppAndOptionalStorePackageUpdatesAsync();
+                if (!_shuttingDown && updates.Any(update =>
+                    string.Equals(update.Package.Id.FamilyName, currentPackageFamily, StringComparison.OrdinalIgnoreCase)))
+                {
+                    BtnStoreUpdate.Visibility = Visibility.Visible;
+                }
+            }
+            catch (Exception ex)
+            {
+                CrashReporter.Log(ex, "CheckForStoreUpdate");
+            }
         }
 
         private void StartPythonServer()
@@ -1632,8 +1678,7 @@ namespace FrontLineOverlay
             RefreshHistoryHeaders();
             RefreshHistoryDateLabels();
 
-            if (currentAppStatus == "IDLE") LblArtistName.Text = t["Ready"];
-            else if (currentAppStatus == "LISTENING") LblLoadingText.Text = t["Listening"];
+            if (currentAppStatus == "LISTENING") LblLoadingText.Text = t["Listening"];
             else if (currentAppStatus == "SEARCHING") LblLoadingText.Text = t["Searching"];
             if (LblLyricsWaitHint.Visibility == Visibility.Visible)
                 UpdateLyricsWaitHint(currentAppStatus, LblArtistName.Text, LblSongTitle.Text, false);
@@ -2035,7 +2080,8 @@ namespace FrontLineOverlay
                     if (status == "IDLE")
                     {
                         LblSongTitle.Visibility = Visibility.Collapsed;
-                        LblArtistName.Text = uiStrings[currentAppLanguage]["Ready"];
+                        LblArtistName.Text = string.Empty;
+                        LblArtistName.Visibility = Visibility.Collapsed;
                         currentCoverUrl = ""; LoadCoverArt("");
                         HomeControls.Visibility = (festivalMode || IsFestivalHubOpen) ? Visibility.Collapsed : Visibility.Visible;
                         isGhostMode = false;
@@ -2061,7 +2107,9 @@ namespace FrontLineOverlay
                         LblSongTitle.Visibility = Visibility.Visible;
                         HomeControls.Visibility = Visibility.Collapsed;
                         LblSongTitle.Text = song;
-                        LblArtistName.Text = string.IsNullOrEmpty(artist) ? "..." : artist;
+                        LblArtistName.Text = artist;
+                        LblArtistName.Visibility = string.IsNullOrWhiteSpace(artist)
+                            ? Visibility.Collapsed : Visibility.Visible;
                         string incomingCover = coverUrl ?? "";
                         if (incomingCover != currentCoverUrl)
                         {
@@ -2600,6 +2648,19 @@ namespace FrontLineOverlay
             }
         }
 
+        private void BtnStoreUpdate_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(StoreProductUrl) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                CrashReporter.Log(ex, "OpenStoreUpdate");
+                AlertDark(uiStrings[currentAppLanguage]["StoreUpdateOpenError"]);
+            }
+        }
+
         private void BtnRate_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -2649,7 +2710,7 @@ namespace FrontLineOverlay
         {
             try
             {
-                Process.Start(new ProcessStartInfo("https://buymeacoffee.com/juliocax/frontline-lyrics-1-6") { UseShellExecute = true });
+                Process.Start(new ProcessStartInfo(ReleaseNotesWindow.Version16AnnouncementUrl) { UseShellExecute = true });
             }
             catch (Exception ex)
             {

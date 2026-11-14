@@ -19,6 +19,7 @@
                 <ResourceDictionary Source="pack://application:,,,/Styles/ListHeaders.xaml"/>
             </ResourceDictionary.MergedDictionaries>
             <SolidColorBrush x:Key="Support.ButtonForeground" Color="White"/>
+            <CornerRadius x:Key="Support.ButtonCornerRadius">18</CornerRadius>
 
             <Style x:Key="SupportPillButton" TargetType="Button">
                 <Setter Property="Height" Value="22"/>
@@ -34,11 +35,11 @@
                     <Setter.Value>
                         <ControlTemplate TargetType="Button">
                             <Grid>
-                                <Border x:Name="Bd" CornerRadius="18" 
+                                <Border x:Name="Bd" CornerRadius="{DynamicResource Support.ButtonCornerRadius}" 
                                         Background="{TemplateBinding Background}" 
                                         BorderThickness="0"/>
 
-                                <Border x:Name="HoverOverlay" CornerRadius="18" Background="White" Opacity="0" IsHitTestVisible="False"/>
+                                <Border x:Name="HoverOverlay" CornerRadius="{DynamicResource Support.ButtonCornerRadius}" Background="White" Opacity="0" IsHitTestVisible="False"/>
 
                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="{TemplateBinding Padding}">
                                     <Rectangle x:Name="Ico" Width="13" Height="13" VerticalAlignment="Center" Fill="{TemplateBinding Foreground}">
@@ -109,24 +110,119 @@
 
                 <Border x:Name="ScreenBackdrop" Grid.ColumnSpan="2" Margin="-20,-20,-20,-52" Panel.ZIndex="0" Background="#FF0A0A0A" CornerRadius="12" IsHitTestVisible="False" Visibility="Collapsed"/>
 
-                <Grid x:Name="SidePanel" Grid.Column="0" Margin="0,0,20,0" VerticalAlignment="Stretch">
+                <Grid x:Name="SidePanel" Grid.Column="0">
+                    <Grid.Style>
+                        <Style TargetType="Grid">
+                            <Setter Property="Margin" Value="0,0,20,0"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Visibility, ElementName=HomeControls}" Value="Visible">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Setter Property="Margin" Value="0,0,20,28"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Grid.Style>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
-                    <Image x:Name="AlbumCoverImg" Grid.Row="0" Stretch="Uniform" Margin="0,0,0,12"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                           RenderOptions.BitmapScalingMode="HighQuality"/>
-                    <Viewbox x:Name="LogoAdornHost" Grid.Row="0" Panel.ZIndex="5" Margin="0,0,0,12" Stretch="Uniform"
-                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                        IsHitTestVisible="False" Visibility="Collapsed">           
-                        <Grid x:Name="LogoAdornSpace" Width="1000" Height="1000">
-                            <ContentControl x:Name="UserThemeLogoAdorn" IsHitTestVisible="False"/>
+                    <Grid Grid.Row="0">
+                        <Grid.Style>
+                            <Style TargetType="Grid">
+                                <Setter Property="Margin" Value="0,0,0,12"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding Visibility, ElementName=HomeControls}" Value="Visible">
+                                        <Setter Property="Margin" Value="0"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Grid.Style>
+                        <Grid HorizontalAlignment="Center">
+                            <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="VerticalAlignment" Value="Center"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding IsVisible, ElementName=StoreUpdateRow}" Value="True"/>
+                                                <Condition Binding="{Binding Visibility, ElementName=BtnStoreUpdate}" Value="Visible"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="VerticalAlignment" Value="Bottom"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                            <Image x:Name="AlbumCoverImg" Stretch="Uniform"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                            <Viewbox x:Name="LogoAdornHost" Panel.ZIndex="5" Stretch="Uniform"
+                                HorizontalAlignment="Center" VerticalAlignment="Center"
+                                IsHitTestVisible="False" Visibility="Collapsed">
+                            <Grid x:Name="LogoAdornSpace" Width="1000" Height="1000">
+                                <ContentControl x:Name="UserThemeLogoAdorn" IsHitTestVisible="False"/>
+                            </Grid>
+                            </Viewbox>
                         </Grid>
-                    </Viewbox>
+                    </Grid>
                     <StackPanel Grid.Row="1" VerticalAlignment="Bottom">
+                        <Grid x:Name="StoreUpdateRow" HorizontalAlignment="Center">
+                                <Grid.Style>
+                                <Style TargetType="Grid">
+                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                    <Style.Triggers>
+                                        <MultiDataTrigger>
+                                            <MultiDataTrigger.Conditions>
+                                                <Condition Binding="{Binding Visibility, ElementName=HomeControls}" Value="Visible"/>
+                                                <Condition Binding="{Binding Visibility, ElementName=SearchInputPanel}" Value="Collapsed"/>
+                                                <Condition Binding="{Binding Visibility, ElementName=FestivalHubPanel}" Value="Collapsed"/>
+                                            </MultiDataTrigger.Conditions>
+                                            <Setter Property="Visibility" Value="Visible"/>
+                                        </MultiDataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Grid.Style>
+                        <Button x:Name="BtnStoreUpdate" MinHeight="32" Padding="12,5"
+                                HorizontalAlignment="Center" Margin="0,0,0,6"
+                                Visibility="Collapsed"
+                                Background="#FF201C28" BorderBrush="#FF685778" BorderThickness="1"
+                                Foreground="#FFF0E5FA" Cursor="Hand" Click="BtnStoreUpdate_Click"
+                                ToolTip="New version available"
+                                AutomationProperties.Name="{Binding ToolTip, RelativeSource={RelativeSource Self}}">
+                            <Button.Template>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="Ring" CornerRadius="16" Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}">
+                                        <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="Ring" Property="Background" Value="#FF33283E"/>
+                                            <Setter TargetName="Ring" Property="BorderBrush" Value="#FFAA8BBE"/>
+                                        </Trigger>
+                                        <Trigger Property="IsKeyboardFocused" Value="True">
+                                            <Setter TargetName="Ring" Property="BorderBrush" Value="#FFE0BADF"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="Ring" Property="Background" Value="#FF493656"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Button.Template>
+                            <StackPanel Orientation="Horizontal">
+                                <Viewbox Width="16" Height="16" Margin="0,0,7,0">
+                                <Canvas Width="24" Height="24" IsHitTestVisible="False">
+                                    <Path Fill="{Binding Foreground, ElementName=BtnStoreUpdate}"
+                                          Data="M11,3 L4,10 5.5,11.5 11,6 11,17 13,17 13,6 18.5,11.5 20,10 13,3 Z M4,19 H20 V21 H4 Z"/>
+                                </Canvas>
+                                </Viewbox>
+                                <TextBlock Text="{Binding ToolTip, ElementName=BtnStoreUpdate}"
+                                           Foreground="{Binding Foreground, ElementName=BtnStoreUpdate}"
+                                           VerticalAlignment="Center" FontSize="11" FontWeight="SemiBold"/>
+                            </StackPanel>
+                        </Button>
+                        </Grid>
                         <TextBlock x:Name="LblSongTitle" Foreground="#E0E0E0" FontSize="13" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,2" Visibility="Collapsed"/>
-                        <TextBlock x:Name="LblArtistName" Text="Ready." Foreground="#888888" FontSize="12" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,10"/>
+                        <TextBlock x:Name="LblArtistName" Visibility="Collapsed" Foreground="#888888" FontSize="12" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,10"/>
                         <TextBlock x:Name="LblTranslating" Text="Translating..." Foreground="#A955FF" FontSize="9" FontWeight="SemiBold" Margin="0,0,0,0" HorizontalAlignment="Center" Visibility="Collapsed"/>
                     </StackPanel>
                 </Grid>
@@ -329,7 +425,7 @@
                                         <ControlTemplate TargetType="Button">
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock x:Name="TxtAppName" Text="FRONTLINE LYRICS" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
-                                                <TextBlock x:Name="TxtAppVersion" Text="v1.6.0" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center" Margin="0,1,0,0"/>
+                                                <TextBlock x:Name="TxtAppVersion" Text="v1.6.2" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center" Margin="0,1,0,0"/>
                                             </StackPanel>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
@@ -406,6 +502,7 @@
 
                     </StackPanel>
                 </Grid>
+
 
                 <StackPanel x:Name="SupportBar" Grid.ColumnSpan="2" Panel.ZIndex="50"
                             Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Bottom"
