@@ -1,0 +1,159 @@
+Metadata-Version: 2.4
+Name: koroman
+Version: 1.0.16
+Summary: Korean Romanizer with pronunciation rules based on 국립국어원 표기법
+Home-page: https://github.com/gerosyab/koroman
+Author: Donghe Youn (Daissue)
+Author-email: gerosyab@gmail.com
+Project-URL: Bug Reports, https://github.com/gerosyab/koroman/issues
+Project-URL: Source, https://github.com/gerosyab/koroman
+Keywords: korean,romanizer,romanization,hangul,transliteration,linguistics,korean romanizer,korean romanization,korean transliteration,korean linguistics,koroman,로마자,로마자표기,로마자표기법,로마자변환,로마자 변환,한글,한글 로마자,한글 로마자 변환
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
+Classifier: Topic :: Software Development :: Libraries :: Python Modules
+Classifier: Topic :: Text Processing :: Linguistic
+Classifier: Programming Language :: Python :: 3
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
+Classifier: Programming Language :: Python :: 3.8
+Classifier: Programming Language :: Python :: 3.9
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.6
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: keywords
+Dynamic: license-file
+Dynamic: project-url
+Dynamic: requires-python
+Dynamic: summary
+
+# KOROMAN - Korean Romanizer
+
+**KOROMAN** is a multilingual Romanizer for Korean text, based on the Revised Romanization system (국립국어원 표기법) with additional pronunciation rules. It converts Hangul syllables into Romanized Latin script across multiple languages: **JavaScript, Python, and Java**.
+
+## 🌐 Live Demo
+- [한국어 버전](https://daissue.app/romanizer)
+- [English version](https://daissue.app/en/romanizer)
+
+---
+
+## 📦 Features
+- Supports Revised Romanization of Korean
+- Applies key Korean phonological rules:
+  - Liaison (연음화)
+  - Nasal assimilation (비음화)
+  - Lateralization (유음화)
+  - Aspiration / consonant cluster simplification — refined in 1.0.15
+- Casing options (lower, upper, capitalized) — accepts full names, short aliases, or numeric codes (1.0.14+)
+- **Optional hyphen at ambiguous syllable boundaries** (`use_hyphen`, 1.0.15+) — e.g. 중앙 → `jung-ang`, 반구대 → `ban-gudae`, 해운대 → `hae-undae`
+- **User dictionary** (`custom_dictionary`, 1.0.15+) — per-call or persistent module-level store; match Korean words and emit user-provided Romanization with the highest priority (casing/phonological rules are not applied to dictionary values)
+- Fully tested in each language
+
+---
+
+## 🆕 1.0.16 changes
+
+- **29항 n-insertion (`-잎` trigger)**, cluster liaison, `밟-`, `ㄷ+ㅎ+ㅣ→치`
+- Persistent dictionary starts **empty** — see [CHANGELOG.md](../CHANGELOG.md)
+
+## 1.0.15 changes (heads-up)
+
+- **Aspiration policy changed.** Receiver-final ㄱ/ㄷ/ㅂ + initial ㅎ is now romanized as a single fortis (`k`/`t`/`p`/`ch`) consistently. The previous noun-only exception (e.g. 묵호 → `Mukho`, 집현전 → `Jiphyeonjeon`) required morphological analysis we cannot perform reliably, so it has been dropped:
+  - `묵호 → muko`, `집현전 → jipyeonjeon`, `잡혀 → japyeo`, `놓다 → nota`
+- **Consonant cluster simplification (자음군 단순화) fixed**: 흙→`heuk`, 닭→`dak`, 삶→`sam`, 읊→`eup`, 값→`gap`.
+- **ᆶ + ᄋ liaison preserved**: 잃어→`ireo` (previously `ileo`).
+- **Final ㄷ / ㅎ** map to `t` in standard mode (previously `d` / `h`). The legacy mapping is kept for `use_pronunciation_rules=False` to preserve 1.0.14 behaviour.
+
+---
+
+## 🚀 Getting Started
+
+### Python
+```bash
+pip install koroman
+```
+```python
+from koroman import romanize
+
+# Basic usage
+romanize("한글")  # → "hangeul"
+
+# With pronunciation rules disabled
+romanize("해돋이", use_pronunciation_rules=False)  # → "haedodi"
+
+# With pronunciation rules enabled (default)
+romanize("해돋이")  # → "haedoji"
+
+# Casing options (full names)
+romanize("한글", casing_option="uppercase")  # → "HANGEUL"
+romanize("안녕 한글", casing_option="capitalize-word")  # → "Annyeong Hangeul"
+romanize("안녕\n한글 로마자 변환", casing_option="capitalize-line")  # → "Annyeong\nHangeul romaja byeonhwan"
+
+# 1.0.14+ : short aliases / numeric codes are also accepted
+romanize("한글", casing_option="u")    # → "HANGEUL"
+romanize("한글", casing_option="uc")   # → "HANGEUL"
+romanize("한글", casing_option=1)      # → "HANGEUL"
+romanize("안녕 한글", casing_option="cw")   # → "Annyeong Hangeul"
+romanize("안녕\n한글 로마자 변환", casing_option=2)  # → "Annyeong\nHangeul romaja byeonhwan"
+
+# Combining options
+romanize("해돋이", use_pronunciation_rules=False, casing_option="uc")  # → "HAEDODI"
+romanize("해돋이", use_pronunciation_rules=False, casing_option=1)     # → "HAEDODI"
+
+# 1.0.15+ : use_hyphen — insert '-' at ambiguous syllable boundaries
+romanize("중앙", use_hyphen=True)    # → "jung-ang"
+romanize("반구대", use_hyphen=True)  # → "ban-gudae"
+romanize("해운대", use_hyphen=True)  # → "hae-undae"
+
+# 1.0.15+ : custom_dictionary — per-call user dictionary (highest priority, casing-safe)
+romanize("나는 김철수입니다",
+         custom_dictionary={"김철수": "Kim Chul-soo"})  # → "naneun Kim Chul-sooimnida"
+
+# 1.0.15+ : persistent dictionary (module-level store)
+from koroman import (
+    set_custom_dictionary, add_custom_dictionary,
+    remove_custom_dictionary_entry, clear_custom_dictionary, get_custom_dictionary,
+)
+set_custom_dictionary({"김철수": "Kim Chul-soo", "서울": "Seoul"})
+add_custom_dictionary("부산", "Busan")
+romanize("서울에 사는 김철수")                         # → "Seoule saneun Kim Chul-soo"
+romanize("부산", use_custom_dictionary=False)         # → "busan"
+clear_custom_dictionary()
+```
+
+### casing_option aliases (1.0.14+)
+
+| Canonical          | Aliases                              | Numeric   |
+|--------------------|--------------------------------------|-----------|
+| `lowercase`        | `lower`, `l`, `lc`                   | `0`       |
+| `uppercase`        | `upper`, `u`, `uc`                   | `1`       |
+| `capitalize-line`  | `cap-line`, `cline`, `cl`            | `2`       |
+| `capitalize-word`  | `cap-word`, `cword`, `cw`            | `3`       |
+
+Case-insensitive. Unknown / `None` falls back to `lowercase`.
+
+### Persistent custom_dictionary API (1.0.15+)
+
+| API | Description |
+|---|---|
+| `set_custom_dictionary(dict)` | Replace the entire store. `None`/empty dict clears it. |
+| `add_custom_dictionary(dict)` / `add_custom_dictionary(key, value)` | Merge/insert entries. |
+| `remove_custom_dictionary_entry(key)` | Remove a single key (returns `True` on success). |
+| `clear_custom_dictionary()` | Empty the store. |
+| `get_custom_dictionary()` | Shallow snapshot of the current store. |
+
+Combine with the per-call `custom_dictionary` option to override the store on a single call (same-key entries in the option win). Set `use_custom_dictionary=False` on a call to ignore the persistent store entirely.
+
+---
+
+## 📜 LICENSE
+[MIT License](LICENSE)
+
+2025 ⓒ Donghe Youn (Daissue)

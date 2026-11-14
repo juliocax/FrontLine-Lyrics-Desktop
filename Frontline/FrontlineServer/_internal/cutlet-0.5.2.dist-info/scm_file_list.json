@@ -1,0 +1,27 @@
+{
+  "files": [
+    "README.md",
+    "cutlet.png",
+    "LICENSE",
+    "setup.py",
+    "pyproject.toml",
+    "requirements.txt",
+    "MANIFEST.in",
+    ".gitignore",
+    "pytest.ini",
+    "docs/index.html",
+    "docs/cutlet.html",
+    "docs/search.js",
+    "cutlet/__init__.py",
+    "cutlet/exceptions.tsv",
+    "cutlet/cutlet.py",
+    "cutlet/cli.py",
+    "cutlet/mapping.py",
+    "cutlet/test/test_basic.py",
+    "cutlet/test/blns.json",
+    "cutlet/test/test_fuzz.py",
+    ".github/FUNDING.yml",
+    ".github/workflows/docs.yml",
+    ".github/workflows/linux.yml"
+  ]
+}
