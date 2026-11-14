@@ -61,6 +61,43 @@ logging.basicConfig(
 logging.info(f"Log started at: {LOG_FILE}")
 logging.info("Server build: translation with 3 parallel sources (google/mymemory/translators-bing) v1")
 
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] in (
+    "--install-japanese-pack", "--validate-japanese-pack"
+):
+    try:
+        from pathlib import Path
+        from engine.japanese_pack import install, validate_dictionary
+
+        if sys.argv[1] == "--validate-japanese-pack":
+            validate_dictionary(Path(sys.argv[2]))
+        else:
+            def validate_in_child(path):
+                command = [sys.executable]
+                if not getattr(sys, "frozen", False):
+                    command.append(os.path.abspath(__file__))
+                result = subprocess.run(
+                    [*command, "--validate-japanese-pack", str(path)],
+                    timeout=60, check=False,
+                )
+                if result.returncode:
+                    error_path = os.environ.get("FRONTLINE_ADDON_ERROR_FILE")
+                    detail = Path(error_path).read_text(encoding="utf-8") if error_path and Path(error_path).is_file() else ""
+                    raise RuntimeError(f"Cutlet / UniDic initialization ({result.returncode}): {detail}")
+
+            install(validate_in_child)
+    except Exception as error:
+        logging.exception("Japanese dictionary installation failed")
+        result = os.environ.get("FRONTLINE_ADDON_ERROR_FILE")
+        if result:
+            try:
+                with open(result, "w", encoding="utf-8") as output:
+                    output.write(f"{type(error).__name__}: {error}"[:700])
+            except OSError:
+                logging.exception("Could not write add-on installer result")
+        sys.exit(1)
+    sys.exit(0)
+
+
 # These pull in media_session (WinRT), pyaudiowpatch, shazamio and
 # translators — only safe to import after crash_guard is installed above.
 from engine.media_session import MEDIA_SESSION_DISPONIVEL

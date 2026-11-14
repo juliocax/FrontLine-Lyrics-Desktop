@@ -3,10 +3,20 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = []
 binaries = []
-hiddenimports = ['winrt.windows.media.control', 'winrt.windows.storage.streams', 'crash_guard', 'media_session', 'music_manager', 'audio_capture', 'recognition', 'lyrics', 'cover_art', 'translation', 'smtc_policy', 'tuning', 'task_utils', 'workers', 'ws_server']
+hiddenimports = ['winrt.windows.media.control', 'winrt.windows.storage.streams']
 tmp_ret = collect_all('anyascii')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 tmp_ret = collect_all('winrt')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('opencc')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('pypinyin')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('koroman')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('cutlet')
+datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
+tmp_ret = collect_all('fugashi')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 
 
@@ -19,7 +29,7 @@ a = Analysis(
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['unidic_lite'],
     noarchive=False,
     optimize=0,
 )

@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import engine.cover_art as cover_art
 import engine.lyrics as lyrics_mod
+from engine.japanese_pack import installed_dictionary
 from engine import service_health
 import engine.tuning as tuning
 from engine.recognition import ShazamRecognizer
@@ -29,7 +30,9 @@ from engine.media_provider import MediaSessionWatcher
 from engine.smtc_policy import sane_media_position, should_trust_smtc_clock
 from engine.translation import (
     apply_translation_in_background,
+    has_japanese_kana,
     romanize_line,
+    release_japanese_converter,
     translate_line_raced,
     LINE_DISPATCH_EXECUTOR,
 )
@@ -892,17 +895,22 @@ class MusicManager:
         if not self.original_lyrics:
             logging.warning(f"generate_translation('{target_language}') chamado sem letra original carregada.")
             return False
-        if target_language in self.cached_translations:
+        japanese = target_language.lower() == "romanized" and self._has_japanese_lyrics()
+        if target_language in self.cached_translations and not japanese:
             return True
 
         logging.info(f"Traduzindo {len(self.original_lyrics)} linha(s) para '{target_language}'...")
         try:
             if target_language.lower() == "romanized":
                 translated_lines = []
-                for item in self.original_lyrics:
-                    text = str(item['text']) if item['text'] else ""
-                    romanized = romanize_line(text)
-                    translated_lines.append({"timestamp": item['timestamp'], "text": romanized})
+                try:
+                    for item in self.original_lyrics:
+                        text = str(item["text"] or "")
+                        romanized = romanize_line(text, japanese=japanese)
+                        translated_lines.append({"timestamp": item["timestamp"], "text": romanized})
+                finally:
+                    if japanese:
+                        release_japanese_converter()
 
                 self.cached_translations[target_language] = translated_lines
                 logging.info(f"Romanização concluída ({len(translated_lines)} linha(s)).")
@@ -976,6 +984,15 @@ class MusicManager:
         return False
 
     # -- State snapshot sent to the WebSocket clients --
+
+    def _has_japanese_lyrics(self) -> bool:
+        lyrics = self.original_lyrics
+        if not hasattr(self, "_kana_detected") or self._kana_lyrics is not lyrics:
+            self._kana_detected = any(
+                has_japanese_kana(str(item["text"] or "")) for item in (lyrics or [])
+            )
+            self._kana_lyrics = lyrics
+        return self._kana_detected
 
     def get_current_state(self) -> Dict[str, Any]:
         """Calculates the current line based on playback time and returns the full app state."""
@@ -1077,6 +1094,10 @@ class MusicManager:
             "current_lyrics_original": current_line_original,
             "is_translated_active": self.current_language != "original",
             "current_language": self.current_language,
+            "japanese_pack_missing": (
+                self.current_language == "romanized" and self._has_japanese_lyrics()
+                and installed_dictionary() is None
+            ),
             "translation_error": self.last_translation_error,
             "font_size": self.overlay_font_size,
             "song": self.current_song,
