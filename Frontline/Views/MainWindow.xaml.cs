@@ -75,7 +75,7 @@ namespace FrontLineOverlay
         private const int SkipIconDecodeWidth = 64;
         private const int MaxPythonRestarts = 5;
 
-        private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v1.6.0.html";
+        private const string HelpWebsiteUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_v1.7.0.html";
         private const string FeedbackFormUrl = "https://forms.gle/bwV1xeKncmGPATDaA";
         private const string StoreProductUrl = "ms-windows-store://pdp/?ProductId=9P6LNJCL8ZCC";
         private const string StoreReviewUrl = "ms-windows-store://review/?ProductId=9P6LNJCL8ZCC";
@@ -814,6 +814,8 @@ namespace FrontLineOverlay
             TabSettingsLyrics.Content = SettingsText("LYRICS", "LETRAS", "LETRAS", "LIRIK");
             TabSettingsTranslate.Content = SettingsText("TRANSLATION", "TRADUÇÃO", "TRADUCCIÓN", "TERJEMAH");
             TabSettingsApp.Content = SettingsText("GENERAL", "GERAL", "GENERAL", "UMUM");
+            LblAddonsTitle.Text = SettingsText("ADD-ONS", "COMPLEMENTOS", "COMPLEMENTOS", "ADD-ON");
+            BtnOpenAddons.Content = SettingsText("Manage add-ons", "Gerenciar complementos", "Gestionar complementos", "Kelola add-on");
             SettingsCloseButton.ToolTip = SettingsText("Close settings", "Fechar configurações", "Cerrar ajustes", "Tutup pengaturan");
             SettingsOpacityDescription.Text = SettingsText("Background outside the window", "Fundo fora da janela", "Fondo fuera de la ventana", "Latar di luar jendela");
             LblThemeBehindLyrics.Text = SettingsText("Use theme behind lyrics", "Usar tema no fundo das letras", "Usar tema detrás de las letras", "Gunakan tema di belakang lirik");
@@ -1531,6 +1533,8 @@ namespace FrontLineOverlay
                     RedirectStandardOutput = false
                 };
 
+                psi.Environment["FRONTLINE_ADDONS_DIR"] = AddonsDirectory;
+                _addonsServerExecutable = serverExePath;
                 pythonServerProcess = new() { StartInfo = psi, EnableRaisingEvents = true };
                 pythonServerProcess.Exited += PythonServer_Exited;
                 pythonServerProcess.Start();
@@ -2024,6 +2028,8 @@ namespace FrontLineOverlay
                 bool autoMode = root.TryGetProperty("auto_mode", out var amp) && amp.GetBoolean();
                 string currentLyricsOriginal = root.TryGetProperty("current_lyrics_original", out var clo) ? clo.GetString() ?? "" : "";
                 bool isTranslatedActive = root.TryGetProperty("is_translated_active", out var ita) && ita.GetBoolean();
+                bool japanesePackMissing = root.TryGetProperty("japanese_pack_missing", out var jp)
+                    && jp.ValueKind == JsonValueKind.True;
                 string currentLanguage = root.TryGetProperty("current_language", out var cl) ? cl.GetString() ?? "original" : "original";
                 string song = root.TryGetProperty("song", out var songEl) ? songEl.GetString() ?? "" : "";
                 string artist = root.TryGetProperty("artist", out var artEl) ? artEl.GetString() ?? "" : "";
@@ -2062,6 +2068,7 @@ namespace FrontLineOverlay
 
                     UpdateLyricsWaitHint(status, artist, song, festivalMode);
                     currentAppStatus = status;
+                    UpdateJapanesePackNotice(status == "SYNCED" && japanesePackMissing, artist, song);
                     // A catalog miss belongs in the lyrics area, never in the service banner.
                     // Global service health may reflect another request (e.g. an earlier 503).
                     // On the home menu, use the failure reason of THIS lookup if available.
@@ -3067,8 +3074,8 @@ namespace FrontLineOverlay
 
                 AppSettings.SetDouble("WindowLeft", Left);
                 AppSettings.SetDouble("WindowTop", Top);
-                AppSettings.SetDouble("WindowWidth", Width);
-                AppSettings.SetDouble("WindowHeight", Height);
+                AppSettings.SetDouble("WindowWidth", _preAddonsSize?.Width ?? Width);
+                AppSettings.SetDouble("WindowHeight", _preAddonsSize?.Height ?? Height);
                 AppSettings.SetBool("OverlayLocked", isLocked);
                 AppSettings.SetDouble("LockHotkeyVk", lockHotKeyVk);
                 AppSettings.SetDouble("LockHotkeyMods", lockHotkeyModifiers);

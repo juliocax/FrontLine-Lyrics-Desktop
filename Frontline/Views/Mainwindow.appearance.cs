@@ -502,6 +502,25 @@ namespace FrontLineOverlay
 
             PaintSeasonalCard(SearchContentBorder, theme, user);
             PaintSeasonalCard(FestivalContentBorder, theme, user);
+            if (SearchContentBorder != null)
+            {
+                var accent = GetThemeLogoColor();
+                var baseColor = SearchContentBorder.Background is SolidColorBrush solid
+                    ? solid.Color : Color.FromRgb(10, 10, 10);
+                Resources["Settings.Panel"] = SearchContentBorder.Background;
+                Resources["Settings.Surface"] = TintSettingsColor(baseColor, accent, 0.04);
+                Resources["Settings.Raised"] = TintSettingsColor(baseColor, accent, 0.09);
+                Resources["Settings.Border"] = TintSettingsColor(baseColor, accent, 0.20);
+                Resources["Settings.Selected"] = TintSettingsColor(baseColor, accent, 0.24);
+                Resources["Settings.Accent"] = TintSettingsColor(baseColor, accent, 0.62);
+            }
+        }
+
+        private static SolidColorBrush TintSettingsColor(Color background, Color accent, double amount)
+        {
+            byte Blend(byte start, byte end) => (byte)Math.Round(start + (end - start) * amount);
+            return Freeze(255, Blend(background.R, accent.R), Blend(background.G, accent.G),
+                Blend(background.B, accent.B));
         }
 
         private static SolidColorBrush Freeze(byte a, byte r, byte g, byte b)
