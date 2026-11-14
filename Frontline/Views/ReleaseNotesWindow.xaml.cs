@@ -48,6 +48,40 @@ namespace FrontLineOverlay
 
         private static readonly Dictionary<string, Dictionary<string, string[]>> Notes = new()
         {
+            ["1.6.2"] = new()
+            {
+                ["en"] = new[]
+                {
+                    "Addresses an issue that affected saved preferences after updating to 1.6.1.",
+                    "Fixed synced lyrics lookup for tracks with titles written partly or entirely in non-Latin scripts.",
+                    "The update button appears below the logo when a new version is available.",
+                },
+                ["pt"] = new[]
+                {
+                    "Corrigimos um problema que afetava as preferências salvas após a atualização para a 1.6.1.",
+                    "Corrigimos a busca de letras sincronizadas para títulos escritos total ou parcialmente em sistemas de escrita não latinos.",
+                    "Quando há uma nova versão, o botão de atualização aparece abaixo da logo.",
+                },
+                ["es"] = new[]
+                {
+                    "Corregimos un problema que afectaba a las preferencias guardadas tras actualizar a la versión 1.6.1.",
+                    "Corregimos la búsqueda de letras sincronizadas para títulos escritos total o parcialmente en sistemas de escritura no latinos.",
+                    "Cuando hay una nueva versión, el botón de actualización aparece debajo del logotipo.",
+                },
+                ["id"] = new[]
+                {
+                    "Memperbaiki masalah pada preferensi tersimpan setelah pembaruan ke versi 1.6.1.",
+                    "Memperbaiki pencarian lirik tersinkronisasi untuk judul yang ditulis sebagian atau seluruhnya dengan aksara non-Latin.",
+                    "Tombol pembaruan muncul di bawah logo saat versi baru tersedia.",
+                }
+            },
+            ["1.6.1"] = new()
+            {
+                ["en"] = new[] { "Fixed lyric matching for tracks with titles written partly or entirely in non-Latin scripts.", "The update button now appears below the logo when a new version is available." },
+                ["pt"] = new[] { "Corrigimos a busca de letras para músicas com títulos escritos total ou parcialmente em alfabetos e sistemas de escrita não latinos.", "Quando há uma nova versão, o botão de atualização aparece abaixo da logo." },
+                ["es"] = new[] { "Corregimos la búsqueda de letras para títulos escritos total o parcialmente en sistemas de escritura no latinos.", "Cuando hay una nueva versión, el botón de actualización aparece debajo del logotipo." },
+                ["id"] = new[] { "Pencarian lirik untuk judul yang ditulis sebagian atau seluruhnya dengan aksara non-Latin telah diperbaiki.", "Tombol pembaruan muncul di bawah logo saat versi baru tersedia." }
+            },
             ["1.6.0"] = new()
             {
                 ["en"] = new[]
@@ -172,9 +206,11 @@ namespace FrontLineOverlay
             ["id"] = new[] { "Yang baru di FrontLine Lyrics", "Berikut perubahan dalam versi ini.", "DALAM RILIS INI", "MENGERTI", "Catatan untuk versi ini belum tersedia." }
         };
 
+        internal const string Version16AnnouncementUrl = "https://buymeacoffee.com/juliocax/frontline-lyrics-1-6";
+
         private static string? FullReleaseUrl => CurrentVersion switch
         {
-            "1.6.0" => "https://buymeacoffee.com/juliocax/frontline-lyrics-1-6",
+            "1.6.0" or "1.6.1" or "1.6.2" => Version16AnnouncementUrl,
             "1.5.0" or "1.5.1" or "1.5.2" or "1.5.3" => "https://buymeacoffee.com/juliocax/frontline-lyrics-1-5-0",
             _ => null
         };

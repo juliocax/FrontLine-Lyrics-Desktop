@@ -61,9 +61,18 @@ def clean_lrclib_query(artist: str, song: str) -> Tuple[str, str]:
 
 def _normalized_name(value: str) -> str:
     """Compare names without case, accents or punctuation differences."""
-    value = unicodedata.normalize("NFKD", value or "")
-    value = "".join(c for c in value if not unicodedata.combining(c))
-    return " ".join(re.findall(r"[a-z0-9]+", value.casefold()))
+    value = unicodedata.normalize("NFKC", value or "")
+    characters = []
+    for char in value:
+        if unicodedata.name(char, "").startswith("LATIN "):
+            char = "".join(c for c in unicodedata.normalize("NFKD", char.casefold())
+                           if not unicodedata.combining(c))
+        elif char.isalnum() or unicodedata.category(char).startswith("M"):
+            char = char.casefold()
+        else:
+            char = " "
+        characters.append(char)
+    return " ".join("".join(characters).split())
 
 
 # Descriptors that can be ignored only as isolated version annotations.
@@ -114,6 +123,10 @@ def _title_variants(raw_title: str, main_artist: str) -> List[str]:
         prefix_names = _artist_parts(parts[0])
         if prefix_names and prefix_names[0] == main_artist:
             variants.append(_normalized_title(parts[1]))
+    # Japanese catalog entries also use “Artist「Song」”.
+    quoted = re.fullmatch(r"(.+?)\s*[「『]([^「」『』]+)[」』]\s*", raw_title)
+    if quoted and _normalized_name(quoted[1]) == main_artist:
+        variants.append(_normalized_title(quoted[2]))
     return variants
 
 
