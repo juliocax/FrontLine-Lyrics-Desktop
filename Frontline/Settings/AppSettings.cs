@@ -19,6 +19,7 @@ namespace FrontLineOverlay
     /// </summary>
     internal static class AppSettings
     {
+        private const string LegacyMigrationKey = "LegacyJsonSettingsImported";
         private static readonly object Gate = new();
         private static object? _winrtValues;
         private static MethodInfo? _winrtHasKey;
@@ -109,9 +110,51 @@ namespace FrontLineOverlay
 
         private static void EnsureBackends()
         {
-            if (_probed) return;
-            _probed = true;
-            _usingWinRt = TryOpenWinRtSettings();
+            lock (Gate)
+            {
+                if (_probed) return;
+                _usingWinRt = TryOpenWinRtSettings();
+                if (_usingWinRt)
+                    ImportLegacySettings();
+                _probed = true;
+            }
+        }
+
+        private static void ImportLegacySettings()
+        {
+            try
+            {
+                if (WinRtTryGet(LegacyMigrationKey, out var imported) && imported is true)
+                    return;
+
+                var legacy = LoadFile();
+                if (legacy.Count == 0) return;
+
+                foreach (var entry in legacy)
+                {
+                    if (entry.Key == LegacyMigrationKey || WinRtTryGet(entry.Key, out _))
+                        continue;
+
+                    object? value = entry.Value.ValueKind switch
+                    {
+                        JsonValueKind.True => true,
+                        JsonValueKind.False => false,
+                        JsonValueKind.Number when entry.Value.TryGetDouble(out var number) => number,
+                        JsonValueKind.String => entry.Value.GetString(),
+                        _ => null
+                    };
+
+                    if (value != null)
+                        WinRtSet(entry.Key, value);
+                }
+
+                WinRtSet(LegacyMigrationKey, true);
+            }
+            catch (Exception ex)
+            {
+                // Values already copied will be preserved if the next launch retries.
+                CrashReporter.Log(ex, "AppSettings.ImportLegacySettings");
+            }
         }
 
         private static bool TryOpenWinRtSettings()
@@ -142,14 +185,16 @@ namespace FrontLineOverlay
                                ?? vt.GetMethod("get_Item", new[] { typeof(string) });
                 _winrtInsert = vt.GetMethod("Insert", new[] { typeof(string), typeof(object) });
 
-                if (_winrtLookup == null && values is IDictionary)
+                if (values is IDictionary<string, object> || (_winrtLookup == null && values is IDictionary))
                 {
                     _winrtValues = values;
                     CrashReporter.Info("AppSettings: ApplicationData.LocalSettings");
                     return true;
                 }
 
-                if (_winrtHasKey == null || _winrtLookup == null)
+                if (_winrtHasKey == null || _winrtLookup == null ||
+                    (_winrtInsert == null && values is not IDictionary &&
+                     vt.GetProperty("Item")?.CanWrite != true))
                     return false;
 
                 _winrtValues = values;
@@ -167,6 +212,8 @@ namespace FrontLineOverlay
         private static bool WinRtTryGet(string key, out object? raw)
         {
             raw = null;
+            if (_winrtValues is IDictionary<string, object> projected)
+                return projected.TryGetValue(key, out raw) && raw != null;
             if (_winrtValues is IDictionary dict && _winrtHasKey == null)
             {
                 if (!dict.Contains(key)) return false;
@@ -181,6 +228,11 @@ namespace FrontLineOverlay
 
         private static void WinRtSet(string key, object value)
         {
+            if (_winrtValues is IDictionary<string, object> projected)
+            {
+                projected[key] = value;
+                return;
+            }
             if (_winrtValues is IDictionary dict && _winrtInsert == null)
             {
                 dict[key] = value;
@@ -192,7 +244,9 @@ namespace FrontLineOverlay
                 return;
             }
             var item = _winrtValues!.GetType().GetProperty("Item");
-            item?.SetValue(_winrtValues, value, new object[] { key });
+            if (item?.CanWrite != true)
+                throw new InvalidOperationException("LocalSettings does not expose a writable indexer.");
+            item.SetValue(_winrtValues, value, new object[] { key });
         }
 
         private static string FilePath => Path.Combine(
