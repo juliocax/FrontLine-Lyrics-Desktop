@@ -295,6 +295,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <Compile Remove="FrontlineServer\**\*.cs" />
     <Content Include="FrontlineServer\**">
         <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
