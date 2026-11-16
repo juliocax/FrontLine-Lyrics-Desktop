@@ -206,7 +206,7 @@ tail -f ~/FrontLineLyrics/logs/frontline_server.log
 ```bash
 chmod +x FrontLine-Linux/packaging-deb/*.sh
 ./FrontLine-Linux/packaging-deb/build-deb.sh
-sudo apt install ./FrontLine-Linux/dist-linux/frontline-lyrics_1.0.0-1_amd64.deb
+sudo apt install ./FrontLine-Linux/dist-linux/frontline-lyrics_1.1.0-1_amd64.deb
 frontline-lyrics
 ```
 

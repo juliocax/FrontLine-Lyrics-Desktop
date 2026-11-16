@@ -1,6 +1,6 @@
-# Linux backend dependencies
 shazamio
 deep-translator
+langdetect==1.0.9
 translators
 anyascii
 requests
@@ -8,4 +8,20 @@ websockets
 dbus-next
 audioop-lts; python_version >= "3.13"
 pyinstaller
-# Ubuntu: sudo apt install pulseaudio-utils playerctl
+# sudo apt install pulseaudio-utils playerctl python3-venv
+# A source build of Cutlet's mojimoji dependency also needs build-essential and
+# the headers for the venv's Python version (e.g. libpython3.14-dev on Ubuntu).
+# ../LINUX-TRANSLATION.md for setup and the separate Argos tokenizer step.
+
+# Local translation runtime. Install the Argos tokenizer separately with --no-deps.
+ctranslate2==4.9.0
+sentencepiece==0.2.3
+sacremoses==0.2.0
+
+# UniDic Lite data is downloaded through Add-ons.
+cutlet==0.5.2
+fugashi==1.5.2
+koroman==1.0.16
+opencc-python-reimplemented==0.1.7
+pypinyin==0.55.0
+pythainlp==5.4.0

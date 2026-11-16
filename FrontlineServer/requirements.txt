@@ -3,7 +3,7 @@ deep-translator==1.11.4
 langdetect==1.0.9
 anyascii
 requests
-certifi  # HTTPS certificate bundle collected by the Windows build.
+certifi  
 websockets
 pyaudiowpatch
 audioop-lts; python_version >= "3.13"
@@ -14,15 +14,12 @@ winrt-Windows.Foundation==3.2.1
 winrt-Windows.Foundation.Collections==3.2.1
 winrt-Windows.Media.Control==3.2.1
 winrt-Windows.Storage.Streams==3.2.1
-
-# Romanization engines bundled with FrontlineServer.
 cutlet==0.5.2
 fugashi==1.5.2
 koroman==1.0.16
 opencc-python-reimplemented==0.1.7
 pypinyin==0.55.0
 pythainlp==5.4.0
-
 # UniDic Lite is downloaded as add-on data at runtime.
 
 # Runtime for downloadable Argos translation models.
