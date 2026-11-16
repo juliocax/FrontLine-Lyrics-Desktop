@@ -33,6 +33,7 @@ https://github.com/user-attachments/assets/0a6f3278-49b2-43f0-9004-6709d65f74b9
 - [How It Works](#how-it-works)
 - [Installation](#installation)
 - [Usage](#usage)
+- [Translation and Romanization on Windows](#translation-and-romanization-on-windows)
 - [Screenshots](#screenshots)
 - [Project Structure](#project-structure)
 - [Building From Source](#building-from-source)
@@ -53,7 +54,7 @@ The project supports a Windows desktop frontend and a Linux frontend sharing a P
 - Song recognition using audio fingerprinting.
 - Automatic tracking from supported media sessions (Windows media sessions / Linux MPRIS).
 - Manual lyrics search and synchronization adjustments.
-- Live translation and romanization options.
+- Live lyric translation, optional on-device translation models, and improved romanization on Windows.
 - Font, color, and theme customization, including seasonal themes.
 - Multiple interface languages.
 - Festival Mode with editable setlists and manual line synchronization (feature availability may vary by platform).
@@ -84,6 +85,14 @@ The Linux version is being prepared for distribution. Until it is published, you
 3. Use **SEARCH** to find lyrics manually.
 4. Adjust the overlay appearance, lyric size, and synchronization as needed.
 5. Use translation controls and other features available on your platform.
+
+## Translation and Romanization on Windows
+
+In **Settings → Translation → Manage add-ons → Manage models**, select your source and target languages. FrontLine Lyrics finds an available route and downloads only the models you are missing. For example, Japanese → Brazilian Portuguese can use Japanese → English and English → Brazilian Portuguese automatically. Installed models are used first for supported verses. The online fallback uses MyMemory, and any remaining untranslated verses keep their original text and timing.
+
+The add-ons screen also offers a Japanese dictionary for improved kana and kanji readings. The dictionary and language models are downloaded separately to limit the size of the base installation. Mandarin, Korean and Thai have language-specific romanization.
+
+**Original** and **Romanization** select the lyric format. **Translate** is independent. When enabled, it displays the translation as the main lyric. Enable **Show lyrics below the translation** to show the original or romanized lyric underneath, according to your selected format.
 
 ## Screenshots
 
@@ -132,7 +141,35 @@ Requires **Visual Studio 2022** with the **.NET desktop development** workload a
 2. Set `Frontline` (WPF) as the startup project and press **F5**.
 3. The Windows frontend starts its bundled Python backend automatically.
 
-If you modify Python backend code, rebuild its Windows PyInstaller executable and replace the bundled `Frontline/FrontlineServer/` output before testing the change from Visual Studio. The existing Windows packaging configuration is separate from the Linux build.
+To rebuild the Windows backend, run this command from the repository root in PowerShell with desktop Python installed:
+
+```powershell
+.\FrontlineServer\build-windows.ps1
+```
+
+The script creates or reuses the backend's `.venv`, installs the requirements and the Argos tokenizer, and runs PyInstaller in `--onedir` mode. Keep `FrontlineServer/hooks/hook-sentencepiece.py` in place so PyInstaller collects the Windows DLLs. The build is first written to `FrontlineServer/dist/FrontlineServer/`.
+
+Close the running WPF app before building. The script replaces `FrontlineServer.exe` and the entire `_internal` directory in `Frontline/FrontlineServer/`. Once the new backend is in place, the script removes `FrontlineServer/build/` and `FrontlineServer/dist/`. Rebuild or package the WPF app in Visual Studio afterward.
+
+#### PowerShell execution policy
+
+If PowerShell reports that `build-windows.ps1` is not digitally signed, check the effective policy and its scopes:
+
+```powershell
+Get-ExecutionPolicy
+Get-ExecutionPolicy -List
+```
+
+With `RemoteSigned`, Windows can block a script downloaded from the internet. Review the script and verify its source before unblocking it. From the repository root, unblock only the build script and then run it:
+
+```powershell
+Unblock-File -LiteralPath .\FrontlineServer\build-windows.ps1
+.\FrontlineServer\build-windows.ps1
+```
+
+On your own PC, if the effective policy is `Restricted` and no Group Policy applies, you can allow local scripts in the current PowerShell session with `Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned`, then run the commands above. This setting expires when you close that session. If your organization requires signed scripts or sets `MachinePolicy` or `UserPolicy`, follow its policy. Unblocking a file does not sign it or satisfy `AllSigned`.
+
+See [PowerShell execution policies](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_execution_policies?view=powershell-5.1) and [Unblock-File](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/unblock-file?view=powershell-5.1).
 
 ### Linux — Ubuntu / VS Code
 
@@ -144,8 +181,7 @@ Requires **.NET 10 SDK**, **Python**, **Git**, `pulseaudio-utils`, and `playerct
 sudo apt install -y pulseaudio-utils playerctl
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -r FrontlineServer/requirements-linux.txtgit config pull.rebase false
-git pull
+python -m pip install -r FrontlineServer/requirements-linux.txt
 dotnet restore FrontLine-Linux/FrontLine-Linux.csproj
 ```
 
@@ -223,4 +259,4 @@ If FrontLine Lyrics is useful to you, consider [supporting the project](https://
 
 ## License
 
-See [LICENSE.txt](LICENSE.txt) for the repository's license terms.
+See [LICENSE.txt](LICENSE.txt) for the repository's license terms and [THIRD-PARTY-NOTICES.md](FrontlineServer/THIRD-PARTY-NOTICES.md) for the Windows Python dependencies and add-ons.

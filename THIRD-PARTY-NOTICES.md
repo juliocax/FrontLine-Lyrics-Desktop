@@ -1,12 +1,39 @@
 # Third-party notices — FrontLine Lyrics 1.7.0
 
-## Romanization components
+## Windows Python requirements
 
-This file covers the romanization engines and the Japanese dictionary in the
-1.7.0 test build. It is not an inventory of all Python, WPF, WinRT or other
-components in FrontLine Lyrics. Generate the full shipped-dependency inventory
-from the actual Windows build before publication. Keep the upstream names,
-copyright, license texts and NOTICE files with the package.
+This inventory covers every direct entry in `FrontlineServer/requirements.txt`
+and the Argos tokenizer installed by the documented build. It distinguishes
+the PyInstaller build tool, optional model data and package licenses.
+Retain the license and NOTICE files from the exact distributions and bundled
+binaries used in the release. This list does not enumerate all transitive
+Python, .NET, native or platform dependencies.
+
+| Component | Purpose | License / upstream terms |
+| --- | --- | --- |
+| shazamio | Audio recognition client | MIT · [ShazamIO](https://github.com/shazamio/ShazamIO) |
+| deep-translator | MyMemory client | MIT · [deep-translator 1.11.4](https://pypi.org/project/deep-translator/1.11.4/) |
+| langdetect | Lyric language detection | Apache-2.0 per the shipped LICENSE and NOTICE below. The package metadata also lists MIT. |
+| anyascii | Transliteration fallback | ISC · see notices below |
+| requests | HTTP client | Apache-2.0 · [Requests](https://github.com/psf/requests) |
+| certifi | HTTPS CA bundle | MPL-2.0 · [certifi](https://github.com/certifi/python-certifi) |
+| websockets | Local frontend connection | BSD-3-Clause · [websockets](https://github.com/python-websockets/websockets) |
+| pyaudiowpatch | Windows audio capture | Apache-2.0 is declared for the distribution. Keep the included [PyAudio MIT notice](https://github.com/s0d3s/PyAudioWPatch/blob/master/LICENSE.txt) and [PortAudio terms](https://github.com/PortAudio/portaudio/blob/master/LICENSE.txt). |
+| audioop-lts | Audio operations on Python 3.13+ | PSF-2.0 · [audioop-lts](https://pypi.org/project/audioop-lts/) |
+| pyinstaller | Windows build tool and bootloader | GPL-2.0-or-later with the PyInstaller exception, and Apache-2.0 for designated files · [PyInstaller license](https://pyinstaller.org/en/stable/license.html) |
+| translators | Existing requirements entry | GPL-3.0 as declared upstream · [translators](https://pypi.org/project/translators/) |
+| winrt-runtime, winrt-Windows.Foundation, winrt-Windows.Foundation.Collections, winrt-Windows.Media.Control, winrt-Windows.Storage.Streams | Windows Runtime bindings | MIT · [PyWinRT](https://github.com/pywinrt/pywinrt) |
+| cutlet, fugashi | Japanese romanization and tokenization | MIT. See the included MeCab notice and retained terms below. |
+| koroman | Korean romanization | MIT · see notices below |
+| opencc-python-reimplemented | Chinese script conversion | Apache-2.0 · see notices below |
+| pypinyin | Mandarin romanization | MIT · see notices below |
+| pythainlp | Thai text processing and romanization | Apache-2.0. The bundled word list is CC0-1.0. |
+| ctranslate2 | On-device model inference | MIT · [CTranslate2](https://github.com/OpenNMT/CTranslate2) |
+| sentencepiece | Model tokenization | Apache-2.0 · [SentencePiece](https://github.com/google/sentencepiece) |
+| sacremoses | Tokenization for compatible models | MIT · [Sacremoses](https://github.com/hplt-project/sacremoses) |
+| argostranslate | Tokenizer code installed separately | MIT · [Argos Translate 1.11.0](https://pypi.org/project/argostranslate/1.11.0/) |
+
+## Romanization components
 
 Only the PyThaiNLP word list `words_th.txt` is selected by the test build
 command. The PyThaiNLP project dedicates it under [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/).
@@ -768,3 +795,57 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ````
+
+## langdetect 1.0.9
+
+Source: https://pypi.org/project/langdetect/1.0.9/
+
+### LICENSE
+
+```text
+   Copyright 2014-2015 Michal "Mimino" Danilak
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+```
+
+### NOTICE
+
+```text
+language-detection license
+==========================
+
+    Copyright (c) 2010-2014 Cybozu Labs, Inc. All rights reserved.
+
+    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.
+```
+
+## Optional offline translation
+
+The Windows server uses the Argos Translate tokenizer, CTranslate2,
+SentencePiece and Sacremoses to run optional translation models.
+
+- Argos Translate tokenizer — MIT. https://github.com/argosopentech/argos-translate
+- CTranslate2 — MIT. https://github.com/OpenNMT/CTranslate2
+- SentencePiece — Apache-2.0. https://github.com/google/sentencepiece
+- Sacremoses — MIT. https://github.com/hplt-project/sacremoses
+
+The models are downloaded from URLs provided by the upstream Argos package
+index. Any documentation and notices in each downloaded model are retained
+with that package. The runtime licenses above do not cover the individual
+model weights or training datasets.
+
+https://github.com/argosopentech/argospm-index
