@@ -1,6 +1,6 @@
 <Window xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
  xmlns:svg="clr-namespace:Avalonia.Svg.Skia;assembly=Svg.Controls.Skia.Avalonia"
- x:Class="FrontLine_Linux.MainWindow" Title="FrontLine Lyrics 1.0.0"
+ x:Class="FrontLine_Linux.MainWindow" Title="FrontLine Lyrics 1.1.0"
  Width="1100" Height="570" MinWidth="550" MinHeight="275"
  CanResize="True" Topmost="True" WindowDecorations="None"
  TransparencyLevelHint="Transparent" Background="Transparent" KeyDown="Window_KeyDown">
@@ -9,6 +9,10 @@
    <Setter Property="Background" Value="#202020"/><Setter Property="Foreground" Value="White"/>
    <Setter Property="BorderBrush" Value="#434343"/><Setter Property="BorderThickness" Value="1"/>
    <Setter Property="CornerRadius" Value="10"/><Setter Property="Padding" Value="14,9"/>
+  </Style>
+  <Style Selector="Button.translation-active">
+   <Setter Property="Background" Value="#59418B"/>
+   <Setter Property="BorderBrush" Value="#B49BFF"/>
   </Style>
  </Window.Styles>
  <Grid x:Name="Root" Background="Transparent" PointerPressed="Root_PointerPressed"
@@ -23,7 +27,7 @@
    <Viewbox Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Center"><Border BorderBrush="#454545" BorderThickness="1" CornerRadius="40" Padding="18">
     <StackPanel Orientation="Horizontal" Spacing="12">
      <Button x:Name="ReleaseNotesButton" Background="Transparent" BorderThickness="0" Padding="4,2" Click="ReleaseNotes_Click" ToolTip.Tip="release" Tag="tip:release">
-      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"><TextBlock Text="FRONTLINE LYRICS" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center" TextAlignment="Center"/><TextBlock Text="v1.0.0" Foreground="#A99BD4" FontSize="11" HorizontalAlignment="Center" TextAlignment="Center"/></StackPanel>
+      <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center"><TextBlock Text="FRONTLINE LYRICS" FontWeight="Bold" FontSize="13" HorizontalAlignment="Center" TextAlignment="Center"/><TextBlock Text="v1.1.0" Foreground="#A99BD4" FontSize="11" HorizontalAlignment="Center" TextAlignment="Center"/></StackPanel>
      </Button>
      <Button x:Name="MenuListenButton" Click="Listen_Click" ToolTip.Tip="listen" Tag="tip:listen"><StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center"><svg:Svg Path="/assets/icon_listen.svg" Width="17" Height="17" IsHitTestVisible="False"/><TextBlock x:Name="MenuListenLabel" Text="LISTEN" VerticalAlignment="Center"/></StackPanel></Button>
      <Button x:Name="MenuSearchButton" Click="OpenSearch_Click" ToolTip.Tip="search" Tag="tip:search"><StackPanel Orientation="Horizontal" Spacing="7" VerticalAlignment="Center"><svg:Svg Path="/assets/icon_search.svg" Width="17" Height="17" IsHitTestVisible="False"/><TextBlock x:Name="MenuSearchLabel" Text="SEARCH" VerticalAlignment="Center"/></StackPanel></Button>
@@ -120,6 +124,8 @@
       <TextBlock x:Name="Next2Text" IsVisible="False" TextAlignment="Center" FontSize="15" Foreground="#747474" TextWrapping="Wrap">
        <TextBlock.Effect><DropShadowEffect BlurRadius="17" Color="#FF000000" Opacity="1" OffsetX="0" OffsetY="0"/></TextBlock.Effect>
       </TextBlock>
+      <ProgressBar x:Name="LyricsTranslationProgress" IsVisible="False" IsIndeterminate="True"
+                   Width="56" Height="4" HorizontalAlignment="Center" Foreground="#A182FB"/>
      </StackPanel>
     </Border>
     <StackPanel x:Name="ShazamSyncTools" Grid.Row="0" Orientation="Vertical" Spacing="8"
@@ -182,7 +188,8 @@
     </Grid>
    </Viewbox>
   </Border>
-  <Popup x:Name="SettingsPopup" Placement="Right" HorizontalOffset="-10"
+  <Popup x:Name="SettingsPopup" PlacementTarget="{Binding #Root}" Placement="RightEdgeAlignedTop"
+         PlacementConstraintAdjustment="SlideX,SlideY" HorizontalOffset="-10"
          IsLightDismissEnabled="False" ShouldUseOverlayLayer="False" WindowManagerAddShadowHint="True">
   <Border x:Name="SettingsPanel" Background="#FC080808" CornerRadius="15"
           Width="360" MaxHeight="535" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
@@ -268,44 +275,70 @@
        </Grid>
       </ScrollViewer>
       <ScrollViewer x:Name="TranslateSettingsScroll" MaxHeight="324" VerticalScrollBarVisibility="Auto" IsVisible="False"><StackPanel x:Name="TranslateSettingsContent" Spacing="18" HorizontalAlignment="Stretch">
-       <TextBlock x:Name="TranslateLabel" Text="TRANSLATE LYRICS / ROMANIZATION" Foreground="#CDCDCD" TextWrapping="Wrap"/>
-       <ComboBox IsVisible="False" x:Name="TranslationCombo" Tag="tip:translation" ToolTip.Tip="Lyric translation language" SelectedIndex="0" SelectionChanged="TranslationCombo_Changed">
-        <ComboBoxItem Tag="original" Content="Original"/>
-        <ComboBoxItem Tag="romanized" Content="Romanization"/>
-        <ComboBoxItem Tag="en" Content="English"/>
-        <ComboBoxItem Tag="es" Content="Español"/>
-        <ComboBoxItem Tag="fr" Content="Français"/>
-        <ComboBoxItem Tag="pt" Content="Português"/>
-       </ComboBox>
-       <WrapPanel x:Name="TranslationSegment" Orientation="Horizontal" ItemWidth="150" ItemHeight="43">
-        <Button Content="Original" Tag="original" Click="TranslationChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
-        <Button Content="Romanization" Tag="romanized" Click="TranslationChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
-        <Button Content="English" Tag="en" Click="TranslationChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
-        <Button Content="Español" Tag="es" Click="TranslationChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
-        <Button Content="Français" Tag="fr" Click="TranslationChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
-        <Button Content="Português" Tag="pt" Click="TranslationChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
-       </WrapPanel>
-       <ToggleSwitch x:Name="ShowOriginalToggle" Content="Show original below translation" Click="ShowOriginal_Changed" ToolTip.Tip="show_original" Tag="tip:show_original"/>
+       <TextBlock x:Name="TranslateLabel" Text="Translation and romanization" Foreground="#CDCDCD" TextWrapping="Wrap"/>
+       <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+        <Button x:Name="OriginalModeButton" Tag="original" Click="BaseLyricsMode_Click" Padding="6,3"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+         <StackPanel Orientation="Horizontal" Spacing="4">
+          <ToggleSwitch x:Name="OriginalModeIndicator" Width="43" MinWidth="0" IsChecked="True" OffContent="{x:Null}" OnContent="{x:Null}" Focusable="False" IsHitTestVisible="False"/>
+          <TextBlock x:Name="OriginalModeLabel" FontSize="12" Text="Original" VerticalAlignment="Center"/>
+         </StackPanel>
+        </Button>
+        <Button x:Name="RomanizedModeButton" Grid.Column="1" Tag="romanized" Click="BaseLyricsMode_Click" Padding="6,3"
+                HorizontalAlignment="Stretch" HorizontalContentAlignment="Center">
+         <StackPanel Orientation="Horizontal" Spacing="4">
+          <ToggleSwitch x:Name="RomanizedModeIndicator" Width="43" MinWidth="0" OffContent="{x:Null}" OnContent="{x:Null}" Focusable="False" IsHitTestVisible="False"/>
+          <TextBlock x:Name="RomanizedModeLabel" FontSize="12" Text="Romanization" VerticalAlignment="Center"/>
+         </StackPanel>
+        </Button>
+       </Grid>
+       <ToggleSwitch x:Name="ShowOriginalToggle" Content="Show lyrics below translation" Click="ShowOriginal_Changed" ToolTip.Tip="show_original" Tag="tip:show_original"/>
+       <StackPanel Spacing="7">
+        <TextBlock x:Name="TranslationFromLabel" Text="Translate from"/>
+        <Button x:Name="TranslationSourcePicker" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"/>
+        <TextBlock x:Name="TranslationToLabel" Text="To"/>
+        <Button x:Name="TranslationTargetPicker" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"/>
+       </StackPanel>
+       <Button x:Name="TranslateEnabledButton" Click="TranslateEnabled_Click" HorizontalAlignment="Stretch"
+               HorizontalContentAlignment="Stretch" Padding="8,3">
+        <Grid ColumnDefinitions="43,*,43" ColumnSpacing="8">
+         <TextBlock x:Name="TranslateEnabledLabel" Grid.Column="1" Text="Translate"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
+         <ToggleSwitch x:Name="TranslateEnabledIndicator" Width="43" MinWidth="0" Grid.Column="2" OffContent="{x:Null}" OnContent="{x:Null}"
+                       Focusable="False" IsHitTestVisible="False"/>
+        </Grid>
+       </Button>
+       <Button x:Name="ManageTranslationAddonsButton" Content="Manage add-ons" Click="ManageTranslationAddons_Click"/>
+       <TextBlock x:Name="TranslationSourceNotice" Foreground="#E0E0E0" TextWrapping="Wrap" IsVisible="False"/>
+       <TextBlock x:Name="JapaneseDictionaryNotice" Foreground="#E0E0E0" TextWrapping="Wrap" IsVisible="False"/>
        <Border x:Name="TranslationNoticeCard" Background="#161616" CornerRadius="10" Padding="12" IsVisible="False">
-        <StackPanel Orientation="Horizontal" Spacing="10">
-         <ProgressBar x:Name="SettingsTranslationProgress" Width="45" Height="4" IsIndeterminate="True" VerticalAlignment="Center" Foreground="#E5E5E5"/>
-         <TextBlock x:Name="TranslationNotice" IsVisible="False" Foreground="#E0E0E0" TextWrapping="Wrap" FontSize="12"/>
-        </StackPanel>
+        <TextBlock x:Name="TranslationNotice" Foreground="#E0E0E0" TextWrapping="Wrap" FontSize="12"/>
        </Border>
       </StackPanel>
       </ScrollViewer>
       <ScrollViewer x:Name="GeneralSettingsScroll" MaxHeight="324" VerticalScrollBarVisibility="Auto" IsVisible="False"><StackPanel x:Name="GeneralSettingsContent" Spacing="18" HorizontalAlignment="Stretch">
        <TextBlock x:Name="LanguageLabel" Text="APP LANGUAGE" Foreground="#CDCDCD"/>
        <ComboBox IsVisible="False" x:Name="AppLanguageCombo" Tag="tip:app_language" ToolTip.Tip="Application language" SelectedIndex="0" SelectionChanged="AppLanguageCombo_Changed">
-        <ComboBoxItem Tag="en" Content="English"/><ComboBoxItem Tag="pt" Content="Português"/>
+        <ComboBoxItem Tag="en" Content="English"/><ComboBoxItem Tag="pt" Content="Português BR"/>
         <ComboBoxItem Tag="es" Content="Español"/><ComboBoxItem Tag="id" Content="Bahasa Indonesia"/>
        </ComboBox>
        <WrapPanel x:Name="LanguageSegment" Orientation="Horizontal" ItemWidth="150" ItemHeight="43">
         <Button Content="English" Tag="en" Click="LanguageChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
-        <Button Content="Português" Tag="pt" Click="LanguageChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
+        <Button Content="Português BR" Tag="pt" Click="LanguageChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
         <Button Content="Español" Tag="es" Click="LanguageChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
         <Button Content="Bahasa Indonesia" Tag="id" Click="LanguageChoice_Click" Margin="3" Width="144" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Padding="5,6"/>
        </WrapPanel>
+       <Border Background="#151515" CornerRadius="10" Padding="12">
+        <StackPanel Spacing="8">
+         <TextBlock x:Name="AudioOutputLabel" FontSize="12" FontWeight="SemiBold" Foreground="#EEEEEE"/>
+         <ComboBox x:Name="AudioOutputCombo" HorizontalAlignment="Stretch" SelectionChanged="AudioOutput_Changed"/>
+         <Button x:Name="AudioOutputRefreshButton" Click="AudioOutputRefresh_Click" HorizontalAlignment="Left"/>
+         <TextBlock x:Name="AudioOutputHint" FontSize="11" Foreground="#AAAAAA" TextWrapping="Wrap"/>
+         <TextBlock x:Name="AudioOutputError" FontSize="11" Foreground="#F5C779" TextWrapping="Wrap" IsVisible="False"/>
+         <TextBlock x:Name="SettingsAudioLevelLabel" FontSize="11"/>
+         <ProgressBar x:Name="SettingsAudioLevel" Minimum="0" Maximum="100" Height="5" Foreground="#A182FB"/>
+        </StackPanel>
+       </Border>
        <Border x:Name="SnapPermissionsSection" Background="#151515" CornerRadius="10" Padding="12" IsVisible="False">
         <StackPanel Spacing="9">
          <TextBlock x:Name="SnapPermissionsHeader" Text="MUSIC AND AUDIO PERMISSIONS" FontSize="12" FontWeight="SemiBold" Foreground="#EEEEEE" TextWrapping="Wrap"/>
