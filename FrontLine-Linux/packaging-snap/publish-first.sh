@@ -2,7 +2,7 @@
 # First time only: login, register, build and publish to edge.
 set -Eeuo pipefail
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-VERSION="${1:-1.0.0}"
+VERSION="${1:-1.1.0}"
 SNAP="$HERE/frontline-lyrics_${VERSION}_amd64.snap"
 command -v snapcraft >/dev/null || { echo 'Install snapcraft first' >&2; exit 2; }
 echo '==> Log in to your Ubuntu One / Snap Store account'

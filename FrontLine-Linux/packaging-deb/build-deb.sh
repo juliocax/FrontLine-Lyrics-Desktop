@@ -7,7 +7,7 @@ APP="$ROOT/FrontLine-Linux"
 SERVER="$ROOT/FrontlineServer"
 OUT="$APP/dist-linux"
 STAGE="$OUT/.frontline-deb-stage"
-VERSION="${FRONTLINE_PACKAGE_VERSION:-1.0.0-1}"
+VERSION="${FRONTLINE_PACKAGE_VERSION:-1.1.0-1}"
 APP_VERSION="${VERSION%-*}"
 PACKAGE="frontline-lyrics"
 
@@ -21,14 +21,25 @@ done
 
 if [[ -n "${FRONTLINE_PYTHON:-}" ]]; then
   PY="$FRONTLINE_PYTHON"
-elif [[ -x "$ROOT/.venv/bin/python" ]]; then
-  PY="$ROOT/.venv/bin/python"
 elif [[ -x "$SERVER/.venv/bin/python" ]]; then
   PY="$SERVER/.venv/bin/python"
+elif [[ -x "$ROOT/.venv/bin/python" ]]; then
+  PY="$ROOT/.venv/bin/python"
 else
   fail "No Python venv found at ROOT/.venv or FrontlineServer/.venv. Set FRONTLINE_PYTHON."
 fi
-"$PY" -m PyInstaller --version >/dev/null || fail "PyInstaller missing: $PY -m pip install pyinstaller"
+PY="$(command -v -- "$PY")" || fail "Python interpreter not found"
+PY="$(realpath -s -- "$PY")"
+[[ -f "$SERVER/requirements-linux.txt" ]] || fail "Missing Linux requirements"
+for hook in hook-engine.offline_translation.py hook-engine.translation.py; do
+  [[ -f "$SERVER/hooks/$hook" ]] || fail "Missing Linux PyInstaller hook: $hook"
+done
+
+printf '==> Preparing backend dependencies with %s...\n' "$PY"
+"$PY" -m pip install -r "$SERVER/requirements-linux.txt"
+"$PY" -m pip install --no-deps argostranslate==1.11.0
+"$PY" -c 'import ctranslate2, cutlet, fugashi; from argostranslate.tokenizer import SentencePieceTokenizer'
+"$PY" -m PyInstaller --version >/dev/null
 
 ARCH="$(dpkg --print-architecture)"
 case "$ARCH" in
@@ -53,6 +64,11 @@ printf '[2/5] Bundling Python backend with PyInstaller...\n'
     --workpath "$OUT/py-work" \
     --specpath "$OUT/py-spec" \
     --paths "$SERVER" \
+    --additional-hooks-dir "$SERVER/hooks" \
+    --exclude-module unidic_lite \
+    --exclude-module torch \
+    --exclude-module stanza \
+    --exclude-module spacy \
     --collect-all shazamio \
     --collect-all deep_translator \
     --collect-all translators \
@@ -79,7 +95,7 @@ Section: sound
 Priority: optional
 Architecture: $ARCH
 Maintainer: FrontLine Lyrics <https://github.com/juliocax/FrontLine-Lyrics-Desktop>
-Depends: libc6, libstdc++6, libgcc-s1, playerctl
+Depends: libc6, libstdc++6, libgcc-s1, playerctl, pulseaudio-utils
 Description: FrontLine Lyrics for Linux ($APP_VERSION)
  Synchronized desktop lyrics with local Python recognition and translation engine.
  Includes self-contained Avalonia frontend and bundled Python backend.
