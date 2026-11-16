@@ -21,7 +21,6 @@
   <Grid x:Name="MenuPanel" Margin="20" ColumnDefinitions="0.9*,1.5*" RowDefinitions="*,Auto">
    <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="20">
     <Image x:Name="MenuLogo" Width="260" Height="250" Source="avares://FrontLine-Linux/assets/logo.png" Stretch="Uniform"/>
-    <TextBlock Text="Ready." Foreground="#999999" HorizontalAlignment="Center"/>
    </StackPanel>
    <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="10">
    <Viewbox Stretch="Uniform" StretchDirection="DownOnly" HorizontalAlignment="Center"><Border BorderBrush="#454545" BorderThickness="1" CornerRadius="40" Padding="18">
@@ -74,7 +73,7 @@
    <Image x:Name="LoadingLogo" Width="220" Height="220" Source="avares://FrontLine-Linux/assets/logo.png" Stretch="Uniform" HorizontalAlignment="Center" VerticalAlignment="Center"/>
    <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Center" Spacing="18">
     <ProgressBar Width="150" Height="6" IsIndeterminate="True" Foreground="#A182FB"/>
-    <TextBlock x:Name="LoadingText" Text="Listening..." FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+    <TextBlock x:Name="LoadingText" Text="Listening" FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center"/>
     <TextBlock x:Name="RecognitionNotice" Text="Song not identified yet. Still listening…"
                IsVisible="False" Foreground="#C8BCE3" FontSize="12"
                TextAlignment="Center" TextWrapping="Wrap" MaxWidth="360"

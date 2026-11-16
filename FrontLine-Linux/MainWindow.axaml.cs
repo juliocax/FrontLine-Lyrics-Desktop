@@ -1329,10 +1329,10 @@ public partial class MainWindow : Window
         var searching = _status == "SEARCHING";
         LoadingText.Text = _appLanguage switch
         {
-            "pt" => searching ? "Buscando letras..." : "Ouvindo...",
-            "es" => searching ? "Buscando letras..." : "Escuchando...",
-            "id" => searching ? "Mencari lirik..." : "Mendengarkan...",
-            _ => searching ? "Searching lyrics..." : "Listening..."
+            "pt" => searching ? "Buscando letras..." : "Ouvindo",
+            "es" => searching ? "Buscando letras..." : "Escuchando",
+            "id" => searching ? "Mencari lirik..." : "Mendengarkan",
+            _ => searching ? "Searching lyrics..." : "Listening"
         };
     }
     private static void OpenLink(string url)
