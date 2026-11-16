@@ -17,6 +17,7 @@ Warith Adetayo's PR #2 into this headless server.
 import asyncio
 import logging
 import threading
+import sys
 import time
 from concurrent.futures import Future
 from typing import Any, Dict, List, Optional, Tuple
@@ -213,7 +214,12 @@ class MusicManager:
             if self.auto_mode:
                 self._hold_current_track()
             self.reset_state()
-            self.lyrics_lookup_notice = reason
+            if reason in {"audio_capture_error", "recognition_connection_error"}:
+                self.recognition_failure_reason = (
+                    "connection_error" if reason == "recognition_connection_error" else reason
+                )
+            else:
+                self.lyrics_lookup_notice = reason
 
     # -- Track identity / cooldown helpers --
 
@@ -897,6 +903,11 @@ class MusicManager:
 
     # -- Translation orchestration (uses translation.py's line-racing primitive) --
 
+    def _translation_source(self, models):
+        if sys.platform.startswith("linux") and hasattr(self, "linux_translation_source"):
+            return self.linux_translation_source
+        return offline_translation.source_code(None, models) if models else None
+
     def generate_translation(self, target_language: str) -> bool:
         """Translates or romanizes the original lyrics."""
         if not self.original_lyrics:
@@ -909,12 +920,13 @@ class MusicManager:
         texts = [item["text"] for item in original]
         argos_target = offline_translation.target_code(target_language)
         models = {} if romanization else offline_translation.installed()
-        selected = offline_translation.source_code(None, models) if models else None
+        selected = self._translation_source(models) if not romanization else None
         groups = {} if romanization else classify_lyric_sources(texts, selected)
         routes = {}
         for source in groups:
-            argos_source = offline_translation.source_code(source, {})
-            if argos_source == "pt" and not offline_translation.route(models, "pt", argos_target):
+            explicit_european = sys.platform.startswith("linux") and source == "pt-pt"
+            argos_source = "pt" if explicit_european else offline_translation.source_code(source, {})
+            if argos_source == "pt" and not explicit_european and not offline_translation.route(models, "pt", argos_target):
                 argos_source = "pb"
             routes[source] = (argos_source, offline_translation.route(models, argos_source, argos_target))
         if original is self.original_lyrics:
@@ -927,7 +939,9 @@ class MusicManager:
                           for source, (_, steps) in routes.items())
         if (target_language in self.cached_translations and not japanese
                 and cache_routes.get(target_language, ()) == route_key):
-            return True
+            if not romanization:
+                self._prepare_secondary_lyrics(original, argos_target, "ja" if "ja" in groups else None)
+            return original is self.original_lyrics
 
         logging.info(f"Traduzindo {len(self.original_lyrics)} linha(s) para '{target_language}'...")
         try:
@@ -964,7 +978,8 @@ class MusicManager:
                                       if translation != verse and not looks_like_bogus_translation(translation, verse))
                     had_result |= any(verse in translated for verse in verses)
                 remaining = [verse for verse in verses if verse not in translated]
-                source_locale = mymemory_locale(argos_source) or mymemory_locale(source)
+                source_locale = (mymemory_locale(source) if source == "pt-pt" else
+                                 mymemory_locale(argos_source) or mymemory_locale(source))
                 if not remaining or not source_locale or original is not self.original_lyrics:
                     continue
                 logging.info("MyMemory: %s → %s (%s versos)", source_locale, target_language, len(remaining))
@@ -1001,8 +1016,9 @@ class MusicManager:
         if not uses_latin_writing(target):
             return
         japanese = source == "ja" or any(has_japanese_kana(item["text"] or "") for item in original)
+        secondary_key = (japanese, installed_dictionary() is not None if japanese else False)
         cached = getattr(self, "_romanized_secondary", None)
-        if cached and cached[0] is original and cached[1] == japanese:
+        if cached and cached[0] is original and cached[1] == secondary_key:
             return
         try:
             texts = (item["text"] or "" for item in original)
@@ -1012,7 +1028,7 @@ class MusicManager:
             if japanese:
                 release_japanese_converter()
         if original is self.original_lyrics:
-            self._romanized_secondary = (original, japanese, lines)
+            self._romanized_secondary = (original, secondary_key, lines)
 
     def _secondary_lyric(self, index):
         cached = getattr(self, "_romanized_secondary", None)
@@ -1024,11 +1040,13 @@ class MusicManager:
     def apply_language(self, lang: str) -> bool:
         """Apply only the latest requested mode for the current lyric."""
         original = self.original_lyrics
-        override = None if lang in {"original", "romanized"} else offline_translation.source_code(
-            None, offline_translation.installed())
+        override = None if lang in {"original", "romanized"} else self._translation_source(
+            offline_translation.installed())
         key = (id(original), lang, override)
         lock = self.__dict__.setdefault("_translation_jobs_lock", threading.Lock())
         with lock:
+            if sys.platform.startswith("linux") and lang != (self.preferred_language or "original"):
+                return True
             self._requested_translation = key
             if lang == "original":
                 self.current_language = lang
@@ -1044,7 +1062,11 @@ class MusicManager:
         try:
             ok = self.generate_translation(lang)
             with lock:
-                if self._requested_translation != key or self.original_lyrics is not original:
+                if (self._requested_translation != key or self.original_lyrics is not original
+                        or sys.platform.startswith("linux") and (
+                            lang != (self.preferred_language or "original")
+                            or (lang != "romanized" and hasattr(self, "linux_translation_source")
+                                and override != self.linux_translation_source))):
                     # A newer choice or track owns the display now.
                     ok = True
                 elif ok:
@@ -1177,7 +1199,7 @@ class MusicManager:
             "is_translated_active": self.current_language != "original",
             "current_language": self.current_language,
             "japanese_pack_missing": (
-                self.current_language == "romanized" and self._has_japanese_lyrics()
+                self.current_language != "original" and self._has_japanese_lyrics()
                 and installed_dictionary() is None
             ),
             "translation_error": self.last_translation_error,

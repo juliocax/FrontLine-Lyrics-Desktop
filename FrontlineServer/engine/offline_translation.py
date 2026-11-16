@@ -16,15 +16,15 @@ from uuid import uuid4
 
 import requests
 
+from engine.addon_paths import addons_directory
+
 INDEX = "https://raw.githubusercontent.com/argosopentech/argospm-index/main/index.json"
 CODE = re.compile(r"[a-z][a-z0-9-]{1,19}")
 MARKER = "metadata.json"
 
 
 def directory():
-    base = Path(os.environ.get("FRONTLINE_ADDONS_DIR") or
-                (Path(os.environ.get("LOCALAPPDATA", Path.home())) / "FrontLineLyrics" / "Addons"))
-    return base / "translation"
+    return addons_directory() / "translation"
 
 
 def read_json(path):

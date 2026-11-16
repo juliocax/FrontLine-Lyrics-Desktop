@@ -8,6 +8,7 @@ True. They're spawned once from ws_server.main_background().
 
 import asyncio
 import logging
+import sys
 import time
 from typing import List, Tuple
 
@@ -22,6 +23,7 @@ from engine.smtc_policy import sane_media_position
 async def background_verification_worker(manager):
     """Continuously captures audio and tries to identify what's playing."""
     loop = asyncio.get_event_loop()
+    linux_audio = sys.platform.startswith("linux")
     shazam_no_match_count = 0
     last_attempt_session = None
     while manager.server_running:
@@ -45,7 +47,15 @@ async def background_verification_worker(manager):
             )
         except Exception as e:
             logging.warning(f"Audio capture failed, resetting device: {e}")
+            if (manager.session_id != current_session or not manager.is_listening
+                    or manager.manual_mode or manager.search_completed or manager._media_busy):
+                continue
             if manager._listen_use_shazam and manager._fallback_listen_to_smtc("falha na captura"):
+                continue
+            if linux_audio:
+                manager.finish_failed_lyrics_lookup(
+                    expected_session=current_session, reason="audio_capture_error"
+                )
                 continue
             manager.audio.device_info = manager.audio.configure_loopback()
             await asyncio.sleep(2)
@@ -56,9 +66,17 @@ async def background_verification_worker(manager):
             continue
 
         rms = await loop.run_in_executor(None, manager.audio.rms, audio_bytes)
-        # Live audio: quiet verse / speech / crowd noise. Don't drop the
-        # snippet -- the previous PyQt client sent it to Shazam anyway.
-        if rms < tuning.SILENCE_RMS_THRESHOLD and not manager._listen_use_shazam:
+        if linux_audio:
+            logging.debug("Linux audio capture: %d WAV bytes, RMS %.1f", len(audio_bytes), rms)
+
+        if (manager.session_id != current_session or not manager.is_listening
+                or manager.manual_mode or manager.search_completed or manager._media_busy):
+            continue
+        if rms < tuning.SILENCE_RMS_THRESHOLD and (linux_audio or not manager._listen_use_shazam):
+            if linux_audio:
+                manager.recognition_notice = "audio_silent"
+                if manager._listen_use_shazam and manager._fallback_listen_to_smtc("captura sem sinal"):
+                    continue
             manager.pending_candidate = None
             manager.pending_candidate_count = 0
             if manager.auto_mode:
@@ -68,6 +86,8 @@ async def background_verification_worker(manager):
                 await asyncio.sleep(2)
             continue
 
+        if manager.recognition_notice == "audio_silent":
+            manager.recognition_notice = None
         new_song, new_artist, shazam_offset, new_cover = await manager.recognizer.recognize(audio_bytes)
 
         if (manager.session_id != current_session or not manager.is_listening
@@ -80,14 +100,17 @@ async def background_verification_worker(manager):
             # and keep the connectivity notice visible there. Auto holds this
             # track until it changes; the user can still retry with LISTEN.
             manager.finish_failed_lyrics_lookup(
-                expected_session=current_session, reason="connection_error"
+                expected_session=current_session,
+                reason="recognition_connection_error" if linux_audio else "connection_error",
             )
             logging.info("Shazam: falha de conexão; voltando ao menu")
             continue
 
         if not new_song:
-            shazam_no_match_count += 1
             manager.recognition_notice = "no_match"
+            if not linux_audio:
+                shazam_no_match_count += 1
+            # A catalog miss on Linux does not diagnose transport failure.
             if shazam_no_match_count >= 2:
                 shazam_no_match_count = 0
                 reachable = await loop.run_in_executor(None, service_health.connectivity_after_failed_recognition)

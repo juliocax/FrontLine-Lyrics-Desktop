@@ -2,11 +2,15 @@
 import hashlib
 import os
 from pathlib import Path
+import sys
 import shutil
 import tarfile
 import tempfile
+from uuid import uuid4
 from urllib.request import urlopen
 from urllib.error import URLError
+
+from engine.addon_paths import addons_directory
 
 URL = ("https://files.pythonhosted.org/packages/55/2b/"
        "8cf7514cb57d028abcef625afa847d60ff1ffbf0049c36b78faa7c35046f/"
@@ -16,8 +20,9 @@ REQUIRED = {"mecabrc", "sys.dic", "unk.dic", "matrix.bin", "char.bin", "dicrc"}
 
 
 def dictionary_path():
-    root = os.environ.get("FRONTLINE_ADDONS_DIR")
-    return Path(root) / "ja-unidic-1.0.8" if root else None
+    if sys.platform.startswith("linux") or os.environ.get("FRONTLINE_ADDONS_DIR"):
+        return addons_directory() / "ja-unidic-1.0.8"
+    return None
 
 
 def installed_dictionary():
@@ -87,3 +92,11 @@ def install(validate):
         if destination.exists():
             shutil.rmtree(destination)
         staged.rename(destination)
+
+
+def remove():
+    path = dictionary_path()
+    if path and path.exists():
+        retired = path.with_name(f".removed-{uuid4().hex}")
+        path.rename(retired)
+        shutil.rmtree(retired)
