@@ -33,7 +33,6 @@ https://github.com/user-attachments/assets/0a6f3278-49b2-43f0-9004-6709d65f74b9
 - [How It Works](#how-it-works)
 - [Installation](#installation)
 - [Usage](#usage)
-- [Translation and Romanization on Windows](#translation-and-romanization-on-windows)
 - [Screenshots](#screenshots)
 - [Project Structure](#project-structure)
 - [Building From Source](#building-from-source)
@@ -54,7 +53,7 @@ The project supports a Windows desktop frontend and a Linux frontend sharing a P
 - Song recognition using audio fingerprinting.
 - Automatic tracking from supported media sessions (Windows media sessions / Linux MPRIS).
 - Manual lyrics search and synchronization adjustments.
-- Live lyric translation, optional on-device translation models, and improved romanization on Windows.
+- Live lyric translation, optional on-device translation models, and improved romanization.
 - Font, color, and theme customization, including seasonal themes.
 - Multiple interface languages.
 - Festival Mode with editable setlists and manual line synchronization (feature availability may vary by platform).
@@ -85,14 +84,6 @@ The Linux version is being prepared for distribution. Until it is published, you
 3. Use **SEARCH** to find lyrics manually.
 4. Adjust the overlay appearance, lyric size, and synchronization as needed.
 5. Use translation controls and other features available on your platform.
-
-## Translation and Romanization on Windows
-
-In **Settings → Translation → Manage add-ons → Manage models**, select your source and target languages. FrontLine Lyrics finds an available route and downloads only the models you are missing. For example, Japanese → Brazilian Portuguese can use Japanese → English and English → Brazilian Portuguese automatically. Installed models are used first for supported verses. The online fallback uses MyMemory, and any remaining untranslated verses keep their original text and timing.
-
-The add-ons screen also offers a Japanese dictionary for improved kana and kanji readings. The dictionary and language models are downloaded separately to limit the size of the base installation. Mandarin, Korean and Thai have language-specific romanization.
-
-**Original** and **Romanization** select the lyric format. **Translate** is independent. When enabled, it displays the translation as the main lyric. Enable **Show lyrics below the translation** to show the original or romanized lyric underneath, according to your selected format.
 
 ## Screenshots
 
@@ -223,8 +214,8 @@ frontline-lyrics
 
 ```bash
 chmod +x FrontLine-Linux/packaging-deb/*.sh FrontLine-Linux/packaging-snap/*.sh
-./FrontLine-Linux/packaging-snap/build-snap.sh 1.0.0
-sudo snap install ./FrontLine-Linux/packaging-snap/frontline-lyrics_1.0.0_amd64.snap --dangerous
+./FrontLine-Linux/packaging-snap/build-snap.sh 1.1.0
+sudo snap install ./FrontLine-Linux/packaging-snap/frontline-lyrics_1.1.0_amd64.snap --dangerous
 snap run frontline-lyrics
 ```
 
