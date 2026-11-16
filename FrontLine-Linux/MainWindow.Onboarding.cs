@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Avalonia.Interactivity;
 
@@ -8,7 +9,7 @@ namespace FrontLine_Linux;
 
 public partial class MainWindow
 {
-    private const string LinuxAppVersion = "1.0.0";
+    internal const string LinuxAppVersion = "1.1.0";
     private sealed class OnboardingState
     {
         public bool WelcomeShown { get; set; }
@@ -90,16 +91,34 @@ public partial class MainWindow
                 _onboarding.SnapPermissionsExplained = true;
                 SaveOnboarding();
             }
-            if (_onboarding.WelcomeShown) _ = LinuxTelemetry.SendIfDueAsync(_onboarding.TelemetryEnabled,
-                _onboarding.LastTelemetryUtc, _appLanguage, _lyricFont,
-                (LyricColorCombo.SelectedItem as Avalonia.Controls.ComboBoxItem)?.Tag?.ToString() ?? "default",
-                _visibleLineCount, () =>
-                {
-                    _onboarding.LastTelemetryUtc = DateTime.UtcNow;
-                    SaveOnboarding();
-                });
+            if (_onboarding.WelcomeShown) await SendLinuxTelemetryAsync();
         }
         catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Startup UI: " + ex); }
+    }
+
+    private async Task SendLinuxTelemetryAsync()
+    {
+        if (!LinuxTelemetry.IsDue(_onboarding.TelemetryEnabled, _onboarding.LastTelemetryUtc)) return;
+
+        TranslationAddonsDialog.State? addons = null;
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(_stop.Token);
+        timeout.CancelAfter(TimeSpan.FromSeconds(2));
+        try { addons = await TranslationAddonsDialog.RequestAsync("status", timeout.Token); }
+        catch (Exception ex) { System.Diagnostics.Debug.WriteLine("Telemetry add-on status: " + ex.Message); }
+        if (_stop.IsCancellationRequested) return;
+
+        var preferences = new LinuxTelemetry.Preferences(
+            _appLanguage, _lyricFont,
+            (LyricColorCombo.SelectedItem as Avalonia.Controls.ComboBoxItem)?.Tag?.ToString() ?? "default",
+            _visibleLineCount, _backgroundOpacity, FontSizeSlider.Value, _lyricAlignment,
+            _lyricBold, _lyricItalic, _connected ? _autoMode : null,
+            addons is null ? null : addons.Models.Length > 0, addons?.Dictionary);
+        await LinuxTelemetry.SendIfDueAsync(_onboarding.TelemetryEnabled, _onboarding.LastTelemetryUtc,
+            preferences, () =>
+            {
+                _onboarding.LastTelemetryUtc = DateTime.UtcNow;
+                SaveOnboarding();
+            });
     }
 
     private async void OpenSnapPermissions_Click(object? sender, RoutedEventArgs e)
