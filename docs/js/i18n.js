@@ -1538,6 +1538,48 @@ FL_TRANSLATIONS.id.linux100 = {
   "imagePending": "Tangkapan layar segera tersedia"
 };
 
+// Additional labels for the Linux v1.1.0 tutorial.
+FL_TRANSLATIONS.en.linux110 = {
+  "title": "How to use FrontLine Lyrics for Linux 1.1.0",
+  "lyricMode": "Choose Original to display the lyrics as written or Romanization to display their pronunciation in Latin characters when available.",
+  "languages": "Use Translate from and To to select the source and target languages. You can search both lists or leave the source on Automatic detection.",
+  "translateToggle": "Turn Translate on to show the translation as the main lyrics. With it off, the main lyrics follow your Original or Romanization choice.",
+  "addons": "Open Manage add-ons to install or remove offline translation models and the optional UniDic Lite dictionary for Japanese romanization.",
+  "audioOutput": "Choose the system default or a specific audio output for recognition. Click Listen and check the signal meter here while FrontLine captures audio."
+};
+FL_TRANSLATIONS.pt.linux110 = {
+  "title": "Como usar o FrontLine Lyrics para Linux 1.1.0",
+  "lyricMode": "Escolha Original para exibir a letra como foi escrita ou Romanização para acompanhar a pronúncia em caracteres latinos, quando disponível.",
+  "languages": "Use Traduzir de e Para para escolher os idiomas de origem e destino. Você pode pesquisar nas duas listas ou deixar a origem em Detecção automática.",
+  "translateToggle": "Ative Traduzir para exibir a tradução como letra principal. Com a opção desativada, a letra segue a escolha entre Original e Romanização.",
+  "addons": "Abra Gerenciar complementos para instalar ou remover os modelos de tradução offline e o dicionário opcional UniDic Lite para romanização do japonês.",
+  "audioOutput": "Escolha a saída padrão do sistema ou uma saída específica para o reconhecimento. Clique em Ouvir e confira o medidor de sinal aqui durante a captura."
+};
+FL_TRANSLATIONS.es.linux110 = {
+  "title": "Cómo usar FrontLine Lyrics para Linux 1.1.0",
+  "lyricMode": "Elige Original para ver la letra tal como está escrita o Romanización para seguir la pronunciación en caracteres latinos cuando esté disponible.",
+  "languages": "Usa Traducir de y A para elegir los idiomas de origen y destino. Puedes buscar en ambas listas o dejar el origen en Detección automática.",
+  "translateToggle": "Activa Traducir para mostrar la traducción como letra principal. Al desactivarlo, la letra sigue la opción Original o Romanización.",
+  "addons": "Abre Gestionar complementos para instalar o quitar los modelos de traducción sin conexión y el diccionario opcional UniDic Lite para romanizar japonés.",
+  "audioOutput": "Elige la salida predeterminada del sistema o una salida específica. Pulsa Escuchar y comprueba aquí el nivel de señal durante la captura."
+};
+FL_TRANSLATIONS.fr.linux110 = {
+  "title": "Comment utiliser FrontLine Lyrics pour Linux 1.1.0",
+  "lyricMode": "Choisissez Original pour afficher les paroles telles qu’elles sont écrites ou Romanisation pour suivre leur prononciation en caractères latins, si disponible.",
+  "languages": "Utilisez Traduire de et Vers pour choisir les langues source et cible. Vous pouvez effectuer une recherche dans les deux listes ou laisser la détection automatique.",
+  "translateToggle": "Activez Traduire pour afficher la traduction en premier. Si la traduction est désactivée, l’affichage suit votre choix entre Original et Romanisation.",
+  "addons": "Ouvrez Gérer les modules complémentaires pour installer ou supprimer les modèles de traduction hors ligne et le dictionnaire facultatif UniDic Lite pour le japonais.",
+  "audioOutput": "Choisissez la sortie système par défaut ou une sortie précise. Cliquez sur Écouter et vérifiez ici le niveau du signal pendant la capture."
+};
+FL_TRANSLATIONS.id.linux110 = {
+  "title": "Cara menggunakan FrontLine Lyrics untuk Linux 1.1.0",
+  "lyricMode": "Pilih Asli untuk melihat lirik sebagaimana ditulis atau Romanisasi untuk mengikuti pelafalan dalam aksara Latin jika tersedia.",
+  "languages": "Gunakan Terjemahkan dari dan Ke untuk memilih bahasa sumber dan tujuan. Kamu dapat mencari di kedua daftar atau memilih Deteksi otomatis.",
+  "translateToggle": "Aktifkan Terjemahkan untuk menjadikan terjemahan sebagai lirik utama. Jika dimatikan, lirik mengikuti pilihan Asli atau Romanisasi.",
+  "addons": "Buka Kelola add-on untuk memasang atau menghapus model terjemahan luring dan kamus opsional UniDic Lite untuk romanisasi bahasa Jepang.",
+  "audioOutput": "Pilih keluaran bawaan sistem atau keluaran tertentu. Pilih Dengarkan dan periksa tingkat sinyal di sini saat audio direkam."
+};
+
 function flTranslate(lang, path) {
   const parts = path.split(".");
   let node = FL_TRANSLATIONS[lang] || FL_TRANSLATIONS.en;
