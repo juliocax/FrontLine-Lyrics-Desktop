@@ -7,6 +7,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 
@@ -48,6 +49,37 @@ namespace FrontLineOverlay
 
         private static readonly Dictionary<string, Dictionary<string, string[]>> Notes = new()
         {
+            ["1.7.0"] = new()
+            {
+                ["en"] = new[]
+                {
+                    "On-device translation models\nInstall models for the language pairs you use most for more natural translations. Choose a source and a target in Manage models. The app finds a route and downloads only the missing models. For example, Japanese → Brazilian Portuguese can automatically use Japanese → English and English → Brazilian Portuguese.",
+                    "Improved romanization\nMandarin, Korean and Thai now use readings tailored to each language. For Japanese, an optional dictionary improves the readings of kana and kanji. The dictionary would add substantial size to the installation, so it is available as an add-on. Romanization writes the lyrics in Latin letters to help you follow the pronunciation.",
+                    "New add-ons screen\nFind translation models and the Japanese dictionary in Settings → Translation → Manage add-ons. The separate downloads keep the app installation small and let you install only what you need for the languages you listen to.",
+                    "New translation and romanization controls\nOriginal and Romanization are two choices for the same setting. Switching on one turns off the other. Translate has its own switch. When it is off, the selected mode shows the main lyrics. When it is on, the translation becomes the main lyrics. If you also enable Show lyrics below the translation, the Original or Romanization setting determines what appears underneath.",
+                },
+                ["pt"] = new[]
+                {
+                    "Modelos de tradução no dispositivo\nAgora você pode instalar modelos para os pares de idiomas que mais usa e obter traduções mais naturais. Basta escolher o idioma de origem e o de destino em Gerenciar modelos. Na hora da instalação, o app encontra a rota e baixa só os modelos que faltam. Se você escolher Japonês → Português (Brasil), por exemplo, o app pode combinar Japonês → Inglês e Inglês → Português (Brasil) automaticamente.",
+                    "Romanização aprimorada\nA romanização foi aprimorada em mandarim, coreano e tailandês, com leituras próprias para cada idioma. Para o japonês, você pode instalar um dicionário que melhora a leitura de kana e kanji. Como esse dicionário aumentaria significativamente o tamanho da instalação, ele fica disponível como complemento opcional. A romanização escreve a letra com caracteres latinos para ajudar você a acompanhar a pronúncia.",
+                    "Nova tela de complementos\nEm Configurações → Tradução → Gerenciar complementos, você encontra os modelos de tradução e o dicionário de romanização japonesa. Esses arquivos ficam disponíveis para download separado para manter a instalação do app leve. Assim, você baixa apenas os complementos úteis para os idiomas que costuma ouvir.",
+                    "Novos controles de tradução e romanização\nOriginal e Romanização são opções da mesma escolha. Ao ligar uma, a outra desliga. Traduzir tem um interruptor independente. Com ele desligado, a letra principal aparece no modo escolhido. Com ele ligado, a tradução vira a letra principal. Se você também ativar Mostrar letra abaixo da tradução, a escolha entre Original e Romanização define o que aparece abaixo.",
+                },
+                ["es"] = new[]
+                {
+                    "Modelos de traducción en tu dispositivo\nInstala modelos para los pares de idiomas que más usas y obtén traducciones más naturales. Elige el idioma de origen y el de destino en Gestionar modelos. La aplicación calcula la ruta y descarga solo los modelos que faltan. Por ejemplo, Japonés → Portugués (Brasil) puede combinar automáticamente Japonés → Inglés e Inglés → Portugués (Brasil).",
+                    "Romanización mejorada\nMejoramos la romanización del mandarín, el coreano y el tailandés con lecturas adaptadas a cada idioma. Para el japonés, puedes instalar un diccionario que mejora la lectura de kana y kanji. Como el diccionario aumentaría considerablemente el tamaño de la instalación, está disponible como complemento opcional. La romanización usa caracteres latinos para facilitar el seguimiento de la pronunciación.",
+                    "Nueva pantalla de complementos\nEn Ajustes → Traducción → Gestionar complementos encontrarás los modelos de traducción y el diccionario japonés. Los archivos se descargan por separado para mantener la instalación ligera y permitirte instalar solo lo que necesites.",
+                    "Nuevos controles de traducción y romanización\nOriginal y Romanización son opciones del mismo ajuste. Al activar una, se desactiva la otra. Traducir tiene su propio interruptor. Si lo desactivas, la letra principal sigue el modo elegido. Si lo activas, la traducción ocupa ese lugar. Si también activas Mostrar letra debajo de la traducción, la opción Original o Romanización determina lo que aparece debajo.",
+                },
+                ["id"] = new[]
+                {
+                    "Model terjemahan di perangkat\nPasang model untuk pasangan bahasa yang paling sering kamu gunakan agar terjemahan terdengar lebih alami. Pilih bahasa sumber dan tujuan di Kelola model. Aplikasi menentukan jalurnya dan hanya mengunduh model yang belum terpasang. Misalnya, Jepang → Portugis (Brasil) dapat otomatis memakai Jepang → Inggris dan Inggris → Portugis (Brasil).",
+                    "Romanisasi yang lebih baik\nRomanisasi bahasa Mandarin, Korea, dan Thai kini memakai pembacaan yang disesuaikan dengan tiap bahasa. Untuk bahasa Jepang, kamus opsional memperbaiki pembacaan kana dan kanji. Kamus tersedia sebagai add-on karena ukurannya akan menambah ukuran instalasi secara signifikan. Romanisasi menampilkan lirik dengan huruf Latin agar pelafalannya lebih mudah diikuti.",
+                    "Layar add-on baru\nModel terjemahan dan kamus Jepang tersedia di Pengaturan → Terjemahan → Kelola add-on. Unduhan terpisah menjaga ukuran instalasi tetap kecil sehingga kamu cukup memasang add-on yang diperlukan untuk bahasa yang biasa kamu dengarkan.",
+                    "Kontrol terjemahan dan romanisasi baru\nAsli dan Romanisasi adalah dua pilihan untuk pengaturan yang sama. Mengaktifkan salah satunya akan menonaktifkan yang lain. Terjemahkan mempunyai sakelar tersendiri. Saat dimatikan, lirik utama mengikuti mode yang dipilih. Saat dinyalakan, terjemahan menjadi lirik utama. Jika Tampilkan lirik di bawah terjemahan juga aktif, pilihan Asli atau Romanisasi menentukan tampilan di bawahnya.",
+                },
+            },
             ["1.6.2"] = new()
             {
                 ["en"] = new[]
@@ -210,6 +242,7 @@ namespace FrontLineOverlay
 
         private static string? FullReleaseUrl => CurrentVersion switch
         {
+            "1.7.0" => "https://buymeacoffee.com/juliocax/frontline-lyrics-1-7",
             "1.6.0" or "1.6.1" or "1.6.2" => Version16AnnouncementUrl,
             "1.5.0" or "1.5.1" or "1.5.2" or "1.5.3" => "https://buymeacoffee.com/juliocax/frontline-lyrics-1-5-0",
             _ => null
@@ -251,12 +284,26 @@ namespace FrontLineOverlay
                 && translations.TryGetValue(language, out var items)
                 ? items : new[] { labels[4] };
             foreach (var item in changes)
-                PanelChanges.Children.Add(new TextBlock
+            {
+                int headingEnd = item.IndexOf('\n');
+                var entry = new TextBlock
                 {
-                    Text = "•  " + item, FontSize = 12.5,
+                    FontSize = 12.5,
                     Foreground = new SolidColorBrush(Color.FromArgb(0xE6, 255, 255, 255)),
                     TextWrapping = TextWrapping.Wrap, Margin = new Thickness(6, 4, 0, 5)
-                });
+                };
+                if (headingEnd < 0)
+                    entry.Text = "•  " + item;
+                else
+                {
+                    entry.Margin = new Thickness(0, 6, 0, 12);
+                    entry.Inlines.Add(new Run(item[..headingEnd]) { FontWeight = FontWeights.SemiBold });
+                    entry.Inlines.Add(new LineBreak());
+                    entry.Inlines.Add(new Run(item[(headingEnd + 1)..]));
+                }
+                PanelChanges.Children.Add(entry);
+            }
+            ChangesScroll.ScrollToTop();
             foreach (var child in LangPanel.Children)
                 if (child is ToggleButton b) b.IsChecked = (b.Tag as string) == language;
         }

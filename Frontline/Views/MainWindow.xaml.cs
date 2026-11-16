@@ -107,6 +107,7 @@ namespace FrontLineOverlay
         private bool _syncingLangPicker;
         private bool keepOriginalWithTranslation = false;
         private string lastCurrentLyricsOriginal = "";
+        private string lastCurrentLyricsRomanized = "";
         private bool lastIsTranslatedActive = false;
 
         private LockButtonWindow? _lockWin;
@@ -152,11 +153,48 @@ namespace FrontLineOverlay
 
         private string _lyricAlignment = "center";
 
-        private string _settingsPreferredTranslation = "original";
+        private static readonly (string Code, string Label)[] TranslationTargets =
+        {
+            ("en", "English"),
+            ("pt", "Português (Brasil)"),
+            ("es", "Español"),
+            ("fr", "Français"),
+            ("de", "Deutsch"),
+            ("it", "Italiano"),
+            ("nl", "Nederlands"),
+            ("id", "Bahasa Indonesia"),
+            ("ja", "日本語"),
+            ("ko", "한국어"),
+            ("zh-cn", "简体中文"),
+            ("zh-tw", "繁體中文"),
+            ("th", "ไทย"),
+            ("ar", "العربية"),
+            ("he", "עברית"),
+            ("el", "Ελληνικά"),
+            ("hi", "हिन्दी"),
+            ("bn", "বাংলা"),
+            ("fa", "فارسی"),
+            ("ru", "Русский"),
+            ("uk", "Українська"),
+            ("pl", "Polski"),
+            ("tr", "Türkçe"),
+            ("vi", "Tiếng Việt"),
+            ("sv", "Svenska"),
+            ("fi", "Suomi"),
+            ("ro", "Română"),
+            ("da", "Dansk"),
+            ("cs", "Čeština"),
+            ("hu", "Magyar"),
+        };
+        private string? _syncedTranslationTarget;
+        private string _settingsPreferredTranslation => _settingsTranslationEnabled ? _settingsTranslationTarget : _settingsBaseLyricsMode;
+        private string _settingsBaseLyricsMode = "original";
+        private string _settingsTranslationTarget = "en";
+        private bool _settingsTranslationEnabled;
+        private bool _syncingTranslationTarget;
         private string _settingsCurrentTranslation = "original";
         private string _settingsTranslationKey = "";
         private string? _settingsPendingTranslation;
-        private bool _settingsTranslationStarted;
         private bool _settingsTranslationFailed;
         private DateTime _settingsTranslationRequestedUtc;
 
@@ -190,7 +228,7 @@ namespace FrontLineOverlay
                 { "UILang", "APP LANGUAGE" },
                 { "Listening", "Listening..." }, { "Searching", "Searching lyrics..." },
                 { "SideListen", "LISTEN" }, { "SideClear", "CLEAR" }, { "Auto", "AUTO" },
-                { "KeepOriginal", "Also show original lyrics" }, { "PreviewLabel", "PREVIEW" },
+                { "KeepOriginal", "Show lyrics below the translation" }, { "PreviewLabel", "PREVIEW" },
                 { "MockPrevious", "♪ this is a preview line ♪" }, { "MockCurrent", "This is how your lyrics will look" },
                 { "MockNext", "♪ next line preview ♪" }, { "MockCurrentOriginal", "(original) this is a preview line" },
                 { "DonateTip", "Leave an optional tip" }, { "ReleaseNotesButton", "VIEW RELEASE NOTES" }, { "ReleaseNotesHeading", "WHAT'S NEW" }, { "ReleaseNotesTooltip", "See what's new in this version" },
@@ -282,7 +320,7 @@ namespace FrontLineOverlay
                 { "UILang", "IDIOMA DO APP" },
                 { "Listening", "Ouvindo..." }, { "Searching", "Buscando letra..." },
                 { "SideListen", "OUVIR" }, { "SideClear", "LIMPAR" }, { "Auto", "AUTO" },
-                { "KeepOriginal", "Também mostra a letra original" }, { "PreviewLabel", "PRÉVIA" },
+                { "KeepOriginal", "Mostrar letra abaixo da tradução" }, { "PreviewLabel", "PRÉVIA" },
                 { "MockPrevious", "♪ esta é uma linha de exemplo ♪" }, { "MockCurrent", "É assim que sua letra vai aparecer" },
                 { "MockNext", "♪ próxima linha de exemplo ♪" }, { "MockCurrentOriginal", "(original) esta é uma linha de exemplo" },
                 { "DonateTip", "Deixe uma gorjeta opcional" }, { "ReleaseNotesButton", "VER NOVIDADES DA VERSÃO" }, { "ReleaseNotesHeading", "NOVIDADES" }, { "ReleaseNotesTooltip", "Veja as novidades desta versão" },
@@ -374,7 +412,7 @@ namespace FrontLineOverlay
                 { "UILang", "IDIOMA DE LA APP" },
                 { "Listening", "Escuchando..." }, { "Searching", "Buscando letra..." },
                 { "SideListen", "ESCUCHAR" }, { "SideClear", "LIMPIAR" }, { "Auto", "AUTO" },
-                { "KeepOriginal", "También muestra la letra original" }, { "PreviewLabel", "VISTA PREVIA" },
+                { "KeepOriginal", "Mostrar letra debajo de la traducción" }, { "PreviewLabel", "VISTA PREVIA" },
                 { "MockPrevious", "♪ esta es una línea de ejemplo ♪" }, { "MockCurrent", "Así se verá tu letra" },
                 { "MockNext", "♪ próxima línea de ejemplo ♪" }, { "MockCurrentOriginal", "(original) esta es una línea de ejemplo" },
                 { "DonateTip", "Deja una propina opcional" }, { "ReleaseNotesButton", "VER NOTAS DE LA VERSIÓN" }, { "ReleaseNotesHeading", "NOVEDADES" }, { "ReleaseNotesTooltip", "Ver las novedades de esta versión" },
@@ -466,7 +504,7 @@ namespace FrontLineOverlay
                 { "UILang", "BAHASA APLIKASI" },
                 { "Listening", "Mendengarkan..." }, { "Searching", "Mencari lirik..." },
                 { "SideListen", "DENGAR" }, { "SideClear", "HAPUS" }, { "Auto", "AUTO" },
-                { "KeepOriginal", "Tampilkan juga lirik asli" }, { "PreviewLabel", "PRATINJAU" },
+                { "KeepOriginal", "Tampilkan lirik di bawah terjemahan" }, { "PreviewLabel", "PRATINJAU" },
                 { "MockPrevious", "♪ ini baris contoh ♪" }, { "MockCurrent", "Lirik Anda akan tampil seperti ini" },
                 { "MockNext", "♪ baris berikutnya ♪" }, { "MockCurrentOriginal", "(asli) ini baris contoh" },
                 { "DonateTip", "Tinggalkan tip opsional" }, { "ReleaseNotesButton", "LIHAT CATATAN RILIS" }, { "ReleaseNotesHeading", "YANG BARU" }, { "ReleaseNotesTooltip", "Lihat yang baru di versi ini" },
@@ -754,34 +792,33 @@ namespace FrontLineOverlay
         {
             _settingsTranslationKey = $"{artist.Trim()}|{song.Trim()}|{_settingsPreferredTranslation}";
             _settingsPendingTranslation = _settingsPreferredTranslation;
-            _settingsTranslationStarted = false;
             _settingsTranslationFailed = false;
             _settingsTranslationRequestedUtc = DateTime.UtcNow;
             SendCommand("TRANSLATE", _settingsPreferredTranslation);
         }
 
+        private bool _serverTranslationActive;
+
         private void UpdateSettingsTranslation(string status, string language, bool translating,
             string error, string artist, string song, bool hasLyrics)
         {
+            _serverTranslationActive = translating && status == "SYNCED";
             _settingsCurrentTranslation = language;
             if (status != "SYNCED")
             {
                 _settingsPendingTranslation = null;
-                _settingsTranslationStarted = false;
                 _settingsTranslationFailed = false;
                 _settingsTranslationKey = "";
             }
             if (_settingsPendingTranslation != null)
             {
-                if (translating) _settingsTranslationStarted = true;
                 bool success = language == _settingsPendingTranslation && !translating;
-                bool failed = _settingsTranslationStarted && !translating && error == _settingsPendingTranslation;
+                bool failed = !translating && error == _settingsPendingTranslation;
                 bool timedOut = DateTime.UtcNow - _settingsTranslationRequestedUtc > TimeSpan.FromSeconds(90);
                 if (success || failed || timedOut)
                 {
                     _settingsTranslationFailed = failed || timedOut;
                     _settingsPendingTranslation = null;
-                    _settingsTranslationStarted = false;
                 }
             }
             if (status == "SYNCED" && hasLyrics && _settingsPendingTranslation == null && _settingsPreferredTranslation != language)
@@ -795,11 +832,29 @@ namespace FrontLineOverlay
         private void SyncSettingsTranslation()
         {
             if (SettingsTranslationNotice == null) return;
-            foreach (var choice in new[] { TransOriginal, TransRomanized, TransEn, TransEs, TransFr, TransPt })
-                choice.IsChecked = choice.Tag?.ToString() == _settingsPreferredTranslation;
+            foreach (var choice in new[] { TransOriginal, TransRomanized })
+                choice.IsChecked = choice.Tag?.ToString() == _settingsBaseLyricsMode;
+            BtnTranslateTarget.IsChecked = _settingsTranslationEnabled;
+            if (_syncedTranslationTarget != _settingsTranslationTarget)
+            {
+                foreach (ComboBoxItem item in CmbTranslationTarget.Items)
+                {
+                    if (Equals(item.Tag, _settingsTranslationTarget))
+                    {
+                        _syncingTranslationTarget = true;
+                        try { CmbTranslationTarget.SelectedItem = item; }
+                        finally { _syncingTranslationTarget = false; }
+                        break;
+                    }
+                }
+                _syncedTranslationTarget = _settingsTranslationTarget;
+            }
             bool pending = _settingsPendingTranslation != null;
-            SettingsTranslationNotice.Visibility = pending || _settingsTranslationFailed ? Visibility.Visible : Visibility.Collapsed;
-            SettingsTranslationProgress.Visibility = pending ? Visibility.Visible : Visibility.Collapsed;
+            LyricTranslationActivity.Visibility = _settingsTranslationEnabled && _serverTranslationActive
+                ? Visibility.Visible : Visibility.Collapsed;
+            LyricTranslationProgress.IsIndeterminate = LyricTranslationActivity.Visibility == Visibility.Visible;
+            LyricTranslationStatus.Text = SettingsText("Translating…", "Traduzindo…", "Traduciendo…", "Menerjemahkan…");
+            SettingsTranslationNotice.Visibility = !pending && _settingsTranslationFailed ? Visibility.Visible : Visibility.Collapsed;
             SettingsTranslationNoticeText.Text = _settingsTranslationFailed && !pending
                 ? SettingsText("Translation failed. Try again.", "Não foi possível traduzir. Tente novamente.", "No fue posible traducir. Inténtalo de nuevo.", "Terjemahan gagal. Coba lagi.")
                 : SettingsText("Translating…", "Traduzindo…", "Traduciendo…", "Menerjemahkan…");
@@ -814,8 +869,6 @@ namespace FrontLineOverlay
             TabSettingsLyrics.Content = SettingsText("LYRICS", "LETRAS", "LETRAS", "LIRIK");
             TabSettingsTranslate.Content = SettingsText("TRANSLATION", "TRADUÇÃO", "TRADUCCIÓN", "TERJEMAH");
             TabSettingsApp.Content = SettingsText("GENERAL", "GERAL", "GENERAL", "UMUM");
-            LblAddonsTitle.Text = SettingsText("ADD-ONS", "COMPLEMENTOS", "COMPLEMENTOS", "ADD-ON");
-            BtnOpenAddons.Content = SettingsText("Manage add-ons", "Gerenciar complementos", "Gestionar complementos", "Kelola add-on");
             SettingsCloseButton.ToolTip = SettingsText("Close settings", "Fechar configurações", "Cerrar ajustes", "Tutup pengaturan");
             SettingsOpacityDescription.Text = SettingsText("Background outside the window", "Fundo fora da janela", "Fondo fuera de la ventana", "Latar di luar jendela");
             LblThemeBehindLyrics.Text = SettingsText("Use theme behind lyrics", "Usar tema no fundo das letras", "Usar tema detrás de las letras", "Gunakan tema di belakang lirik");
@@ -832,10 +885,22 @@ namespace FrontLineOverlay
             SettingsFullLinesChoice.Content = SettingsText("Full", "Inteira", "Completa", "Penuh");
             TransOriginal.Content = "Original";
             TransRomanized.Content = SettingsText("Romanization", "Romanização", "Romanización", "Romanisasi");
-            TransEn.Content = "English";
-            TransEs.Content = "Español";
-            TransFr.Content = "Français";
-            TransPt.Content = "Português";
+            LblTranslationSource.Text = SettingsText("Source language", "Idioma original", "Idioma de origen", "Bahasa sumber");
+            LblTranslationAddonsHint.Text = SettingsText(
+                "Install translation models or improve Japanese romanization.",
+                "Instale modelos de tradução ou melhore a romanização do japonês.",
+                "Instala modelos de traducción o mejora la romanización del japonés.",
+                "Pasang model terjemahan atau tingkatkan romanisasi bahasa Jepang.");
+            BtnTranslationAddons.Content = SettingsText("Manage add-ons", "Gerenciar complementos", "Gestionar complementos", "Kelola add-on");
+            LblTranslationTarget.Text = SettingsText("Translate to", "Traduzir para", "Traducir a", "Terjemahkan ke");
+            BtnTranslateTarget.Content = SettingsText("Translate", "Traduzir", "Traducir", "Terjemahkan");
+            if (CmbTranslationTarget.Items.Count == 0)
+            {
+                foreach (var target in TranslationTargets)
+                    CmbTranslationTarget.Items.Add(new ComboBoxItem { Content = target.Label, Tag = target.Code });
+                _syncedTranslationTarget = null;
+            }
+            RefreshOfflineTranslationTargets();
             SettingsTranslationNoticeText.Text = SettingsText("Translating…", "Traduzindo…", "Traduciendo…", "Menerjemahkan…");
             SyncSettingsSegments();
             SyncSettingsTypography();
@@ -2026,6 +2091,7 @@ namespace FrontLineOverlay
                 bool isTranslating = root.TryGetProperty("is_translating", out var tp) && tp.GetBoolean();
                 string translationError = root.TryGetProperty("translation_error", out var te) && te.ValueKind == JsonValueKind.String ? te.GetString() ?? "" : "";
                 bool autoMode = root.TryGetProperty("auto_mode", out var amp) && amp.GetBoolean();
+                string currentLyricsRomanized = root.TryGetProperty("current_lyrics_romanized", out var clr) ? clr.GetString() ?? "" : "";
                 string currentLyricsOriginal = root.TryGetProperty("current_lyrics_original", out var clo) ? clo.GetString() ?? "" : "";
                 bool isTranslatedActive = root.TryGetProperty("is_translated_active", out var ita) && ita.GetBoolean();
                 bool japanesePackMissing = root.TryGetProperty("japanese_pack_missing", out var jp)
@@ -2077,10 +2143,12 @@ namespace FrontLineOverlay
                         : lyricsServiceStatus;
                     ApplyLyricsServiceStatus(serviceNotice);
                     _playerClock = playerClock;
-                    LblTranslating.Visibility = isTranslating ? Visibility.Visible : Visibility.Collapsed;
 
                     ApplyAutoModeFromServer(autoMode);
 
+                    UpdateTranslationSourceNotice(
+                        status == "SYNCED" && root.TryGetProperty("translation_source_notice", out var sourceNotice)
+                            ? sourceNotice : default);
                     UpdateSettingsTranslation(status, currentLanguage, isTranslating, translationError, artist, song,
                         !string.IsNullOrWhiteSpace(currentLyrics) || (fullLyricsRaw != null && fullLyricsRaw != "[]"));
 
@@ -2097,7 +2165,7 @@ namespace FrontLineOverlay
                         _currentLyricIndex = -1;
                         RefreshLyricDisplay();
                         LblCurrentOriginal.Text = ""; LblCurrentOriginal.Visibility = Visibility.Collapsed;
-                        lastCurrentLyricsOriginal = ""; lastIsTranslatedActive = false;
+                        lastCurrentLyricsOriginal = lastCurrentLyricsRomanized = ""; lastIsTranslatedActive = false;
                         if (_lastFullLyricsJson != null)
                         {
                             _lastFullLyricsJson = null;
@@ -2157,6 +2225,7 @@ namespace FrontLineOverlay
                         _currentLyricIndex = lyricIndex;
                         RefreshLyricDisplay();
                         lastCurrentLyricsOriginal = currentLyricsOriginal;
+                        lastCurrentLyricsRomanized = currentLyricsRomanized;
                         lastIsTranslatedActive = isTranslatedActive;
                         RefreshOriginalLyricsDisplay();
                     }
@@ -2602,20 +2671,49 @@ namespace FrontLineOverlay
         }
         private void BtnTrans_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is ToggleButton b && b.Tag is string l)
-            {
-                if (_settingsPreferredTranslation == l && _settingsPendingTranslation == l) return;
-                _settingsPreferredTranslation = l;
-                AppSettings.SetString("PreferredTranslation", l);
-                _settingsTranslationKey = "";
-                _settingsTranslationFailed = false;
-                if (currentAppStatus == "SYNCED" &&
-                    (!string.IsNullOrWhiteSpace(LblCurrent.Text) || _visibleLyrics?.Count > 0) &&
-                    _settingsCurrentTranslation != l)
-                    RequestSettingsTranslation(LblArtistName.Text, LblSongTitle.Text);
-                SyncSettingsTranslation();
-            }
+            if (sender is not ToggleButton button || button.Tag is not string mode) return;
+            string previous = _settingsPreferredTranslation;
+            _settingsBaseLyricsMode = mode;
+            UpdateTranslationMode(previous);
         }
+
+        private void BtnTranslateTarget_Click(object sender, RoutedEventArgs e)
+        {
+            string previous = _settingsPreferredTranslation;
+            _settingsTranslationEnabled = BtnTranslateTarget.IsChecked == true;
+            UpdateTranslationMode(previous);
+        }
+
+        private void TranslationTarget_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_syncingTranslationTarget ||
+                !(CmbTranslationTarget.IsDropDownOpen || CmbTranslationTarget.IsKeyboardFocusWithin) ||
+                CmbTranslationTarget.SelectedItem is not ComboBoxItem item || item.Tag is not string target ||
+                target == _settingsTranslationTarget) return;
+            string previous = _settingsPreferredTranslation;
+            _settingsTranslationTarget = target;
+            UpdateTranslationMode(previous);
+        }
+
+        private void UpdateTranslationMode(string previous)
+        {
+            string mode = _settingsPreferredTranslation;
+            AppSettings.SetString("BaseLyricsMode", _settingsBaseLyricsMode);
+            AppSettings.SetBool("LyricsTranslationEnabled", _settingsTranslationEnabled);
+            AppSettings.SetString("LyricsTranslationTarget", _settingsTranslationTarget);
+            AppSettings.SetString("PreferredTranslation", mode);
+            if (previous != mode)
+            {
+                _settingsTranslationFailed = false;
+                _settingsTranslationKey = "";
+                _settingsPendingTranslation = null;
+                if (currentAppStatus == "SYNCED")
+                    RequestSettingsTranslation(LblArtistName.Text, LblSongTitle.Text);
+            }
+            SyncSettingsTranslation();
+            RefreshOriginalLyricsDisplay();
+        }
+
         private void ChkKeepOriginal_Click(object sender, RoutedEventArgs e)
         {
             keepOriginalWithTranslation = ChkKeepOriginal.IsChecked == true;
@@ -2625,8 +2723,11 @@ namespace FrontLineOverlay
 
         private void RefreshOriginalLyricsDisplay()
         {
-            bool show = keepOriginalWithTranslation && lastIsTranslatedActive && !string.IsNullOrWhiteSpace(lastCurrentLyricsOriginal);
-            LblCurrentOriginal.Text = lastCurrentLyricsOriginal;
+            string secondary = _settingsBaseLyricsMode == "romanized" && !string.IsNullOrWhiteSpace(lastCurrentLyricsRomanized)
+                ? lastCurrentLyricsRomanized : lastCurrentLyricsOriginal;
+            bool show = _settingsTranslationEnabled && keepOriginalWithTranslation && lastIsTranslatedActive &&
+                        _settingsCurrentTranslation is not ("original" or "romanized") && !string.IsNullOrWhiteSpace(secondary);
+            LblCurrentOriginal.Text = secondary;
             LblCurrentOriginal.Visibility = show ? Visibility.Visible : Visibility.Collapsed;
         }
         private void BtnStartHelp_Click(object sender, RoutedEventArgs e)
@@ -2935,7 +3036,12 @@ namespace FrontLineOverlay
                 if (BtnAutoSide != null)
                     BtnAutoSide.IsChecked = _wantAuto;
                 string translation = AppSettings.GetString("PreferredTranslation", "original");
-                _settingsPreferredTranslation = translation is "original" or "romanized" or "en" or "es" or "fr" or "pt" ? translation : "original";
+                bool ValidTarget(string code) => TranslationTargets.Any(target => target.Code == code)
+                    || InstalledOfflineTargets().Any(target => target.Code == code);
+                _settingsBaseLyricsMode = AppSettings.GetString("BaseLyricsMode", translation) == "romanized" ? "romanized" : "original";
+                string destination = AppSettings.GetString("LyricsTranslationTarget", ValidTarget(translation) ? translation : "en");
+                _settingsTranslationTarget = ValidTarget(destination) ? destination : "en";
+                _settingsTranslationEnabled = AppSettings.GetBool("LyricsTranslationEnabled", ValidTarget(translation));
                 keepOriginalWithTranslation = AppSettings.GetBool("KeepOriginalWithTranslation", false);
                 ChkKeepOriginal.IsChecked = keepOriginalWithTranslation;
                 string lang = AppSettings.GetString("AppLanguage", "en");

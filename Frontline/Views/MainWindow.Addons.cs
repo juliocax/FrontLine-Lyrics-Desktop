@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -51,19 +52,29 @@ namespace FrontLineOverlay
             SettingsPopup.IsOpen = false;
             BtnMenu.IsChecked = false;
             string title = SettingsText("Add-ons", "Complementos", "Complementos", "Add-on");
-            var panel = new StackPanel();
-            var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 24) };
+            var header = new StackPanel { Orientation = Orientation.Horizontal, Margin = new Thickness(0, 0, 0, 14) };
             header.Children.Add(CreateExtensionIcon());
             var heading = Label(title, 26);
             heading.FontWeight = FontWeights.SemiBold;
             heading.VerticalAlignment = VerticalAlignment.Center;
             heading.Margin = new Thickness(14, 0, 0, 0);
             header.Children.Add(heading);
-            var close = AddonsButton("×");
+            var close = AddonsButton("");
+            close.Content = new System.Windows.Shapes.Path
+            {
+                Data = Geometry.Parse("M1,1 L11,11 M11,1 L1,11"),
+                Width = 12, Height = 12, Stretch = Stretch.Fill,
+                Stroke = Brushes.White, StrokeThickness = 1.5,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                VerticalAlignment = VerticalAlignment.Center
+            };
+            close.HorizontalContentAlignment = HorizontalAlignment.Center;
+            close.VerticalContentAlignment = VerticalAlignment.Center;
+            close.Template = (ControlTemplate)FindResource("AddonsCloseTemplate");
             close.Width = close.Height = 32;
             close.FontSize = 20;
             close.Padding = new Thickness(0);
-            close.VerticalAlignment = VerticalAlignment.Top;
+            close.VerticalAlignment = VerticalAlignment.Center;
             close.Margin = new Thickness(12, 0, 0, 0);
             close.ToolTip = SettingsText("Close", "Fechar", "Cerrar", "Tutup");
             System.Windows.Automation.AutomationProperties.SetName(close, (string)close.ToolTip);
@@ -72,7 +83,13 @@ namespace FrontLineOverlay
             DockPanel.SetDock(close, Dock.Right);
             dock.Children.Add(close);
             dock.Children.Add(header);
-            panel.Children.Add(dock);
+            DockPanel.SetDock(dock, Dock.Top);
+            var body = new Grid();
+            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            body.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+            var layout = new DockPanel();
+            layout.Children.Add(dock);
+            layout.Children.Add(new ScrollViewer { Content = body, VerticalScrollBarVisibility = ScrollBarVisibility.Auto });
 
             var card = new StackPanel { Margin = new Thickness(16) };
             var name = Label(SettingsText("Japanese romanization", "Romanização japonesa",
@@ -80,23 +97,26 @@ namespace FrontLineOverlay
             name.FontWeight = FontWeights.SemiBold;
             card.Children.Add(name);
             var description = Label(SettingsText(
-                "UniDic Lite dictionary. Works offline after installation.",
-                "Dicionário UniDic Lite. Funciona offline após a instalação.",
-                "Diccionario UniDic Lite. Funciona sin conexión tras la instalación.",
-                "Kamus UniDic Lite. Berfungsi offline setelah pemasangan."), 13);
+                "Adds a Japanese dictionary to improve kana and kanji readings.",
+                "Adiciona um dicionário para melhorar a leitura de kana e kanji.",
+                "Añade un diccionario para mejorar la lectura de kana y kanji.",
+                "Menambahkan kamus untuk meningkatkan pembacaan kana dan kanji."), 13);
             description.Margin = new Thickness(0, 6, 0, 8);
             card.Children.Add(description);
             var status = Label("", 12);
             card.Children.Add(status);
+            var progress = AddonActivityBar();
+            card.Children.Add(progress);
             var action = AddonsButton("");
             action.HorizontalAlignment = HorizontalAlignment.Left;
             card.Children.Add(action);
-            panel.Children.Add(new Border
+            body.Children.Add(new Border
             {
                 CornerRadius = new CornerRadius(12),
                 BorderBrush = new SolidColorBrush(Color.FromArgb(48, 255, 255, 255)),
                 BorderThickness = new Thickness(1),
                 Background = new SolidColorBrush(Color.FromArgb(22, 255, 255, 255)),
+                Margin = new Thickness(0, 0, 6, 0), VerticalAlignment = VerticalAlignment.Top,
                 Child = card
             });
 
@@ -115,12 +135,27 @@ namespace FrontLineOverlay
                         "Unduhan 47 MB · sekitar 250 MB setelah dipasang");
             }
 
+            CancellationTokenSource? download = null;
             action.Click += async (_, _) =>
             {
+                if (download != null)
+                {
+                    action.IsEnabled = false;
+                    status.Text = SettingsText("Canceling…", "Cancelando…", "Cancelando…", "Membatalkan…");
+                    download.Cancel();
+                    return;
+                }
+                if (_addonsBusy) return;
                 _addonsBusy = true;
+                SetAddonActivity(progress, true);
                 close.IsEnabled = false;
-                action.IsEnabled = false;
                 bool removing = JapanesePackInstalled();
+                action.IsEnabled = !removing;
+                if (!removing)
+                {
+                    download = new CancellationTokenSource();
+                    action.Content = SettingsText("Cancel download", "Cancelar download", "Cancelar descarga", "Batalkan unduhan");
+                }
                 status.Text = removing
                     ? SettingsText("Removing…", "Removendo…", "Quitando…", "Menghapus…")
                     : SettingsText("Downloading and verifying…", "Baixando e verificando…",
@@ -137,7 +172,9 @@ namespace FrontLineOverlay
                         var executable = _addonsServerExecutable
                             ?? throw new InvalidOperationException("FrontlineServer is unavailable.");
                         Directory.CreateDirectory(AddonsDirectory);
-                        string errorFile = System.IO.Path.Combine(AddonsDirectory, $"install-{Guid.NewGuid():N}.txt");
+                        string workspace = System.IO.Path.Combine(AddonsDirectory, $".japanese-install-{Guid.NewGuid():N}");
+                        Directory.CreateDirectory(workspace);
+                        string errorFile = System.IO.Path.Combine(workspace, "error.txt");
                         try
                         {
                             var start = new ProcessStartInfo(executable, "--install-japanese-pack")
@@ -147,10 +184,11 @@ namespace FrontLineOverlay
                             };
                             start.Environment["FRONTLINE_ADDONS_DIR"] = AddonsDirectory;
                             start.Environment["FRONTLINE_ADDON_ERROR_FILE"] = errorFile;
+                            start.Environment["FRONTLINE_ADDON_STAGE_DIR"] = workspace;
                             using var installer = Process.Start(start)
                                 ?? throw new InvalidOperationException("Unable to start the installer.");
                             ChildProcessJob.Attach(installer);
-                            await installer.WaitForExitAsync();
+                            await WaitForAddonProcessAsync(installer, download!.Token);
                             if (installer.ExitCode != 0 || !JapanesePackInstalled())
                             {
                                 string detail = File.Exists(errorFile)
@@ -160,13 +198,19 @@ namespace FrontLineOverlay
                         }
                         finally
                         {
-                            try { File.Delete(errorFile); }
-                            catch (IOException ex) { CrashReporter.Log(ex, "JapaneseAddonCleanup"); }
+                            try { Directory.Delete(workspace, recursive: true); }
+                            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException) { CrashReporter.Log(ex, "JapaneseAddonCleanup"); }
                         }
                     }
                     if (!removing && _settingsPreferredTranslation == "romanized" && currentAppStatus == "SYNCED")
                         RequestSettingsTranslation(LblArtistName.Text, LblSongTitle.Text);
                     Refresh();
+                }
+                catch (OperationCanceledException)
+                {
+                    Refresh();
+                    if (!JapanesePackInstalled())
+                        status.Text = SettingsText("Download canceled.", "Download cancelado.", "Descarga cancelada.", "Unduhan dibatalkan.");
                 }
                 catch (Exception error)
                 {
@@ -177,21 +221,45 @@ namespace FrontLineOverlay
                 }
                 finally
                 {
+                    download?.Dispose();
+                    download = null;
                     _addonsBusy = false;
+                    SetAddonActivity(progress, false);
                     close.IsEnabled = true;
                     action.IsEnabled = true;
                 }
             };
             Refresh();
+            AddOfflineTranslationCard(body, close);
             if (WindowState == WindowState.Normal)
             {
                 _preAddonsSize = new Size(Width, Height);
-                Width = Math.Max(Width, Math.Min(760, SystemParameters.WorkArea.Width));
+                Width = Math.Max(Width, Math.Min(865, SystemParameters.WorkArea.Width));
                 Height = Math.Max(Height, Math.Min(470, SystemParameters.WorkArea.Height));
             }
-            AddonsPageContent.Content = panel;
+            var background = (TryFindResource("Settings.Panel") as SolidColorBrush)?.Color ?? Color.FromRgb(20, 21, 27);
+            AddonsPage.Background = new SolidColorBrush(Color.FromRgb(background.R, background.G, background.B));
+            AddonsPageContent.Content = layout;
             AddonsPage.Visibility = Visibility.Visible;
             AddonsPage.Focus();
+        }
+
+        private static async Task WaitForAddonProcessAsync(Process process, CancellationToken cancellationToken)
+        {
+            try
+            {
+                await process.WaitForExitAsync(cancellationToken);
+            }
+            catch (OperationCanceledException)
+            {
+                if (!process.HasExited)
+                {
+                    try { process.Kill(entireProcessTree: true); }
+                    catch (InvalidOperationException) when (process.HasExited) { }
+                }
+                await process.WaitForExitAsync();
+                if (process.ExitCode != 0) throw;
+            }
         }
 
         private async Task RemoveJapaneseDictionaryAsync()
@@ -274,10 +342,10 @@ namespace FrontLineOverlay
                         SettingsText("Japanese romanization", "Romanização japonesa",
                             "Romanización japonesa", "Romanisasi bahasa Jepang"),
                         SettingsText(
-                            "Basic romanization is active. For better Japanese readings, download the dictionary in Settings → General → Manage add-ons.",
-                            "A romanização básica está ativa. Para melhorar as leituras em japonês, baixe o dicionário em Configurações → Geral → Gerenciar complementos.",
-                            "La romanización básica está activa. Descarga el diccionario en Ajustes → General → Gestionar complementos.",
-                            "Romanisasi dasar aktif. Unduh kamus di Pengaturan → Umum → Kelola add-on."),
+                            "Basic romanization is active. For better Japanese readings, download the dictionary in Settings → Translation → Manage add-ons.",
+                            "A romanização básica está ativa. Para melhorar as leituras em japonês, baixe o dicionário em Configurações → Tradução → Gerenciar complementos.",
+                            "La romanización básica está activa. Descarga el diccionario en Ajustes → Traducción → Gestionar complementos.",
+                            "Romanisasi dasar aktif. Unduh kamus di Pengaturan → Terjemahan → Kelola add-on."),
                         SettingsText("Got it", "Ciente", "Entendido", "Mengerti"), "", showCancel: false);
                     if (ChkHideJapaneseNotice.IsChecked == true)
                         AppSettings.SetBool(JapaneseNoticeSetting, true);
@@ -287,6 +355,19 @@ namespace FrontLineOverlay
                     ChkHideJapaneseNotice.Visibility = Visibility.Collapsed;
                 }
             }));
+        }
+
+        private static ProgressBar AddonActivityBar() => new()
+        {
+            Height = 4, Margin = new Thickness(0, 7, 0, 4),
+            Foreground = new SolidColorBrush(Color.FromRgb(169, 137, 224)),
+            Visibility = Visibility.Collapsed
+        };
+
+        private static void SetAddonActivity(ProgressBar bar, bool active)
+        {
+            bar.IsIndeterminate = active;
+            bar.Visibility = active ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void CloseAddonsPage()
