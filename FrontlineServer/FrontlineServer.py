@@ -1,4 +1,4 @@
-﻿"""
+"""
 FrontlineServer entrypoint.
 
 Startup order matters here:
@@ -15,6 +15,27 @@ Startup order matters here:
 
 import os
 import sys
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] in (
+    "--offline-addons", "--offline-translate",
+):
+    try:
+        from engine.offline_translation import command
+
+        command(sys.argv[1], sys.argv[2:])
+    except Exception as error:
+        result_file = os.environ.get("FRONTLINE_ADDON_RESULT_FILE")
+        if sys.argv[1] == "--offline-addons" and result_file:
+            from pathlib import Path
+
+            Path(result_file).write_text(f"{type(error).__name__}: {error}", encoding="utf-8")
+        elif sys.argv[1] == "--offline-translate" and len(sys.argv) > 3:
+            from pathlib import Path
+            from traceback import format_exc
+
+            Path(sys.argv[3]).write_text(format_exc(), encoding="utf-8")
+        sys.exit(1)
+    sys.exit(0)
 
 from engine.crash_guard import instalar as instalar_crash_guard
 
@@ -59,7 +80,7 @@ logging.basicConfig(
     ],
 )
 logging.info(f"Log started at: {LOG_FILE}")
-logging.info("Server build: translation with 3 parallel sources (google/mymemory/translators-bing) v1")
+logging.info("Server build: Argos offline translation with MyMemory fallback")
 
 if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] in (
     "--install-japanese-pack", "--validate-japanese-pack"
@@ -135,7 +156,7 @@ instalar_crash_guard()
 
 
 if __name__ == "__main__":
-    # python -m PyInstaller --noconfirm --clean --onedir --windowed --collect-all anyascii --collect-all winrt --collect-all opencc --collect-all pypinyin --collect-all koroman --collect-all cutlet --collect-all fugashi --hidden-import pythainlp.tokenize.newmm --hidden-import pythainlp.transliterate.royin --add-data ('{0}:pythainlp/corpus' -f (Join-Path (python -c "import pythainlp; print(pythainlp.__path__[0])") 'corpus\words_th.txt')) --exclude-module unidic_lite --hidden-import winrt.windows.media.control --hidden-import winrt.windows.storage.streams --hidden-import crash_guard --hidden-import media_session --hidden-import music_manager --hidden-import audio_capture --hidden-import recognition --hidden-import lyrics --hidden-import cover_art --hidden-import translation --hidden-import smtc_policy --hidden-import tuning --hidden-import task_utils --hidden-import workers --hidden-import ws_server --name FrontlineServer --distpath dist-sem-yamnet --workpath build-sem-yamnet --specpath build-sem-yamnet FrontlineServer.py
+    # pyinstaller --noconfirm --onedir --windowed --collect-all anyascii --collect-all winrt --hidden-import winrt.windows.media.control --hidden-import winrt.windows.storage.streams --hidden-import crash_guard --hidden-import media_session --hidden-import music_manager --hidden-import audio_capture --hidden-import recognition --hidden-import lyrics --hidden-import cover_art --hidden-import translation --hidden-import smtc_policy --hidden-import tuning --hidden-import task_utils --hidden-import workers --hidden-import ws_server --name "FrontlineServer" "FrontlineServer.py"
     server_port = 8765
     
     if len(sys.argv) > 2 and sys.platform == "win32":

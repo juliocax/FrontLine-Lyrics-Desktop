@@ -10,8 +10,11 @@ per-language cache, and the fallback to original text for failed lines.
 
 import asyncio
 import logging
+import re
 import threading
+import time
 import unicodedata
+from collections import Counter
 from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Tuple
@@ -19,12 +22,52 @@ from typing import Optional, Tuple
 from anyascii import anyascii
 from engine.japanese_pack import create_converter, installed_dictionary
 from deep_translator import MyMemoryTranslator
+from deep_translator.constants import MY_MEMORY_LANGUAGES_TO_CODES
+from langdetect import DetectorFactory, detect, detect_langs
+from langdetect.lang_detect_exception import LangDetectException
 
 LINE_DISPATCH_EXECUTOR = ThreadPoolExecutor(max_workers=2, thread_name_prefix="translate-mymemory")
+_mymemory_lock = threading.Lock()
+_mymemory_next_request = 0.0
+_mymemory_blocked_until = 0.0
 
-MYMEMORY_TARGET_LANGUAGES = {"pt": "pt-BR", "es": "es-ES", "fr": "fr-FR", "en": "en-GB"}
-
-MYMEMORY_SOURCE_LANGUAGE = "en-GB"
+MYMEMORY_TARGET_LANGUAGES = {
+    "en": "en-GB",
+    "pt": "pt-BR",
+    "pb": "pt-BR",
+    "pt-pt": "pt-PT",
+    "zh": "zh-CN",
+    "zt": "zh-TW",
+    "es": "es-ES",
+    "fr": "fr-FR",
+    "de": "de-DE",
+    "it": "it-IT",
+    "nl": "nl-NL",
+    "id": "id-ID",
+    "ja": "ja-JP",
+    "ko": "ko-KR",
+    "zh-cn": "zh-CN",
+    "zh-tw": "zh-TW",
+    "th": "th-TH",
+    "ar": "ar-SA",
+    "he": "he-IL",
+    "el": "el-GR",
+    "hi": "hi-IN",
+    "bn": "bn-IN",
+    "fa": "fa-IR",
+    "ru": "ru-RU",
+    "uk": "uk-UA",
+    "pl": "pl-PL",
+    "tr": "tr-TR",
+    "vi": "vi-VN",
+    "sv": "sv-SE",
+    "fi": "fi-FI",
+    "ro": "ro-RO",
+    "da": "da-DK",
+    "cs": "cs-CZ",
+    "hu": "hu-HU",
+}
+DetectorFactory.seed = 0
 
 
 def _short_provider_error(error: Exception) -> str:
@@ -46,6 +89,13 @@ def looks_like_bogus_translation(candidate: str, original_text: str) -> bool:
 
     if stripped in _HTTP_ERROR_CODE_STRINGS and original_stripped not in _HTTP_ERROR_CODE_STRINGS:
         return True
+
+    if any(char.isalpha() for char in original_stripped):
+        if not any(char.isalnum() for char in stripped):
+            return True
+        if re.match(r"^(?:tradução|translation)(?:\s+(?:e|and)\s+(?:sincronia|sync))?\s*:", stripped, re.I):
+            if not re.match(r"^(?:tradução|translation)\b", original_stripped, re.I):
+                return True
 
     low = stripped.lower()
     if any(marker in low for marker in _ERROR_PAGE_MARKERS):
@@ -154,6 +204,33 @@ def _korean_converter():
         return None
 
 
+_THAI_GROUPS = {
+    "เพื่อนเล่น": ("เพื่อน", "เล่น"),
+    "เล่นเพื่อน": ("เล่น", "เพื่อน"),
+}
+
+
+def _is_thai_letter(char: str) -> bool:
+    return "\u0e00" <= char <= "\u0e7f" and unicodedata.category(char)[0] in "LM"
+
+
+@lru_cache(maxsize=1)
+def _thai_converter():
+    try:
+        from pythainlp.tokenize import word_tokenize
+        from pythainlp.transliterate import romanize
+    except (ImportError, OSError) as error:
+        logging.warning("PyThaiNLP indisponível: %s", error)
+        return None
+
+    def convert(text: str) -> str:
+        tokens = word_tokenize(text, engine="newmm", keep_whitespace=False)
+        words = (word for token in tokens for word in _THAI_GROUPS.get(token, (token,)))
+        return " ".join(romanize(word, engine="royin") or word for word in words)
+
+    return convert
+
+
 def romanize_line(text: str, *, japanese: Optional[bool] = None) -> str:
     """Preserve Latin text and use kana to distinguish Japanese from Mandarin."""
     if japanese is None:
@@ -165,6 +242,20 @@ def romanize_line(text: str, *, japanese: Optional[bool] = None) -> str:
         index = 0
         while index < len(text):
             char = text[index]
+            if _is_thai_letter(char):
+                end = index + 1
+                while end < len(text) and _is_thai_letter(text[end]):
+                    end += 1
+                original = text[index:end]
+                thai = _thai_converter()
+                converted = thai(original) if thai else anyascii(original)
+                if index and text[index - 1].isalnum():
+                    parts.append(" ")
+                parts.append(converted or original)
+                if end < len(text) and text[end].isalnum():
+                    parts.append(" ")
+                index = end
+                continue
             if _is_hangul(char):
                 end = index + 1
                 while end < len(text) and _is_hangul(text[end]):
@@ -208,7 +299,145 @@ def romanize_line(text: str, *, japanese: Optional[bool] = None) -> str:
         return text
 
 
-def translate_line_raced(text: str, target_language: str) -> Tuple[Optional[str], Optional[str]]:
+_LATIN_WRITING_LANGUAGES = frozenset("""
+az ca cs da de en eo es et eu fi fr ga gl hu id it lt lv ms nb nl pb pl pt pt-pt
+ro sk sl sq sv sw tl tr vi
+""".split())
+
+
+def uses_latin_writing(code: Optional[str]) -> bool:
+    return code in _LATIN_WRITING_LANGUAGES
+
+
+def has_non_latin_letters(text: str) -> bool:
+    return any(char.isalpha() and not unicodedata.name(char, "").startswith("LATIN ")
+               for char in text)
+
+
+_SCRIPT_DEFAULTS = {
+    "kana": "ja", "hangul": "ko", "thai": "th", "hebrew": "he",
+    "greek": "el",
+}
+_LANGUAGE_SCRIPTS = {
+    "ja": {"kana", "han"}, "ko": {"hangul", "han"},
+    "zh": {"han"}, "zt": {"han"}, "zh-cn": {"han"}, "zh-tw": {"han"},
+    "th": {"thai"}, "he": {"hebrew"}, "el": {"greek"}, "bn": {"bengali"},
+    "ar": {"arabic"}, "fa": {"arabic"}, "ur": {"arabic"},
+    "hi": {"devanagari"}, "ru": {"cyrillic"}, "uk": {"cyrillic"},
+    "bg": {"cyrillic"}, "ky": {"cyrillic"},
+}
+
+
+def _letter_script(char):
+    if _is_kana(char):
+        return "kana"
+    if _is_han(char):
+        return "han"
+    if _is_hangul(char):
+        return "hangul"
+    return unicodedata.name(char, "").split(" ", 1)[0].lower()
+
+
+def classify_lyric_sources(lines, selected=None):
+    """Group verses by their dominant script, applying hints only where compatible."""
+    by_script = {}
+    for line in dict.fromkeys(text.strip() for text in lines if text and text.strip()):
+        counts = Counter(_letter_script(ch) for ch in line if ch.isalpha())
+        if not counts:
+            continue
+        # Kanji beside kana belongs to the Japanese phrase.
+        if counts["kana"]:
+            counts["kana"] += counts.pop("han", 0)
+        script = counts.most_common(1)[0][0]
+        by_script.setdefault(script, []).append(line)
+
+    def compatible(code, script):
+        if script == "latin":
+            return uses_latin_writing(code)
+        return script in _LANGUAGE_SCRIPTS.get(code, ())
+
+    groups = {}
+    for script, verses in by_script.items():
+        if compatible(selected, script):
+            source = selected
+        elif script == "han" and "kana" in by_script:
+            source = "ja"
+        elif script in _SCRIPT_DEFAULTS:
+            source = _SCRIPT_DEFAULTS[script]
+        else:
+            detected = _confident_script_language(verses, script)
+            source = detected if compatible(detected, script) else None
+        groups.setdefault(source, []).extend(verses)
+    return groups
+
+
+def _confident_script_language(verses, script):
+    text = " ".join(verses)[:12000]
+    if sum(char.isalpha() for char in text) < 24:
+        return None
+    if script == "latin":
+        words = set(re.findall(r"[^\W\d_]+", text.casefold()))
+        if len(words) < 7:
+            return None
+    if script not in {"latin", "han", "bengali", "arabic", "devanagari", "cyrillic"}:
+        return None
+    try:
+        best, *others = detect_langs(text)
+    except (LangDetectException, ValueError):
+        return None
+    if best.prob < 0.95 or (others and best.prob - others[0].prob < 0.80):
+        return None
+    return best.lang
+
+
+def detect_lyrics_code(lines) -> Optional[str]:
+    """Detect the language of the entire lyric."""
+
+    text = " ".join(dict.fromkeys(line.strip() for line in lines if line and line.strip()))
+    if not text:
+        return None
+    try:
+        return detect(text[:12000])
+    except LangDetectException:
+        return None
+
+def mymemory_locale(code: Optional[str]) -> Optional[str]:
+    if not code:
+        return None
+    preferred = MYMEMORY_TARGET_LANGUAGES.get(code)
+    if preferred:
+        return preferred
+    return next((locale for locale in MY_MEMORY_LANGUAGES_TO_CODES.values()
+                 if locale.split("-")[0].lower() == code), None)
+
+
+def detect_lyrics_language(lines) -> Optional[str]:
+    return mymemory_locale(detect_lyrics_code(lines))
+
+
+def _translate_with_mymemory(text, source, target):
+    global _mymemory_next_request, _mymemory_blocked_until
+    with _mymemory_lock:
+        now = time.monotonic()
+        if now < _mymemory_blocked_until:
+            return None
+        delay = _mymemory_next_request - now
+        if delay > 0:
+            time.sleep(delay)
+        _mymemory_next_request = time.monotonic() + 0.35
+        try:
+            return MyMemoryTranslator(source=source, target=target).translate(text)
+        except Exception as error:
+            message = str(error).lower()
+            if (type(error).__name__ == "TooManyRequests" or "too many requests" in message
+                    or "quota" in message or "429" in message):
+                _mymemory_blocked_until = time.monotonic() + 60
+                logging.warning("MyMemory limit reached; pausing requests for 60 seconds.")
+                return None
+            raise
+
+
+def translate_line_raced(text: str, target_language: str, source_language: Optional[str] = None) -> Tuple[Optional[str], Optional[str]]:
     """Translate a line using MyMemory only.
 
     Keep the original function signature because MusicManager imports it in
@@ -218,16 +447,18 @@ def translate_line_raced(text: str, target_language: str) -> Tuple[Optional[str]
         return text, "mymemory"
 
     my_target = MYMEMORY_TARGET_LANGUAGES.get(target_language.lower(), target_language)
+    source_language = source_language or detect_lyrics_language((text,))
+    if source_language is None:
+        return None, None
+    if source_language == my_target:
+        return text, "original"
     try:
-        result = MyMemoryTranslator(
-            source=MYMEMORY_SOURCE_LANGUAGE, target=my_target
-        ).translate(text)
+        result = _translate_with_mymemory(text, source_language, my_target)
     except Exception as error:
         logging.warning("MyMemory falhou: %s", _short_provider_error(error))
         return None, None
 
     if not result or not str(result).strip():
-        logging.warning("MyMemory retornou tradução vazia.")
         return None, None
 
     candidate = str(result).strip()
@@ -242,7 +473,13 @@ async def apply_translation_in_background(manager, target_lang: str):
     WebSocket listener. Used both when the user picks a language button and
     when fresh lyrics are loaded (Auto or manual) and need the "sticky"
     preferred language re-applied."""
+    manager._background_translation_count = getattr(manager, "_background_translation_count", 0) + 1
     manager.is_translating = True
-    ok = await asyncio.to_thread(manager.apply_language, target_lang)
-    manager.last_translation_error = None if ok else target_lang
-    manager.is_translating = False
+    manager.last_translation_error = None
+    ok = False
+    try:
+        ok = await asyncio.to_thread(manager.apply_language, target_lang)
+    finally:
+        manager.last_translation_error = None if ok else target_lang
+        manager._background_translation_count -= 1
+        manager.is_translating = manager._background_translation_count > 0

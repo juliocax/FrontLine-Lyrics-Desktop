@@ -48,7 +48,8 @@ def install(validate):
     if installed_dictionary():
         return
     destination.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=destination.parent) as temporary:
+    stage_dir = os.environ.get("FRONTLINE_ADDON_STAGE_DIR") or destination.parent
+    with tempfile.TemporaryDirectory(dir=stage_dir) as temporary:
         root = Path(temporary)
         archive = root / "unidic.tar.gz"
         staged = root / "dictionary"
