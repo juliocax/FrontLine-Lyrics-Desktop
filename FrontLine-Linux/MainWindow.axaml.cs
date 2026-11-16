@@ -45,6 +45,11 @@ public partial class MainWindow : Window
         public bool ShowOriginal { get; set; }
         public string Language { get; set; } = "en";
         public string Translation { get; set; } = "original";
+        public string? BaseLyricsMode { get; set; }
+        public string? TranslationTarget { get; set; }
+        public string? TranslationSource { get; set; }
+        public bool? TranslateEnabled { get; set; }
+        public string? AudioOutput { get; set; }
     }
     private static string PreferencesFile => Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -64,6 +69,11 @@ public partial class MainWindow : Window
                 ShowOriginal = _showOriginal,
                 Language = _appLanguage,
                 Translation = _preferredTranslation,
+                BaseLyricsMode = _baseLyricsMode,
+                TranslationTarget = _translationTarget,
+                TranslationSource = _sourcePreferenceLoaded ? _translationSource ?? "auto" : null,
+                TranslateEnabled = _translateEnabled,
+                AudioOutput = _audioOutput,
                 LyricFont = _lyricFont,
                 Bold = _lyricBold,
                 Italic = _lyricItalic
@@ -93,6 +103,7 @@ public partial class MainWindow : Window
                 if (item.Tag?.ToString() == settings.LyricColor) { LyricColorCombo.SelectedItem = item; break; }
             _lyricAlignment = settings.Alignment is "left" or "center" or "right" ? settings.Alignment : "center";
             ApplyLyricAlignment();
+            _audioOutput = string.IsNullOrWhiteSpace(settings.AudioOutput) ? null : settings.AudioOutput;
             _showOriginal = settings.ShowOriginal;
             ShowOriginalToggle.IsChecked = _showOriginal;
             _lyricFont = string.IsNullOrWhiteSpace(settings.LyricFont) ? "Poppins" : settings.LyricFont;
@@ -106,9 +117,19 @@ public partial class MainWindow : Window
             _updatingSettings = true;
             foreach (var item in AppLanguageCombo.Items.OfType<ComboBoxItem>())
                 if (item.Tag?.ToString() == _appLanguage) { AppLanguageCombo.SelectedItem = item; break; }
-            _preferredTranslation = settings.Translation is "original" or "romanized" or "en" or "es" or "fr" or "pt"
-                ? settings.Translation : "original";
-            SelectComboTag(TranslationCombo, _preferredTranslation);
+            _baseLyricsMode = (settings.BaseLyricsMode ?? settings.Translation) == "romanized"
+                ? "romanized" : "original";
+            _translateEnabled = settings.TranslateEnabled ??
+                (!string.IsNullOrWhiteSpace(settings.Translation) && settings.Translation is not ("original" or "romanized"));
+            var savedTarget = settings.TranslationTarget ?? settings.Translation;
+            _translationTarget = System.Text.RegularExpressions.Regex.IsMatch(savedTarget ?? "", "^[a-z][a-z0-9-]{1,19}$")
+                && savedTarget is not ("original" or "romanized") ? savedTarget! : "en";
+            _sourcePreferenceLoaded = settings.TranslationSource is not null;
+            var savedSource = settings.TranslationSource;
+            _translationSource = savedSource != "auto" &&
+                System.Text.RegularExpressions.Regex.IsMatch(savedSource ?? "", "^[a-z][a-z0-9-]{1,19}$")
+                ? savedSource : null;
+            _preferredTranslation = EffectiveLyricsMode;
             _updatingSettings = false;
             _loadingPreferences = false;
             FontSizeSlider_Changed(this, null!);
@@ -149,10 +170,10 @@ public partial class MainWindow : Window
     private bool _updatingSettings;
     private string? _pendingTranslation;
     private bool _translationStarted;
+    private bool _serverIsTranslating;
     private DateTime _translationRequestedUtc;
     private string? _translationUiError;
-    private static readonly string ReleaseNotesUrl = "https://buymeacoffee.com/juliocax/frontline-lyrics-linux-1-0-0";
-    private static readonly string HelpUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_linux_v1.0.0.html";
+    private static readonly string HelpUrl = "https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_linux_v1.1.0.html";
     private static readonly HttpClient CoverHttp = new() { Timeout = TimeSpan.FromSeconds(8) };
     private string _lastCover = "";
     private int _coverRequestVersion;
@@ -250,6 +271,18 @@ public partial class MainWindow : Window
             using var doc = JsonDocument.Parse(stream.ToArray());
             if (doc.RootElement.ValueKind != JsonValueKind.Object) continue;
             var root = doc.RootElement;
+            if (root.TryGetProperty("audio_outputs", out var outputs))
+            {
+                var devices = ReadAudioOutputs(outputs);
+                bool failed = root.TryGetProperty("audio_outputs_error", out var problem)
+                    && problem.ValueKind == JsonValueKind.True;
+                Dispatcher.UIThread.Post(() => UpdateAudioOutputs(devices, failed));
+                continue;
+            }
+            bool audioMeterActive = root.TryGetProperty("audio_meter_active", out var activeMeter)
+                && activeMeter.ValueKind == JsonValueKind.True;
+            double audioMeterLevel = root.TryGetProperty("audio_meter_level", out var meter) &&
+                meter.ValueKind == JsonValueKind.Number && meter.TryGetDouble(out var level) ? level : 0;
             var status = ReadString(root, "status") ?? "IDLE";
             var lyricsServiceStatus = ReadString(root, "lyrics_service_status") ?? "ok";
             var lyricsLookupNotice = ReadString(root, "lyrics_lookup_notice");
@@ -270,6 +303,11 @@ public partial class MainWindow : Window
             var playerClock = root.TryGetProperty("player_clock", out var clockValue) && clockValue.ValueKind == JsonValueKind.True;
             var translatedActive = root.TryGetProperty("is_translated_active", out var activeElement) && activeElement.ValueKind == JsonValueKind.True;
             var originalCurrent = ReadString(root, "current_lyrics_original") ?? "";
+            var romanizedCurrent = ReadString(root, "current_lyrics_romanized") ?? "";
+            var sourceNotice = root.TryGetProperty("translation_source_notice", out var notice)
+                ? notice.Clone() : default;
+            var japaneseMissing = root.TryGetProperty("japanese_pack_missing", out var dictionary)
+                && dictionary.ValueKind == JsonValueKind.True;
             List<(double timestamp, string text)>? lines = null;
             if (root.TryGetProperty("full_lyrics", out var full) && full.ValueKind == JsonValueKind.Array)
             {
@@ -288,12 +326,16 @@ public partial class MainWindow : Window
                 _playerClock = playerClock;
                 _translatedActive = translatedActive;
                 _originalCurrent = originalCurrent;
+                _romanizedCurrent = romanizedCurrent;
+                _translationSourceNotice = sourceNotice;
+                _japanesePackMissing = japaneseMissing;
                 if (lines is not null)
                 {
                     _lyricTimes.Clear(); _lyricTexts.Clear();
                     foreach (var line in lines) { _lyricTimes.Add(line.timestamp); _lyricTexts.Add(line.text); }
                 }
                 _status = status;
+                UpdateAudioMeter(audioMeterActive, audioMeterLevel);
                 _lyricsServiceStatus = lyricsServiceStatus;
                 _lyricsLookupNotice = lyricsLookupNotice;
                 _recognitionFailure = recognitionFailure;
@@ -304,6 +346,7 @@ public partial class MainWindow : Window
                 UpdateRecognitionNotice();
 
                 _currentTranslation = currentLang;
+                _serverIsTranslating = isTranslating;
                 if (status != "SYNCED")
                 {
                     _pendingTranslation = null;
@@ -323,13 +366,6 @@ public partial class MainWindow : Window
                         _translationStarted = false;
                     }
                 }
-                if (TranslationCombo?.SelectedItem is ComboBoxItem selected &&
-                    selected.Tag?.ToString() != _preferredTranslation)
-                {
-                    _updatingSettings = true;
-                    SelectComboTag(TranslationCombo, _preferredTranslation);
-                    _updatingSettings = false;
-                }
                 bool hasLyrics = status == "SYNCED" &&
                     (!string.IsNullOrWhiteSpace(current) || lines is { Count: > 0 });
                 if (hasLyrics && _pendingTranslation is null && _preferredTranslation != currentLang)
@@ -342,7 +378,7 @@ public partial class MainWindow : Window
                         _pendingTranslation = _preferredTranslation;
                         _translationStarted = false;
                         _translationRequestedUtc = DateTime.UtcNow;
-                        _ = SendAsync(new { action = "TRANSLATE", lang = _preferredTranslation });
+                        _ = SendAsync(new { action = "TRANSLATE", lang = _preferredTranslation, source = _translationSource });
                     }
                 }
                 UpdateTranslationFeedback();
@@ -374,6 +410,17 @@ public partial class MainWindow : Window
     private void SetConnected(bool connected)
     {
         _connected = connected;
+        if (!connected)
+        {
+            _autoTranslationKey = "";
+            _pendingTranslation = null;
+            _translationStarted = false;
+        }
+        AudioOutputCombo.IsEnabled = AudioOutputRefreshButton.IsEnabled = connected;
+        if (connected) _ = RestoreAudioOutputAsync();
+        else UpdateAudioMeter(false, 0);
+        ManageTranslationAddonsButton.IsEnabled = connected;
+        if (connected) _ = RefreshTranslationAddonsAsync();
         MenuListenButton.IsEnabled = connected;
         ListenButton.IsEnabled = connected;
         ClearButton.IsEnabled = connected;
@@ -441,6 +488,13 @@ public partial class MainWindow : Window
 
     private string LocalizedNotFoundMessage() => _recognitionFailure switch
     {
+        "audio_capture_error" => _appLanguage switch
+        {
+            "pt" => "Não foi possível capturar o áudio do sistema. Verifique a saída de áudio e as permissões.",
+            "es" => "No se pudo capturar el audio del sistema. Comprueba la salida de audio y los permisos.",
+            "id" => "Audio sistem tidak dapat direkam. Periksa keluaran audio dan izin.",
+            _ => "Couldn't capture system audio. Check the audio output and permissions."
+        },
         "connection_error" => _appLanguage switch
         {
             "pt" => "Não foi possível acessar o serviço de reconhecimento. Verifique sua conexão.",
@@ -539,8 +593,11 @@ public partial class MainWindow : Window
         Next2Text.IsVisible = _visibleLineCount == 5;
         Previous2Text.Text = _currentIndex >= 2 && _currentIndex - 2 < _lyricTexts.Count ? _lyricTexts[_currentIndex - 2] : "";
         Next2Text.Text = _currentIndex >= 0 && _currentIndex + 2 < _lyricTexts.Count ? _lyricTexts[_currentIndex + 2] : "";
-        OriginalText.Text = _originalCurrent;
-        OriginalText.IsVisible = _showOriginal && _translatedActive && !string.IsNullOrWhiteSpace(_originalCurrent);
+        var secondary = _baseLyricsMode == "romanized" && !string.IsNullOrWhiteSpace(_romanizedCurrent)
+            ? _romanizedCurrent : _originalCurrent;
+        OriginalText.Text = secondary;
+        OriginalText.IsVisible = _showOriginal && _translateEnabled && _translatedActive
+            && _currentTranslation is not ("original" or "romanized") && !string.IsNullOrWhiteSpace(secondary);
     }
 
     private void RefreshSegmentSelections()
@@ -548,7 +605,6 @@ public partial class MainWindow : Window
         if (LinesSegment is null) return;
         HighlightSegment(LinesSegment, _visibleLineCount.ToString());
         HighlightSegment(AlignmentSegment, _lyricAlignment);
-        HighlightSegment(TranslationSegment, _preferredTranslation);
         HighlightSegment(LanguageSegment, _appLanguage);
     }
     private static void HighlightSegment(Panel panel, string chosen)
@@ -592,11 +648,6 @@ public partial class MainWindow : Window
             item.TextAlignment = alignment;
     }
 
-    private void TranslationChoice_Click(object? sender, RoutedEventArgs e)
-    {
-        if (sender is Button button) SelectComboTag(TranslationCombo, button.Tag?.ToString() ?? "original");
-        RefreshSegmentSelections();
-    }
     private void LanguageChoice_Click(object? sender, RoutedEventArgs e)
     {
         if (sender is Button button) SelectComboTag(AppLanguageCombo, button.Tag?.ToString() ?? "en");
@@ -970,7 +1021,12 @@ public partial class MainWindow : Window
     }
     private void SettingsLyricsTab_Click(object? sender, RoutedEventArgs e) => ShowSettingsTab("lyrics");
     private void SettingsTranslateTab_Click(object? sender, RoutedEventArgs e) => ShowSettingsTab("translate");
-    private void SettingsGeneralTab_Click(object? sender, RoutedEventArgs e) { ShowSettingsTab("general"); _ = RefreshSnapPermissionsStatusAsync(); }
+    private void SettingsGeneralTab_Click(object? sender, RoutedEventArgs e)
+    {
+        ShowSettingsTab("general");
+        _ = RefreshSnapPermissionsStatusAsync();
+        _ = SendAsync(new { action = "AUDIO_OUTPUTS" });
+    }
     private void FontSizeSlider_Changed(object? sender, Avalonia.Controls.Primitives.RangeBaseValueChangedEventArgs e)
     {
         if (CurrentText is null || FontSizeSlider is null) return;
@@ -1057,65 +1113,29 @@ public partial class MainWindow : Window
         SavePreferences();
     }
 
-    private void TranslationCombo_Changed(object? sender, SelectionChangedEventArgs e)
-    {
-        if (_updatingSettings || TranslationCombo?.SelectedItem is not ComboBoxItem item) return;
-        var lang = item.Tag?.ToString() ?? "original";
-        if (_preferredTranslation == lang && _pendingTranslation == lang) return;
-        _preferredTranslation = lang;
-        _autoTranslationKey = "";
-        _translationUiError = null;
-        _pendingTranslation = null;
-        _translationStarted = false;
-        SavePreferences();
-        RefreshSegmentSelections();
-        if (_status != "SYNCED" ||
-            (_lyricTexts.Count == 0 && string.IsNullOrWhiteSpace(CurrentText.Text)))
-        {
-            UpdateTranslationFeedback();
-            return;
-        }
-        _autoTranslationKey = $"{ArtistText.Text?.Trim()}|{SongText.Text?.Trim()}|{lang}";
-        if (_currentTranslation != lang)
-        {
-            _pendingTranslation = lang;
-            _translationRequestedUtc = DateTime.UtcNow;
-            _ = SendAsync(new { action = "TRANSLATE", lang });
-        }
-        UpdateTranslationFeedback();
-    }
     private string LocalizedTranslationProgress()
     {
-        var name = _pendingTranslation switch
-        {
-            "pt" => "Português", "fr" => "Français", "es" => "Español",
-            "en" => "English", "romanized" => "Romanization", _ => _pendingTranslation ?? ""
-        };
-        return _appLanguage switch
-        {
-            "pt" => $"Traduzindo para {name}...",
-            "es" => $"Traduciendo a {name}...",
-            "id" => $"Menerjemahkan ke {name}...",
-            _ => $"Translating to {name}..."
-        };
+        var name = TranslationTargetName(_pendingTranslation ?? _translationTarget);
+        return DialogUi.L(_appLanguage, $"Translating to {name}...", $"Traduzindo para {name}...",
+                          $"Traduciendo a {name}...", $"Menerjemahkan ke {name}...");
     }
 
     private void UpdateTranslationFeedback()
     {
         if (TranslationNotice is null) return;
-        var pending = _pendingTranslation is not null;
-        var message = pending ? LocalizedTranslationProgress() : _translationUiError is null ? "" :
-            _appLanguage switch
-            {
-                "pt" => "Não foi possível traduzir. A letra anterior foi mantida.",
-                "es" => "No fue posible traducir. Se mantuvo la letra anterior.",
-                "id" => "Terjemahan gagal. Lirik sebelumnya dipertahankan.",
-                _ => "Translation failed. Previous lyrics were kept."
-            };
-        TranslationNotice.Text = message;
-        TranslationNoticeCard.IsVisible = pending || _translationUiError is not null;
-        TranslationNotice.IsVisible = !pending && _translationUiError is not null;
-        SettingsTranslationProgress.IsVisible = pending;
+        var pending = _status == "SYNCED" && _translateEnabled && _serverIsTranslating
+            && (_pendingTranslation == _translationTarget || _currentTranslation != _translationTarget);
+        LyricsTranslationProgress.IsVisible = pending;
+        if (pending) ToolTip.SetTip(LyricsTranslationProgress, LocalizedTranslationProgress());
+        UpdateAddonNotices();
+        TranslationNoticeCard.IsVisible = !pending && _translationUiError is not null;
+        TranslationNotice.Text = _appLanguage switch
+        {
+            "pt" => "Não foi possível traduzir. A letra anterior foi mantida.",
+            "es" => "No fue posible traducir. Se mantuvo la letra anterior.",
+            "id" => "Terjemahan gagal. Lirik sebelumnya dipertahankan.",
+            _ => "Translation failed. Previous lyrics were kept."
+        };
     }
 
     private void AppLanguageCombo_Changed(object? sender, SelectionChangedEventArgs e)
@@ -1152,8 +1172,6 @@ public partial class MainWindow : Window
         }
         foreach (var button in LinesSegment.Children.OfType<Button>())
             ToolTip.SetTip(button, LocalizedTip("lines", _appLanguage) + ": " + button.Content);
-        foreach (var button in TranslationSegment.Children.OfType<Button>())
-            ToolTip.SetTip(button, LocalizedTip("translation", _appLanguage) + ": " + button.Content);
         foreach (var button in LanguageSegment.Children.OfType<Button>())
             ToolTip.SetTip(button, LocalizedTip("app_language", _appLanguage) + ": " + button.Content);
     }
@@ -1212,6 +1230,8 @@ public partial class MainWindow : Window
         var id = _appLanguage == "id";
         SettingsHeader.Text = pt ? "CONFIGURAÇÕES" : es ? "AJUSTES" : id ? "PENGATURAN" : "SETTINGS";
         SettingsLyricsTab.Content = pt ? "LETRAS" : es ? "LETRAS" : id ? "LIRIK" : "LYRICS";
+        ApplyTranslationOptionsLanguage();
+        ApplyAudioOptionsLanguage();
         SettingsTranslateTab.Content = pt ? "TRADUÇÃO" : es ? "TRADUCCIÓN" : id ? "TERJEMAH" : "TRANSLATION";
         SettingsGeneralTab.Content = pt ? "GERAL" : es ? "GENERAL" : id ? "UMUM" : "GENERAL";
         OpacityLabel.Text = pt ? "OPACIDADE DO FUNDO" : es ? "OPACIDAD DEL FONDO" : id ? "OPASITAS LATAR" : "BACKGROUND OPACITY";
@@ -1220,7 +1240,8 @@ public partial class MainWindow : Window
         LyricBoldToggle.Content = pt ? "Negrito" : es ? "Negrita" : id ? "Tebal" : "Bold";
         LyricItalicToggle.Content = pt ? "Itálico" : es ? "Cursiva" : id ? "Miring" : "Italic";
         ColorLabel.Text = pt ? "COR DA LETRA ATUAL" : es ? "COLOR DE LA LETRA" : id ? "WARNA LIRIK" : "CURRENT LYRIC COLOR";
-        TranslateLabel.Text = pt ? "TRADUÇÃO E ROMANIZAÇÃO" : es ? "TRADUCCIÓN Y ROMANIZACIÓN" : id ? "TERJEMAHAN DAN ROMANISASI" : "TRANSLATION AND ROMANIZATION";
+        TranslateLabel.Text = DialogUi.L(_appLanguage, "Translation and romanization", "Tradução e romanização",
+            "Traducción y romanización", "Terjemahan dan romanisasi");
         SearchTitle.Text = pt ? "BUSCA MANUAL" : es ? "BÚSQUEDA MANUAL" : id ? "PENCARIAN MANUAL" : "MANUAL SEARCH";
         SearchDescription.Text = pt ? "Encontre uma música por artista e título" : es ? "Busca por artista y título" : id ? "Cari lagu berdasarkan artis dan judul" : "Find a song by artist and title";
         SearchHistoryTitle.Text = pt ? "PESQUISAS RECENTES" : es ? "BÚSQUEDAS RECIENTES" : id ? "PENCARIAN TERAKHIR" : "RECENT SEARCHES";
@@ -1245,10 +1266,10 @@ public partial class MainWindow : Window
         LanguageLabel.Text = pt ? "IDIOMA DO APLICATIVO" : es ? "IDIOMA DE LA APLICACIÓN" : id ? "BAHASA APLIKASI" : "APP LANGUAGE";
         ShowOriginalToggle.Content = _appLanguage switch
         {
-            "pt" => "Mostrar original abaixo da tradução",
-            "es" => "Mostrar original debajo de la traducción",
-            "id" => "Tampilkan lirik asli di bawah terjemahan",
-            _ => "Show original below translation"
+            "pt" => "Mostrar letra abaixo da tradução",
+            "es" => "Mostrar letra debajo de la traducción",
+            "id" => "Tampilkan lirik di bawah terjemahan",
+            _ => "Show lyrics below translation"
         };
         EnjoyingAppLabel.Text = pt ? "Gostando do app?" : es ? "¿Te gusta la app?" : id ? "Suka aplikasi ini?" : "Enjoying the app?";
         SupportLabel.Text = pt ? "Apoiar" : es ? "Apoyar" : id ? "Dukung" : "Support";
@@ -1269,10 +1290,10 @@ public partial class MainWindow : Window
         if (_status == "NOT_FOUND") CurrentText.Text = LocalizedNotFoundMessage();
         UpdateTranslationFeedback();
         TelemetryHeading.Text = pt ? "ESTATÍSTICAS ANÔNIMAS" : es ? "ESTADÍSTICAS ANÓNIMAS" : id ? "STATISTIK ANONIM" : "ANONYMOUS SETTINGS STATISTICS";
-        TelemetryDescription.Text = pt ? "Opcional. Envia preferências, versão e idioma do sistema ao Aptabase no máximo uma vez por dia. Nunca envia músicas, letras ou pesquisas."
-            : es ? "Opcional. Envía ajustes, versión e idioma del sistema a Aptabase como máximo una vez al día. Nunca envía canciones, letras ni búsquedas."
-            : id ? "Opsional. Mengirim pengaturan, versi dan bahasa sistem ke Aptabase paling banyak sekali sehari. Tidak mengirim lagu, lirik, atau pencarian."
-            : "Optional. Sends settings, app version and system language to Aptabase at most once daily. Never sends songs, lyrics or searches.";
+        TelemetryDescription.Text = pt ? "Opcional. Envia preferências, versão e idioma do sistema ao Aptabase no máximo uma vez por dia. Em tradução, só indica se há modelos ou dicionário instalados. Nunca envia músicas, letras ou pesquisas."
+            : es ? "Opcional. Envía ajustes, versión e idioma del sistema a Aptabase como máximo una vez al día. En traducción, solo indica si hay modelos o diccionario instalados. Nunca envía canciones, letras ni búsquedas."
+            : id ? "Opsional. Mengirim pengaturan, versi dan bahasa sistem ke Aptabase paling banyak sekali sehari. Untuk terjemahan, hanya melaporkan apakah model atau kamus terpasang. Tidak mengirim lagu, lirik, atau pencarian."
+            : "Optional. Sends settings, app version and system language to Aptabase at most once daily. For translation, it only reports whether models or a dictionary are installed. Never sends songs, lyrics or searches.";
         SnapPermissionsHeader.Text = pt ? "PERMISSÕES DE MÚSICA E ÁUDIO" : es ? "PERMISOS DE MÚSICA Y AUDIO" : id ? "IZIN MUSIK DAN AUDIO" : "MUSIC AND AUDIO PERMISSIONS";
         SnapPermissionsDescription.Text = pt ? "Para reconhecer músicas pelo áudio e controlar seu reprodutor, autorize a captura de som e a conexão MPRIS do aplicativo que você usa."
             : es ? "Para reconocer canciones por audio y controlar tu reproductor, autoriza la grabación de audio y la conexión MPRIS del reproductor que uses."
@@ -1285,8 +1306,15 @@ public partial class MainWindow : Window
     private void UpdateRecognitionNotice()
     {
         if (RecognitionNotice is null) return;
-        RecognitionNotice.IsVisible = _status == "LISTENING" && _recognitionNotice == "no_match";
-        RecognitionNotice.Text = _appLanguage switch
+        RecognitionNotice.IsVisible = _status == "LISTENING"
+            && (_recognitionNotice is "no_match" or "audio_silent");
+        RecognitionNotice.Text = _recognitionNotice == "audio_silent" ? _appLanguage switch
+        {
+            "pt" => "Nenhum sinal de áudio na captura. Verifique em qual saída a música está tocando.",
+            "es" => "No se detecta señal de audio. Comprueba en qué salida se reproduce la música.",
+            "id" => "Tidak ada sinyal audio yang tertangkap. Periksa keluaran yang memutar musik.",
+            _ => "No audio signal detected. Check which output is playing the music."
+        } : _appLanguage switch
         {
             "pt" => "Dificuldade para identificar esta música. Continuando a escutar…",
             "es" => "Dificultad para identificar esta canción. Seguimos escuchando…",
@@ -1301,10 +1329,10 @@ public partial class MainWindow : Window
         var searching = _status == "SEARCHING";
         LoadingText.Text = _appLanguage switch
         {
-            "pt" => searching ? "Buscando letras..." : "Ouvindo...",
-            "es" => searching ? "Buscando letras..." : "Escuchando...",
-            "id" => searching ? "Mencari lirik..." : "Mendengarkan...",
-            _ => searching ? "Searching lyrics..." : "Listening..."
+            "pt" => searching ? "Buscando letras..." : "Ouvindo",
+            "es" => searching ? "Buscando letras..." : "Escuchando",
+            "id" => searching ? "Mencari lirik..." : "Mendengarkan",
+            _ => searching ? "Searching lyrics..." : "Listening"
         };
     }
     private static void OpenLink(string url)
@@ -1312,7 +1340,8 @@ public partial class MainWindow : Window
         try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true }); }
         catch (Exception ex) { Debug.WriteLine($"Failed to open browser: {ex.Message}"); }
     }
-    private void ReleaseNotes_Click(object? sender, RoutedEventArgs e) => OpenLink(ReleaseNotesUrl);
+    private void ReleaseNotes_Click(object? sender, RoutedEventArgs e) =>
+        OpenLink("https://buymeacoffee.com/juliocax/frontline-lyrics-linux-1-1-0");
     private void Help_Click(object? sender, RoutedEventArgs e) => OpenLink(HelpUrl);
     private void Support_Click(object? sender, RoutedEventArgs e) => OpenLink("https://buymeacoffee.com/juliocax");
     private void Feedback_Click(object? sender, RoutedEventArgs e) => OpenLink("https://forms.gle/VZnno2gPw5F1H5os5");

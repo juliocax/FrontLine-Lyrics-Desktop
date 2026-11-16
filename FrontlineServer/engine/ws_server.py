@@ -12,6 +12,8 @@ import json
 import logging
 import math
 import os
+import sys
+import subprocess
 import time
 
 import websockets
@@ -55,6 +57,12 @@ async def _start_festival(app_manager, name: str, artist: str, api_key: str, son
 
 async def ws_handler(websocket):
     """Handles WebSocket communication with the frontend overlay."""
+    path = getattr(getattr(websocket, "request", None), "path", None) or getattr(websocket, "path", "")
+    if sys.platform.startswith("linux") and path == "/addons":
+        from engine.linux_addons import handle
+
+        await handle(websocket)
+        return
     connected_clients.add(websocket)
     try:
         async for message in websocket:
@@ -62,7 +70,21 @@ async def ws_handler(websocket):
                 command = json.loads(message)
                 action = command.get("action")
 
-                if action == "LISTEN":
+                if action == "AUDIO_OUTPUTS" and sys.platform.startswith("linux") and manager.audio:
+                    try:
+                        outputs = await asyncio.to_thread(manager.audio.list_outputs)
+                    except (OSError, RuntimeError, subprocess.SubprocessError) as error:
+                        logging.warning("Linux audio outputs: %s", error)
+                        await websocket.send(json.dumps({"audio_outputs": [], "audio_outputs_error": True}))
+                    else:
+                        await websocket.send(json.dumps({"audio_outputs": outputs}))
+                elif action == "AUDIO_SELECT_OUTPUT" and sys.platform.startswith("linux") and manager.audio:
+                    output = command.get("output")
+                    if output is not None and (not isinstance(output, str) or not 0 < len(output) <= 512
+                                               or any(ord(char) < 32 for char in output)):
+                        raise ValueError("Invalid audio output")
+                    manager.audio.output = output
+                elif action == "LISTEN":
                     service_health.begin_user_attempt()
                     manager._release_auto_hold()
                     manager.reset_state()
@@ -110,13 +132,21 @@ async def ws_handler(websocket):
                     manager.overlay_font_size = max(14, manager.overlay_font_size - 2)
                 elif action == "TRANSLATE":
                     lang = command.get("lang", "original")
+                    if sys.platform.startswith("linux") and "source" in command:
+                        from engine.offline_translation import CODE
+
+                        source = command["source"]
+                        if source is not None and (not isinstance(source, str) or not CODE.fullmatch(source)):
+                            raise ValueError("Invalid translation source")
+                        manager.linux_translation_source = {"pt": "pb"}.get(source, source)
                     if lang == "original":
                         manager.preferred_language = None
                         manager.apply_language("original")
                         manager.last_translation_error = None
                     else:
                         manager.preferred_language = lang
-                        spawn_task(apply_translation_in_background(manager, lang))
+                        if not sys.platform.startswith("linux") or manager.original_lyrics:
+                            spawn_task(apply_translation_in_background(manager, lang))
                 elif action == "MANUAL_SEARCH":
                     service_health.begin_user_attempt()
                     artist = command.get("artist", "")
@@ -183,7 +213,12 @@ async def broadcast_ui_state(manager):
     while manager.server_running:
         try:
             if connected_clients:
-                websockets.broadcast(connected_clients, json.dumps(manager.get_current_state()))
+                state = manager.get_current_state()
+                if sys.platform.startswith("linux") and manager.audio:
+                    active, level = manager.audio.meter
+                    state["audio_meter_active"] = active
+                    state["audio_meter_level"] = level
+                websockets.broadcast(connected_clients, json.dumps(state))
         except Exception:
             logging.exception("broadcast_ui_state")
         await asyncio.sleep(0.1)

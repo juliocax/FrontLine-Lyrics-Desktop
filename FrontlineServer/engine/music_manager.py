@@ -17,19 +17,30 @@ Warith Adetayo's PR #2 into this headless server.
 import asyncio
 import logging
 import threading
+import sys
 import time
+from concurrent.futures import Future
 from typing import Any, Dict, List, Optional, Tuple
 
 import engine.cover_art as cover_art
 import engine.lyrics as lyrics_mod
+from engine.japanese_pack import installed_dictionary
 from engine import service_health
 import engine.tuning as tuning
 from engine.recognition import ShazamRecognizer
 from engine.media_provider import MediaSessionWatcher
 from engine.smtc_policy import sane_media_position, should_trust_smtc_clock
+from engine import offline_translation
 from engine.translation import (
     apply_translation_in_background,
+    has_japanese_kana,
+    classify_lyric_sources,
+    has_non_latin_letters,
+    looks_like_bogus_translation,
+    uses_latin_writing,
+    mymemory_locale,
     romanize_line,
+    release_japanese_converter,
     translate_line_raced,
     LINE_DISPATCH_EXECUTOR,
 )
@@ -203,7 +214,12 @@ class MusicManager:
             if self.auto_mode:
                 self._hold_current_track()
             self.reset_state()
-            self.lyrics_lookup_notice = reason
+            if reason in {"audio_capture_error", "recognition_connection_error"}:
+                self.recognition_failure_reason = (
+                    "connection_error" if reason == "recognition_connection_error" else reason
+                )
+            else:
+                self.lyrics_lookup_notice = reason
 
     # -- Track identity / cooldown helpers --
 
@@ -887,95 +903,196 @@ class MusicManager:
 
     # -- Translation orchestration (uses translation.py's line-racing primitive) --
 
+    def _translation_source(self, models):
+        if sys.platform.startswith("linux") and hasattr(self, "linux_translation_source"):
+            return self.linux_translation_source
+        return offline_translation.source_code(None, models) if models else None
+
     def generate_translation(self, target_language: str) -> bool:
         """Translates or romanizes the original lyrics."""
         if not self.original_lyrics:
             logging.warning(f"generate_translation('{target_language}') chamado sem letra original carregada.")
             return False
-        if target_language in self.cached_translations:
-            return True
+        japanese = target_language.lower() == "romanized" and self._has_japanese_lyrics()
+
+        original = self.original_lyrics
+        romanization = target_language.lower() == "romanized"
+        texts = [item["text"] for item in original]
+        argos_target = offline_translation.target_code(target_language)
+        models = {} if romanization else offline_translation.installed()
+        selected = self._translation_source(models) if not romanization else None
+        groups = {} if romanization else classify_lyric_sources(texts, selected)
+        routes = {}
+        for source in groups:
+            explicit_european = sys.platform.startswith("linux") and source == "pt-pt"
+            argos_source = "pt" if explicit_european else offline_translation.source_code(source, {})
+            if argos_source == "pt" and not explicit_european and not offline_translation.route(models, "pt", argos_target):
+                argos_source = "pb"
+            routes[source] = (argos_source, offline_translation.route(models, argos_source, argos_target))
+        if original is self.original_lyrics:
+            self._translation_source_notice = (
+                original, {"selected": selected, "uncertain": None in groups,
+                           "mismatch": bool(selected and groups and selected not in groups)},
+            )
+        cache_routes = self.__dict__.setdefault("_translation_routes", {})
+        route_key = tuple((source, tuple((step, models[step].get("package_version")) for step in steps))
+                          for source, (_, steps) in routes.items())
+        if (target_language in self.cached_translations and not japanese
+                and cache_routes.get(target_language, ()) == route_key):
+            if not romanization:
+                self._prepare_secondary_lyrics(original, argos_target, "ja" if "ja" in groups else None)
+            return original is self.original_lyrics
 
         logging.info(f"Traduzindo {len(self.original_lyrics)} linha(s) para '{target_language}'...")
         try:
             if target_language.lower() == "romanized":
                 translated_lines = []
-                for item in self.original_lyrics:
-                    text = str(item['text']) if item['text'] else ""
-                    romanized = romanize_line(text)
-                    translated_lines.append({"timestamp": item['timestamp'], "text": romanized})
+                try:
+                    for item in self.original_lyrics:
+                        text = str(item["text"] or "")
+                        romanized = romanize_line(text, japanese=japanese)
+                        translated_lines.append({"timestamp": item["timestamp"], "text": romanized})
+                finally:
+                    if japanese:
+                        release_japanese_converter()
 
                 self.cached_translations[target_language] = translated_lines
                 logging.info(f"Romanização concluída ({len(translated_lines)} linha(s)).")
                 return True
-            else:
-                translated_lines = []
-                failures = 0
-                source_wins: Dict[str, int] = {}
-
-                line_futures: List[Optional[Any]] = []
-                for item in self.original_lyrics:
-                    text = item['text']
-                    if not text or not text.strip():
-                        line_futures.append(None)
-                        continue
-                    line_futures.append(LINE_DISPATCH_EXECUTOR.submit(translate_line_raced, text, target_language))
-
-                for idx, (item, fut) in enumerate(zip(self.original_lyrics, line_futures)):
-                    if fut is None:
-                        translated_lines.append({"timestamp": item['timestamp'], "text": item['text']})
-                        continue
-                    text = item['text']
-                    try:
-                        translated, winning_source = fut.result()
-                    except Exception as line_err:
-                        logging.warning(f"Falha ao traduzir linha {idx} ('{text[:40]}'): {line_err}")
-                        translated, winning_source = None, None
-                    if not translated:
-                        translated = text
-                        failures += 1
-                    else:
-                        source_wins[winning_source] = source_wins.get(winning_source, 0) + 1
-                    translated_lines.append({"timestamp": item['timestamp'], "text": translated})
-
-                if source_wins:
-                    logging.info(f"Fontes vencedoras nesta tradução: {source_wins}")
-
-                if failures and failures == len([l for l in self.original_lyrics if l['text'] and l['text'].strip()]):
-                    logging.error(f"Todas as {failures} linha(s) falharam ao traduzir para '{target_language}'.")
+            translated = {}
+            had_result = False
+            for source, verses in groups.items():
+                if original is not self.original_lyrics:
                     return False
+                argos_source, steps = routes[source]
+                if not source:
+                    continue
+                if (argos_source == argos_target
+                        or mymemory_locale(source) == mymemory_locale(target_language)
+                        and mymemory_locale(source) is not None):
+                    translated.update((verse, verse) for verse in verses)
+                    continue
+                local = offline_translation.translate(verses, argos_source, steps) if steps else None
+                if local:
+                    translated.update((verse, translation) for verse, translation in local.items()
+                                      if translation != verse and not looks_like_bogus_translation(translation, verse))
+                    had_result |= any(verse in translated for verse in verses)
+                remaining = [verse for verse in verses if verse not in translated]
+                source_locale = (mymemory_locale(source) if source == "pt-pt" else
+                                 mymemory_locale(argos_source) or mymemory_locale(source))
+                if not remaining or not source_locale or original is not self.original_lyrics:
+                    continue
+                logging.info("MyMemory: %s → %s (%s versos)", source_locale, target_language, len(remaining))
+                futures = {verse: LINE_DISPATCH_EXECUTOR.submit(
+                    translate_line_raced, verse, target_language, source_locale) for verse in remaining}
+                for verse, future in futures.items():
+                    value, _ = future.result()
+                    if value:
+                        translated[verse] = value
+                        had_result = True
 
-                if failures:
-                    logging.warning(f"{failures} linha(s) não foram traduzidas (mantidas no original) para '{target_language}'.")
-
-                self.cached_translations[target_language] = translated_lines
-                logging.info(f"Tradução para '{target_language}' concluída ({len(translated_lines)} linha(s), {failures} falha(s)).")
-                return True
+            all_resolved = bool(groups) and all(
+                verse in translated for verses in groups.values() for verse in verses)
+            if original is not self.original_lyrics or not (had_result or all_resolved):
+                return False
+            self._prepare_secondary_lyrics(original, argos_target, "ja" if "ja" in groups else None)
+            if original is not self.original_lyrics:
+                return False
+            self.cached_translations[target_language] = [
+                {**item, "text": translated.get((item["text"] or "").strip(), item["text"])}
+                for item in original
+            ]
+            if all_resolved:
+                cache_routes[target_language] = route_key
+            else:
+                cache_routes.pop(target_language, None)
+                logging.info("Trechos sem tradução mantidos no original.")
+            return True
         except Exception as e:
             logging.error(f"Translation error (target='{target_language}'): {e}", exc_info=True)
             return False
 
+    def _prepare_secondary_lyrics(self, original, target, source):
+        if not uses_latin_writing(target):
+            return
+        japanese = source == "ja" or any(has_japanese_kana(item["text"] or "") for item in original)
+        secondary_key = (japanese, installed_dictionary() is not None if japanese else False)
+        cached = getattr(self, "_romanized_secondary", None)
+        if cached and cached[0] is original and cached[1] == secondary_key:
+            return
+        try:
+            texts = (item["text"] or "" for item in original)
+            lines = [romanize_line(text, japanese=japanese) if has_non_latin_letters(text) else text
+                     for text in texts]
+        finally:
+            if japanese:
+                release_japanese_converter()
+        if original is self.original_lyrics:
+            self._romanized_secondary = (original, secondary_key, lines)
+
+    def _secondary_lyric(self, index):
+        cached = getattr(self, "_romanized_secondary", None)
+        if (cached and cached[0] is self.original_lyrics
+                and uses_latin_writing(offline_translation.target_code(self.current_language))):
+            return cached[2][index]
+        return self.original_lyrics[index]["text"]
+
     def apply_language(self, lang: str) -> bool:
-        """Sets the current lyrics language, triggering translation if needed.
-
-        Only switches current_language/synced_lyrics if the operation actually
-        succeeded -- otherwise a translation error used to leave
-        is_translated_active=True while the old (original) lyrics stayed on
-        screen, which looked like the language "didn't take".
-        """
-        if lang == "original":
-            self.current_language = lang
-            self.synced_lyrics = self.original_lyrics
-            return True
-
-        if self.generate_translation(lang):
-            self.current_language = lang
-            self.synced_lyrics = self.cached_translations[lang]
-            return True
-
-        logging.warning(f"Falha ao aplicar idioma '{lang}'; mantendo '{self.current_language}'.")
-        return False
+        """Apply only the latest requested mode for the current lyric."""
+        original = self.original_lyrics
+        override = None if lang in {"original", "romanized"} else self._translation_source(
+            offline_translation.installed())
+        key = (id(original), lang, override)
+        lock = self.__dict__.setdefault("_translation_jobs_lock", threading.Lock())
+        with lock:
+            if sys.platform.startswith("linux") and lang != (self.preferred_language or "original"):
+                return True
+            self._requested_translation = key
+            if lang == "original":
+                self.current_language = lang
+                self.synced_lyrics = original
+                return True
+            jobs = self.__dict__.setdefault("_translation_jobs", {})
+            request = jobs.get(key)
+            leader = request is None
+            if leader:
+                request = jobs[key] = Future()
+        if not leader:
+            return request.result()
+        try:
+            ok = self.generate_translation(lang)
+            with lock:
+                if (self._requested_translation != key or self.original_lyrics is not original
+                        or sys.platform.startswith("linux") and (
+                            lang != (self.preferred_language or "original")
+                            or (lang != "romanized" and hasattr(self, "linux_translation_source")
+                                and override != self.linux_translation_source))):
+                    # A newer choice or track owns the display now.
+                    ok = True
+                elif ok:
+                    self.current_language = lang
+                    self.synced_lyrics = self.cached_translations[lang]
+                else:
+                    logging.warning("Falha ao aplicar idioma '%s'; mantendo '%s'.", lang, self.current_language)
+            request.set_result(ok)
+            return ok
+        except BaseException as error:
+            request.set_exception(error)
+            raise
+        finally:
+            with lock:
+                jobs.pop(key, None)
 
     # -- State snapshot sent to the WebSocket clients --
+
+    def _has_japanese_lyrics(self) -> bool:
+        lyrics = self.original_lyrics
+        if not hasattr(self, "_kana_detected") or self._kana_lyrics is not lyrics:
+            self._kana_detected = any(
+                has_japanese_kana(str(item["text"] or "")) for item in (lyrics or [])
+            )
+            self._kana_lyrics = lyrics
+        return self._kana_detected
 
     def get_current_state(self) -> Dict[str, Any]:
         """Calculates the current line based on playback time and returns the full app state."""
@@ -985,7 +1102,7 @@ class MusicManager:
 
         current_line, previous_line, next_line = "", "", ""
         current_lyric_index = -1
-        current_line_original = ""
+        current_line_original = current_line_romanized = ""
         overlay_msg, status = "", ""
 
         if self.recognition_failure_reason:
@@ -1033,7 +1150,8 @@ class MusicManager:
                         previous_line = self.synced_lyrics[i-1]['text'] if i > 0 else ""
                         next_line = self.synced_lyrics[i+1]['text'] if i + 1 < len(self.synced_lyrics) else ""
                         if self.current_language != "original" and i < len(self.original_lyrics):
-                            current_line_original = self.original_lyrics[i]['text']
+                            current_line_original = self.original_lyrics[i]["text"]
+                            current_line_romanized = self._secondary_lyric(i)
                     else:
                         break
 
@@ -1062,8 +1180,10 @@ class MusicManager:
             current_line = overlay_msg
 
         full = [{"timestamp": i["timestamp"], "text": i["text"]} for i in self.synced_lyrics] if self.synced_lyrics else []
+        notice = getattr(self, "_translation_source_notice", None)
         payload = {
             "status": status,
+            "translation_source_notice": notice[1] if notice and notice[0] is self.original_lyrics else None,
             "lyrics_service_status": ("ok" if status == "NOT_FOUND" else service_health.status()),
             "lyrics_lookup_notice": self.lyrics_lookup_notice,
             "recognition_failure": self.recognition_failure_reason,
@@ -1075,8 +1195,13 @@ class MusicManager:
             "previous_lyrics": previous_line,
             "next_lyrics": next_line,
             "current_lyrics_original": current_line_original,
+            "current_lyrics_romanized": current_line_romanized,
             "is_translated_active": self.current_language != "original",
             "current_language": self.current_language,
+            "japanese_pack_missing": (
+                self.current_language != "original" and self._has_japanese_lyrics()
+                and installed_dictionary() is None
+            ),
             "translation_error": self.last_translation_error,
             "font_size": self.overlay_font_size,
             "song": self.current_song,

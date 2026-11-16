@@ -1,4 +1,4 @@
-﻿"""
+"""
 FrontlineServer entrypoint.
 
 Startup order matters here:
@@ -15,6 +15,27 @@ Startup order matters here:
 
 import os
 import sys
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] in (
+    "--offline-addons", "--offline-translate",
+):
+    try:
+        from engine.offline_translation import command
+
+        command(sys.argv[1], sys.argv[2:])
+    except Exception as error:
+        result_file = os.environ.get("FRONTLINE_ADDON_RESULT_FILE")
+        if sys.argv[1] == "--offline-addons" and result_file:
+            from pathlib import Path
+
+            Path(result_file).write_text(f"{type(error).__name__}: {error}", encoding="utf-8")
+        elif sys.argv[1] == "--offline-translate" and len(sys.argv) > 3:
+            from pathlib import Path
+            from traceback import format_exc
+
+            Path(sys.argv[3]).write_text(format_exc(), encoding="utf-8")
+        sys.exit(1)
+    sys.exit(0)
 
 from engine.crash_guard import instalar as instalar_crash_guard
 
@@ -59,7 +80,44 @@ logging.basicConfig(
     ],
 )
 logging.info(f"Log started at: {LOG_FILE}")
-logging.info("Server build: translation with 3 parallel sources (google/mymemory/translators-bing) v1")
+logging.info("Server build: Argos offline translation with MyMemory fallback")
+
+if __name__ == "__main__" and len(sys.argv) > 1 and sys.argv[1] in (
+    "--install-japanese-pack", "--validate-japanese-pack"
+):
+    try:
+        from pathlib import Path
+        from engine.japanese_pack import install, validate_dictionary
+
+        if sys.argv[1] == "--validate-japanese-pack":
+            validate_dictionary(Path(sys.argv[2]))
+        else:
+            def validate_in_child(path):
+                command = [sys.executable]
+                if not getattr(sys, "frozen", False):
+                    command.append(os.path.abspath(__file__))
+                result = subprocess.run(
+                    [*command, "--validate-japanese-pack", str(path)],
+                    timeout=60, check=False,
+                )
+                if result.returncode:
+                    error_path = os.environ.get("FRONTLINE_ADDON_ERROR_FILE")
+                    detail = Path(error_path).read_text(encoding="utf-8") if error_path and Path(error_path).is_file() else ""
+                    raise RuntimeError(f"Cutlet / UniDic initialization ({result.returncode}): {detail}")
+
+            install(validate_in_child)
+    except Exception as error:
+        logging.exception("Japanese dictionary installation failed")
+        result = os.environ.get("FRONTLINE_ADDON_ERROR_FILE")
+        if result:
+            try:
+                with open(result, "w", encoding="utf-8") as output:
+                    output.write(f"{type(error).__name__}: {error}"[:700])
+            except OSError:
+                logging.exception("Could not write add-on installer result")
+        sys.exit(1)
+    sys.exit(0)
+
 
 # These pull in media_session (WinRT), pyaudiowpatch, shazamio and
 # translators — only safe to import after crash_guard is installed above.

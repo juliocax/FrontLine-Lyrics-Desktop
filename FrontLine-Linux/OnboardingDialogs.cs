@@ -80,7 +80,7 @@ internal sealed class WelcomeDialog : Window
         var root = new DockPanel { Margin = new Thickness(26, 22, 26, 22), LastChildFill = true };
         var header = new StackPanel { Spacing = 12 };
         var lang = new ComboBox { HorizontalAlignment = HorizontalAlignment.Right, MinWidth = 154 };
-        foreach (var (id, title) in new[] { ("en", "English"), ("pt", "Português"), ("es", "Español"), ("id", "Bahasa Indonesia") })
+        foreach (var (id, title) in new[] { ("en", "English"), ("pt", "Português BR"), ("es", "Español"), ("id", "Bahasa Indonesia") })
             lang.Items.Add(new ComboBoxItem { Content = title, Tag = id });
         foreach (var item in lang.Items)
             if (item is ComboBoxItem option && option.Tag?.ToString() == _language) lang.SelectedItem = option;
@@ -98,7 +98,7 @@ internal sealed class WelcomeDialog : Window
             "First time here?", "Primeira vez por aqui?", "¿Es tu primera vez aquí?", "Baru pertama kali di sini?")));
         var tutorialLink = DialogUi.Link(DialogUi.L(_language,
             "See the tutorials", "Veja os tutoriais", "Ver los tutoriales", "Lihat tutorial"));
-        tutorialLink.Click += (_, _) => Open("https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_linux_v1.0.0.html");
+        tutorialLink.Click += (_, _) => Open("https://juliocax.github.io/FrontLine-Lyrics-Desktop/documentation_linux_v1.1.0.html");
         tutorial.Children.Add(tutorialLink);
         header.Children.Add(tutorial);
         DockPanel.SetDock(header, Dock.Top); root.Children.Add(header);
@@ -186,13 +186,21 @@ internal sealed class ReleaseNotesDialog : Window
         DockPanel.SetDock(done, Dock.Bottom); root.Children.Add(done);
         var body = new StackPanel { Spacing = 15 };
         body.Children.Add(DialogUi.Text(DialogUi.L(lang,"What's new in FrontLine Lyrics","Novidades do FrontLine Lyrics","Novedades de FrontLine Lyrics","Yang baru di FrontLine Lyrics"), 23, true, "#FFFFFF"));
-        body.Children.Add(DialogUi.Text("v1.0.0", 13, true, "#BBBBBB"));
+        body.Children.Add(DialogUi.Text($"v{MainWindow.LinuxAppVersion}", 13, true, "#BBBBBB"));
         string[] details = lang switch
         {
-            "pt" => ["FrontLine Lyrics 1.0.0 para Linux, com Avalonia e servidor Python compartilhado.", "Identificação de músicas por áudio e acompanhamento de players MPRIS.", "Letras sincronizadas, busca manual e histórico persistente.", "Tradução, romanização e personalização de fontes, cores e linhas.", "Configurações persistentes e telemetria anônima opcional."],
-            "es" => ["FrontLine Lyrics 1.0.0 para Linux, con Avalonia y servidor Python compartido.", "Identificación por audio y seguimiento MPRIS.", "Letras sincronizadas, búsqueda manual e historial persistente.", "Traducción, romanización y personalización de fuentes, colores y líneas.", "Configuración persistente y telemetría anónima opcional."],
-            "id" => ["FrontLine Lyrics 1.0.0 untuk Linux dengan Avalonia dan backend Python bersama.", "Pengenalan lagu dan pemantauan pemutar MPRIS.", "Lirik tersinkronisasi, pencarian manual dan riwayat tersimpan.", "Terjemahan, romanisasi, penyesuaian font, warna dan jumlah baris.", "Pengaturan tersimpan dan telemetri anonim opsional."],
-            _ => ["FrontLine Lyrics 1.0.0 for Linux with Avalonia UI and shared Python backend.", "Audio recognition and MPRIS player tracking.", "Synchronized lyrics, manual search and saved history.", "Translation, romanization and customizable fonts, colors and lines.", "Persistent settings and optional anonymous telemetry."]
+            "pt" => ["Em Configurações → Tradução, escolha a origem e o destino. Há opções separadas para Português (Brasil) e Português (Portugal).",
+                     "Em Gerenciar complementos, baixe apenas os modelos necessários para traduzir offline ou instale o UniDic Lite para melhorar a leitura do japonês.",
+                     "Alterne entre Original e Romanização, ligue a tradução separadamente e escolha se quer mostrar a letra abaixo dela."],
+            "es" => ["En Ajustes → Traducción, elige el idioma de origen y el de destino. Hay opciones separadas para portugués de Brasil y de Portugal.",
+                     "En Gestionar complementos, descarga solo los modelos necesarios para traducir sin conexión o instala UniDic Lite para mejorar la lectura del japonés.",
+                     "Alterna entre Original y Romanización, activa la traducción por separado y elige si quieres mostrar la letra debajo."],
+            "id" => ["Di Pengaturan → Terjemahan, pilih bahasa sumber dan tujuan. Bahasa Portugis Brasil dan Portugal tersedia sebagai pilihan terpisah.",
+                     "Di Kelola add-on, unduh model yang diperlukan untuk terjemahan luring atau pasang UniDic Lite untuk memperbaiki pembacaan bahasa Jepang.",
+                     "Beralih antara lirik asli dan romanisasi, aktifkan terjemahan secara terpisah, dan pilih apakah lirik ditampilkan di bawahnya."],
+            _ => ["In Settings → Translation, choose the source and target languages. Brazilian and European Portuguese are separate options.",
+                  "In Manage add-ons, download the models you need for offline translation or install UniDic Lite for better Japanese readings.",
+                  "Switch between Original and Romanization, turn translation on separately, and choose whether to show lyrics below it."]
         };
         foreach (var item in details) body.Children.Add(DialogUi.Text("•  " + item, 13));
 

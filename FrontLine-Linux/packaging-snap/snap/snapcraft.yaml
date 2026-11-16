@@ -1,5 +1,5 @@
 name: frontline-lyrics
-version: '1.0.0'
+version: '1.1.0'
 title: FrontLine Lyrics
 summary: Synchronized desktop lyrics with song recognition
 website: https://github.com/juliocax/FrontLine-Lyrics-Desktop
@@ -46,6 +46,8 @@ parts:
       - libxcb1
       - libxrender1
       - libfontconfig1
+      - fonts-noto-core
+      - fonts-noto-cjk
       - libfreetype6
       - libgl1
       - libpulse0

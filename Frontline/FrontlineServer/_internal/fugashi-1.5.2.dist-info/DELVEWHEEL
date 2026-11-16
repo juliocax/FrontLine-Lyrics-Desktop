@@ -1,0 +1,2 @@
+Version: 1.11.2
+Arguments: ['C:\\hostedtoolcache\\windows\\Python\\3.13.8\\x64\\Lib\\site-packages\\delvewheel\\__main__.py', 'repair', '--add-path=C:/mecab', './dist/fugashi-*.whl']

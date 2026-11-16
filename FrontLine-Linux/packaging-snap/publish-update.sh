@@ -2,7 +2,7 @@
 # Subsequent versions: build, verify and publish to edge.
 set -Eeuo pipefail
 HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-[[ $# -eq 1 ]] || { echo "Usage: $0 1.0.1" >&2; exit 2; }
+[[ $# -eq 1 ]] || { echo "Usage: $0 1.1.0" >&2; exit 2; }
 VERSION="$1"
 SNAP="$HERE/frontline-lyrics_${VERSION}_amd64.snap"
 "$HERE/build-snap.sh" "$VERSION"

@@ -5,7 +5,7 @@ HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(realpath "$HERE/../..")"
 LINUX="$ROOT/FrontLine-Linux"
 ARCH="$(dpkg --print-architecture)"
-VERSION="${1:-1.0.0}"
+VERSION="${1:-1.1.0}"
 [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]] || { echo "Invalid version: $VERSION" >&2; exit 2; }
 [[ "$ARCH" == amd64 ]] || { echo 'Only amd64 is configured in snapcraft.yaml' >&2; exit 2; }
 for tool in snapcraft dpkg-deb realpath; do command -v "$tool" >/dev/null || { echo "Missing: $tool" >&2; exit 2; }; done

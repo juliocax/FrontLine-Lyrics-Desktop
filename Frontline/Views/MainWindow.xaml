@@ -18,6 +18,12 @@
                 <ResourceDictionary Source="pack://application:,,,/Styles/Sliders.xaml"/>
                 <ResourceDictionary Source="pack://application:,,,/Styles/ListHeaders.xaml"/>
             </ResourceDictionary.MergedDictionaries>
+            <SolidColorBrush x:Key="Settings.Panel" Color="#FC080808"/>
+            <SolidColorBrush x:Key="Settings.Surface" Color="#FF0D0D0D"/>
+            <SolidColorBrush x:Key="Settings.Raised" Color="#FF151515"/>
+            <SolidColorBrush x:Key="Settings.Border" Color="#FF292929"/>
+            <SolidColorBrush x:Key="Settings.Selected" Color="#FF353535"/>
+            <SolidColorBrush x:Key="Settings.Accent" Color="#FFAAAAAA"/>
             <SolidColorBrush x:Key="Support.ButtonForeground" Color="White"/>
             <CornerRadius x:Key="Support.ButtonCornerRadius">18</CornerRadius>
 
@@ -77,6 +83,111 @@
                                     <Setter TargetName="Bd" Property="Opacity" Value="0.7"/>
                                 </Trigger>
                             </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <ControlTemplate x:Key="AddonsCloseTemplate" TargetType="Button">
+                <Border x:Name="Circle" CornerRadius="18" Background="{DynamicResource Settings.Raised}"
+                        BorderBrush="{DynamicResource Settings.Border}" BorderThickness="1">
+                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Circle" Property="BorderBrush" Value="#FFA989E0"/></Trigger>
+                    <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Circle" Property="BorderBrush" Value="#FFA989E0"/></Trigger>
+                    <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Circle" Property="Opacity" Value="0.55"/></Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+            <Style x:Key="TranslationAction" TargetType="Button" BasedOn="{StaticResource SquareGlassButton}">
+                <Setter Property="MinHeight" Value="35"/>
+                <Setter Property="Padding" Value="14,7"/>
+                <Setter Property="FontWeight" Value="SemiBold"/>
+                <Setter Property="Cursor" Value="Hand"/>
+            </Style>
+            <Style x:Key="SearchLanguageCombo" TargetType="ComboBox">
+                <Setter Property="Foreground" Value="#FFF0F0F3"/>
+                <Setter Property="MinHeight" Value="35"/>
+                <Setter Property="IsTextSearchEnabled" Value="False"/>
+                <Setter Property="ItemContainerStyle">
+                    <Setter.Value>
+                        <Style TargetType="ComboBoxItem">
+                            <Setter Property="Foreground" Value="#FFF0F0F3"/>
+                            <Setter Property="Padding" Value="8,5"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ComboBoxItem">
+                                        <Border x:Name="Option" Background="Transparent" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsHighlighted" Value="True"><Setter TargetName="Option" Property="Background" Value="#FF363947"/></Trigger>
+                                            <Trigger Property="IsSelected" Value="True"><Setter TargetName="Option" Property="Background" Value="#FF443A57"/></Trigger>
+                                            <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Option" Property="Background" Value="#FF363947"/></Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Setter.Value>
+                </Setter>
+                <Setter Property="ItemsPanel">
+                    <Setter.Value><ItemsPanelTemplate><StackPanel/></ItemsPanelTemplate></Setter.Value>
+                </Setter>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBox">
+                            <Grid>
+                                <ToggleButton Focusable="False" Foreground="{TemplateBinding Foreground}"
+                                              IsChecked="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}, Mode=TwoWay}">
+                                    <ToggleButton.Template>
+                                        <ControlTemplate TargetType="ToggleButton">
+                                            <Border Background="{DynamicResource Settings.Raised}" BorderBrush="{DynamicResource Settings.Border}"
+                                                    BorderThickness="1" CornerRadius="8" Padding="10,6">
+                                                <ContentPresenter/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </ToggleButton.Template>
+                                    <DockPanel>
+                                        <Path DockPanel.Dock="Right" Data="M0,0 L4,4 L8,0" Stroke="#FFD2D2DA"
+                                              VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                        <ContentPresenter VerticalAlignment="Center" Content="{TemplateBinding SelectionBoxItem}"
+                                                          ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                                          ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}"
+                                                          ContentStringFormat="{TemplateBinding SelectionBoxItemStringFormat}"/>
+                                    </DockPanel>
+                                </ToggleButton>
+                                <Popup x:Name="PART_Popup" Placement="Bottom" AllowsTransparency="True"
+                                       IsOpen="{TemplateBinding IsDropDownOpen}">
+                                    <Border Background="#FF17191F" BorderBrush="#FF454851" BorderThickness="1"
+                                            CornerRadius="8" Padding="6" MinWidth="{TemplateBinding ActualWidth}">
+                                        <DockPanel>
+                                            <Grid DockPanel.Dock="Top" Margin="0,0,0,5">
+                                                <TextBox x:Name="LanguageSearch" TextChanged="LanguagePicker_Filter"
+                                                         PreviewKeyDown="LanguagePicker_SearchKey"
+                                                         Background="#FF272A33" Foreground="#FFF2F2F5" CaretBrush="White"
+                                                         BorderBrush="#FF454851" Padding="7,4"/>
+                                                <TextBlock IsHitTestVisible="False" VerticalAlignment="Center" Margin="8,0"
+                                                           Foreground="#FFACAFBB" Text="{Binding ToolTip, ElementName=LanguageSearch}">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Visibility" Value="Collapsed"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Text, ElementName=LanguageSearch}" Value="">
+                                                                    <Setter Property="Visibility" Value="Visible"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Grid>
+                                            <ScrollViewer MaxHeight="210" CanContentScroll="False">
+                                                <ItemsPresenter/>
+                                            </ScrollViewer>
+                                        </DockPanel>
+                                    </Border>
+                                </Popup>
+                            </Grid>
                         </ControlTemplate>
                     </Setter.Value>
                 </Setter>
@@ -223,13 +334,13 @@
                         </Grid>
                         <TextBlock x:Name="LblSongTitle" Foreground="#E0E0E0" FontSize="13" FontWeight="Bold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,2" Visibility="Collapsed"/>
                         <TextBlock x:Name="LblArtistName" Visibility="Collapsed" Foreground="#888888" FontSize="12" FontWeight="SemiBold" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,10"/>
-                        <TextBlock x:Name="LblTranslating" Text="Translating..." Foreground="#A955FF" FontSize="9" FontWeight="SemiBold" Margin="0,0,0,0" HorizontalAlignment="Center" Visibility="Collapsed"/>
                     </StackPanel>
                 </Grid>
 
                 <Grid x:Name="ContentPanel" Grid.Column="1" VerticalAlignment="Stretch">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                     </Grid.RowDefinitions>
 
@@ -352,7 +463,14 @@
                         </StackPanel>
                     </Grid>
 
-                    <Grid x:Name="PlayingControls" Grid.Row="1" Margin="0,20,0,0" Visibility="Collapsed" Panel.ZIndex="10">
+                    <StackPanel x:Name="LyricTranslationActivity" Grid.Row="1" HorizontalAlignment="Center"
+                                Margin="0,5,0,2" Width="140" Visibility="Collapsed" IsHitTestVisible="False">
+                        <ProgressBar x:Name="LyricTranslationProgress" Height="3" Foreground="#FFB798EB"
+                                     Background="#443D354F" BorderThickness="0"/>
+                        <TextBlock x:Name="LyricTranslationStatus" Text="Translating…" Foreground="#FFBFBACB"
+                                   FontSize="10" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                    </StackPanel>
+                    <Grid x:Name="PlayingControls" Grid.Row="2" Margin="0,20,0,0" Visibility="Collapsed" Panel.ZIndex="10">
                         <Grid.Effect>
                             <DropShadowEffect Color="Black" BlurRadius="12" ShadowDepth="0" Opacity="0.75"/>
                         </Grid.Effect>
@@ -425,7 +543,7 @@
                                         <ControlTemplate TargetType="Button">
                                             <StackPanel VerticalAlignment="Center">
                                                 <TextBlock x:Name="TxtAppName" Text="FRONTLINE LYRICS" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center"/>
-                                                <TextBlock x:Name="TxtAppVersion" Text="v1.6.2" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center" Margin="0,1,0,0"/>
+                                                <TextBlock x:Name="TxtAppVersion" Text="v1.7.0" Foreground="#88FFFFFF" FontWeight="Bold" FontSize="10" HorizontalAlignment="Center" Margin="0,1,0,0"/>
                                             </StackPanel>
                                             <ControlTemplate.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
@@ -996,15 +1114,63 @@
         </StackPanel>
 
 <Popup x:Name="SettingsPopup" IsOpen="{Binding IsChecked, ElementName=BtnMenu, Mode=TwoWay}" StaysOpen="True" PlacementTarget="{Binding ElementName=MainBorder}" Placement="Custom" HorizontalOffset="0" VerticalOffset="0" AllowsTransparency="True" Opened="SettingsPopup_Opened" Closed="SettingsPopup_Closed" PreviewKeyDown="SettingsPopup_PreviewKeyDown">
-<Border MouseLeftButtonDown="SettingsPanel_MouseLeftButtonDown" x:Name="MenuScaleBorder" Background="#FC080808" BorderThickness="0" CornerRadius="15" Padding="14,13,14,14" Width="330" MaxHeight="535" TextElement.Foreground="White">
-<Border.Resources><Style x:Key="SettingsChoiceStyle" TargetType="ToggleButton"><Setter Property="Background" Value="#171717"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="#434343"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="14,9"/><Setter Property="FontSize" Value="12"/><Setter Property="Cursor" Value="Hand"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ToggleButton"><Border x:Name="ChoiceBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="ChoiceBorder" Property="Background" Value="#353535"/><Setter TargetName="ChoiceBorder" Property="BorderBrush" Value="#777777"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ChoiceBorder" Property="BorderBrush" Value="#AAAAAA"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="ChoiceBorder" Property="BorderBrush" Value="White"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="ChoiceBorder" Property="Opacity" Value="0.45"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style></Border.Resources><Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
-<Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/><ColumnDefinition Width="32"/></Grid.ColumnDefinitions><TextBlock IsHitTestVisible="False" x:Name="LblSettingsTitle" Text="SETTINGS" Foreground="#BDBDBD" FontSize="14" FontWeight="Normal" TextAlignment="Center" HorizontalAlignment="Stretch" Margin="0" Grid.Column="1" VerticalAlignment="Center"/><Button x:Name="SettingsCloseButton" Grid.Column="2" Width="30" Height="30" Padding="0" HorizontalAlignment="Center" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Background="#1B1B1B" BorderBrush="#353535" BorderThickness="1" Cursor="Hand" Click="CloseSettings_Click">
-<Button.Template><ControlTemplate TargetType="Button"><Border x:Name="CloseBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8"><Grid Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center"><Path Data="M1,1 L11,11 M11,1 L1,11" Stroke="#DEDEDE" StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" IsHitTestVisible="False"/></Grid></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="CloseBorder" Property="Background" Value="#343434"/><Setter TargetName="CloseBorder" Property="BorderBrush" Value="#777777"/></Trigger><Trigger Property="IsPressed" Value="True"><Setter TargetName="CloseBorder" Property="Background" Value="#444444"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="CloseBorder" Property="BorderBrush" Value="#BBBBBB"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template></Button></Grid>
-<UniformGrid x:Name="SettingsTabs" Grid.Row="1" Columns="3" Margin="0,0,0,10"><ToggleButton x:Name="TabSettingsLyrics" Content="Lyrics" Tag="lyrics" Style="{StaticResource SettingsChoiceStyle}" FontSize="11" Padding="3,9" Margin="0,0,4,0" IsChecked="True" Click="SettingsTab_Click"/><ToggleButton x:Name="TabSettingsTranslate" Content="Translate" Tag="translate" Style="{StaticResource SettingsChoiceStyle}" FontSize="11" Padding="3,9" Margin="2,0,2,0" Click="SettingsTab_Click"/><ToggleButton x:Name="TabSettingsApp" Content="General" Tag="app" Style="{StaticResource SettingsChoiceStyle}" FontSize="11" Padding="3,9" Margin="4,0,0,0" Click="SettingsTab_Click"/></UniformGrid><Button x:Name="BtnManualSyncToggle" Content="MANUAL SYNC" Style="{StaticResource SquareGlassButton}" Padding="0,6" Margin="0,0,0,10" Click="BtnManualSync_Toggle" Visibility="Collapsed" Grid.Row="2"/><Border Grid.Row="3" Background="#0D0D0D" BorderBrush="#252525" BorderThickness="1" CornerRadius="13" Padding="12" MinHeight="100"><Grid>
-<ScrollViewer x:Name="SettingsLyricsScroll" MaxHeight="340" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel x:Name="SettingsPanelLyrics" Margin="2,2,8,4"><Border x:Name="SettingsOpacityBlock" Background="#151515" CornerRadius="14" BorderBrush="#292929" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><TextBlock x:Name="LblBgOpacityTitle" Text="BACKGROUND OPACITY" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><TextBlock x:Name="SettingsOpacityDescription" FontSize="11" Foreground="#AAAAAA" Margin="0,0,0,14" TextWrapping="Wrap"/><Slider x:Name="SldBgOpacity" Style="{StaticResource GlassSlider}" Minimum="0" Maximum="1" Value="0.8" ValueChanged="SldBgOpacity_ValueChanged"/><Grid Margin="0,16,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+<Border MouseLeftButtonDown="SettingsPanel_MouseLeftButtonDown" x:Name="MenuScaleBorder" Background="{DynamicResource Settings.Panel}" BorderBrush="{DynamicResource Settings.Border}" BorderThickness="1" CornerRadius="15" Padding="14,13,14,14" Width="330" MaxHeight="535" TextElement.Foreground="White">
+<Border.Resources><Style x:Key="SettingsChoiceStyle" TargetType="ToggleButton"><Setter Property="Background" Value="{DynamicResource Settings.Raised}"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderBrush" Value="{DynamicResource Settings.Border}"/><Setter Property="BorderThickness" Value="1"/><Setter Property="Padding" Value="14,9"/><Setter Property="FontSize" Value="12"/><Setter Property="Cursor" Value="Hand"/><Setter Property="HorizontalContentAlignment" Value="Center"/><Setter Property="VerticalContentAlignment" Value="Center"/><Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ToggleButton"><Border x:Name="ChoiceBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10" Padding="{TemplateBinding Padding}"><ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/></Border><ControlTemplate.Triggers><Trigger Property="IsChecked" Value="True"><Setter TargetName="ChoiceBorder" Property="Background" Value="{DynamicResource Settings.Selected}"/><Setter TargetName="ChoiceBorder" Property="BorderBrush" Value="{DynamicResource Settings.Accent}"/></Trigger><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="ChoiceBorder" Property="BorderBrush" Value="{DynamicResource Settings.Accent}"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="ChoiceBorder" Property="BorderBrush" Value="White"/></Trigger><Trigger Property="IsEnabled" Value="False"><Setter TargetName="ChoiceBorder" Property="Opacity" Value="0.45"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Setter.Value></Setter></Style><Style x:Key="TranslationModeSwitch" TargetType="ToggleButton" BasedOn="{StaticResource SettingsChoiceStyle}">
+    <Setter Property="Padding" Value="5,6"/>
+    <Setter Property="MinHeight" Value="36"/>
+    <Setter Property="Template">
+        <Setter.Value>
+            <ControlTemplate TargetType="ToggleButton">
+                <Border x:Name="Choice" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                        BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="10" Padding="{TemplateBinding Padding}">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition x:Name="LabelInset" Width="24"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="24"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock x:Name="ModeLabel" Grid.Column="1" VerticalAlignment="Center" TextAlignment="Center"
+                                   TextWrapping="Wrap" Text="{TemplateBinding Content}"/>
+                        <Grid Grid.Column="2" Width="22" Height="14" HorizontalAlignment="Right" VerticalAlignment="Center">
+                            <Border x:Name="Track" Background="#FF50525A" CornerRadius="7"/>
+                            <Ellipse x:Name="Thumb" Width="10" Height="10" Fill="White" HorizontalAlignment="Left" Margin="2,0"/>
+                        </Grid>
+                    </Grid>
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="Tag" Value="original">
+                        <Setter TargetName="LabelInset" Property="Width" Value="3"/>
+                        <Setter TargetName="ModeLabel" Property="TextAlignment" Value="Left"/>
+                        <Setter TargetName="ModeLabel" Property="TextWrapping" Value="NoWrap"/>
+                        <Setter TargetName="ModeLabel" Property="TextTrimming" Value="CharacterEllipsis"/>
+                    </Trigger>
+                    <Trigger Property="Tag" Value="romanized">
+                        <Setter TargetName="LabelInset" Property="Width" Value="3"/>
+                        <Setter TargetName="ModeLabel" Property="TextAlignment" Value="Left"/>
+                        <Setter TargetName="ModeLabel" Property="TextWrapping" Value="NoWrap"/>
+                        <Setter TargetName="ModeLabel" Property="TextTrimming" Value="CharacterEllipsis"/>
+                    </Trigger>
+                    <Trigger Property="IsChecked" Value="True">
+                        <Setter TargetName="Choice" Property="Background" Value="{DynamicResource Settings.Selected}"/>
+                        <Setter TargetName="Choice" Property="BorderBrush" Value="{DynamicResource Settings.Accent}"/>
+                        <Setter TargetName="Track" Property="Background" Value="#FF7957BD"/>
+                        <Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right"/>
+                    </Trigger>
+                    <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Choice" Property="BorderBrush" Value="{DynamicResource Settings.Accent}"/></Trigger>
+                    <Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="Choice" Property="BorderBrush" Value="White"/></Trigger>
+                    <Trigger Property="IsEnabled" Value="False"><Setter TargetName="Choice" Property="Opacity" Value="0.45"/></Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
+        </Setter.Value>
+    </Setter>
+</Style></Border.Resources><Grid><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+<Grid Margin="0,0,0,10"><Grid.ColumnDefinitions><ColumnDefinition Width="32"/><ColumnDefinition Width="*"/><ColumnDefinition Width="32"/></Grid.ColumnDefinitions><TextBlock IsHitTestVisible="False" x:Name="LblSettingsTitle" Text="SETTINGS" Foreground="#BDBDBD" FontSize="14" FontWeight="Normal" TextAlignment="Center" HorizontalAlignment="Stretch" Margin="0" Grid.Column="1" VerticalAlignment="Center"/><Button x:Name="SettingsCloseButton" Grid.Column="2" Width="30" Height="30" Padding="0" HorizontalAlignment="Center" VerticalAlignment="Center" HorizontalContentAlignment="Center" VerticalContentAlignment="Center" Background="{DynamicResource Settings.Raised}" BorderBrush="{DynamicResource Settings.Selected}" BorderThickness="1" Cursor="Hand" Click="CloseSettings_Click">
+<Button.Template><ControlTemplate TargetType="Button"><Border x:Name="CloseBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8"><Grid Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center"><Path Data="M1,1 L11,11 M11,1 L1,11" Stroke="#DEDEDE" StrokeThickness="1.6" StrokeStartLineCap="Round" StrokeEndLineCap="Round" IsHitTestVisible="False"/></Grid></Border><ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="CloseBorder" Property="Background" Value="{DynamicResource Settings.Selected}"/><Setter TargetName="CloseBorder" Property="BorderBrush" Value="{DynamicResource Settings.Accent}"/></Trigger><Trigger Property="IsPressed" Value="True"><Setter TargetName="CloseBorder" Property="Background" Value="{DynamicResource Settings.Selected}"/></Trigger><Trigger Property="IsKeyboardFocused" Value="True"><Setter TargetName="CloseBorder" Property="BorderBrush" Value="#BBBBBB"/></Trigger></ControlTemplate.Triggers></ControlTemplate></Button.Template></Button></Grid>
+<UniformGrid x:Name="SettingsTabs" Grid.Row="1" Columns="3" Margin="0,0,0,10"><ToggleButton x:Name="TabSettingsLyrics" Content="Lyrics" Tag="lyrics" Style="{StaticResource SettingsChoiceStyle}" FontSize="11" Padding="3,9" Margin="0,0,4,0" IsChecked="True" Click="SettingsTab_Click"/><ToggleButton x:Name="TabSettingsTranslate" Content="Translate" Tag="translate" Style="{StaticResource SettingsChoiceStyle}" FontSize="11" Padding="3,9" Margin="2,0,2,0" Click="SettingsTab_Click"/><ToggleButton x:Name="TabSettingsApp" Content="General" Tag="app" Style="{StaticResource SettingsChoiceStyle}" FontSize="11" Padding="3,9" Margin="4,0,0,0" Click="SettingsTab_Click"/></UniformGrid><Button x:Name="BtnManualSyncToggle" Content="MANUAL SYNC" Style="{StaticResource SquareGlassButton}" Padding="0,6" Margin="0,0,0,10" Click="BtnManualSync_Toggle" Visibility="Collapsed" Grid.Row="2"/><Border Grid.Row="3" Background="{DynamicResource Settings.Surface}" BorderBrush="{DynamicResource Settings.Border}" BorderThickness="1" CornerRadius="13" Padding="12" MinHeight="100"><Grid>
+<ScrollViewer x:Name="SettingsLyricsScroll" MaxHeight="340" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel x:Name="SettingsPanelLyrics" Margin="2,2,8,4"><Border x:Name="SettingsOpacityBlock" Background="{DynamicResource Settings.Raised}" CornerRadius="14" BorderBrush="{DynamicResource Settings.Border}" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><TextBlock x:Name="LblBgOpacityTitle" Text="BACKGROUND OPACITY" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><TextBlock x:Name="SettingsOpacityDescription" FontSize="11" Foreground="#AAAAAA" Margin="0,0,0,14" TextWrapping="Wrap"/><Slider x:Name="SldBgOpacity" Style="{StaticResource GlassSlider}" Minimum="0" Maximum="1" Value="0.8" ValueChanged="SldBgOpacity_ValueChanged"/><Grid Margin="0,16,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
 <TextBlock x:Name="LblThemeBehindLyrics" Text="Use theme behind lyrics" Foreground="#EFEFEF" FontSize="12" TextWrapping="Wrap" Margin="0,0,10,0" VerticalAlignment="Center"/>
 <ToggleButton x:Name="ChkThemeBehindLyrics" Grid.Column="1" Style="{StaticResource ToggleSwitchNoLabelStyle}" Click="ChkThemeBehindLyrics_Click" VerticalAlignment="Center"/>
-</Grid><TextBlock x:Name="LblThemeBehindLyricsHint" Text="Show the selected theme behind lyrics. Opacity controls the scenery." FontSize="11" Foreground="#AAAAAA" TextWrapping="Wrap" Margin="0,9,0,0"/></StackPanel></Border><Border  Background="#151515" CornerRadius="14" BorderBrush="#292929" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><TextBlock x:Name="LblFontSizeTitle" Text="FONT SIZE" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><TextBlock x:Name="SettingsFontDescription" FontSize="11" Foreground="#AAAAAA" Margin="0,0,0,14" TextWrapping="Wrap"/><Slider x:Name="SldFontSize" Style="{StaticResource GlassSlider}" Minimum="14" Maximum="80" Value="26" VerticalAlignment="Center" Margin="0" ValueChanged="SldFontSize_ValueChanged"/></StackPanel></Border><Border  Background="#151515" CornerRadius="14" BorderBrush="#292929" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><StackPanel Margin="0,0,10,0"><TextBlock x:Name="LblLyricLinesTitle" Text="LYRIC LINES" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><ComboBox x:Name="CmbLyricLines" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbLyricLines_SelectionChanged" Visibility="Collapsed">
+</Grid><TextBlock x:Name="LblThemeBehindLyricsHint" Text="Show the selected theme behind lyrics. Opacity controls the scenery." FontSize="11" Foreground="#AAAAAA" TextWrapping="Wrap" Margin="0,9,0,0"/></StackPanel></Border><Border  Background="{DynamicResource Settings.Raised}" CornerRadius="14" BorderBrush="{DynamicResource Settings.Border}" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><TextBlock x:Name="LblFontSizeTitle" Text="FONT SIZE" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><TextBlock x:Name="SettingsFontDescription" FontSize="11" Foreground="#AAAAAA" Margin="0,0,0,14" TextWrapping="Wrap"/><Slider x:Name="SldFontSize" Style="{StaticResource GlassSlider}" Minimum="14" Maximum="80" Value="26" VerticalAlignment="Center" Margin="0" ValueChanged="SldFontSize_ValueChanged"/></StackPanel></Border><Border  Background="{DynamicResource Settings.Raised}" CornerRadius="14" BorderBrush="{DynamicResource Settings.Border}" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions><StackPanel Margin="0,0,10,0"><TextBlock x:Name="LblLyricLinesTitle" Text="LYRIC LINES" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><ComboBox x:Name="CmbLyricLines" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbLyricLines_SelectionChanged" Visibility="Collapsed">
                                         <ComboBoxItem Tag="1" Content="1"/>
                                         <ComboBoxItem Tag="3" Content="3" IsSelected="True"/>
                                         <ComboBoxItem Tag="5" Content="5"/>
@@ -1013,14 +1179,40 @@
                                         <ComboBoxItem Tag="left" Content="Left"/>
                                         <ComboBoxItem Tag="center" Content="Center" IsSelected="True"/>
                                         <ComboBoxItem Tag="right" Content="Right"/>
-                                    </ComboBox><UniformGrid Columns="3" x:Name="SettingsAlignmentSegment"><ToggleButton Tag="left" Style="{StaticResource SettingsChoiceStyle}" Height="34" Margin="0,0,3,0" Padding="0" Click="SettingsAlignmentChoice_Click"><Path Data="M1,1 H17 M1,5 H12 M1,9 H17 M1,13 H12" Stroke="White" StrokeThickness="1.5" Width="18" Height="14" Stretch="Fill" IsHitTestVisible="False"/></ToggleButton><ToggleButton Tag="center" Style="{StaticResource SettingsChoiceStyle}" Height="34" Margin="0,0,3,0" Padding="0" Click="SettingsAlignmentChoice_Click"><Path Data="M1,1 H17 M4,5 H14 M1,9 H17 M4,13 H14" Stroke="White" StrokeThickness="1.5" Width="18" Height="14" Stretch="Fill" IsHitTestVisible="False"/></ToggleButton><ToggleButton Tag="right" Style="{StaticResource SettingsChoiceStyle}" Height="34" Margin="0,0,3,0" Padding="0" Click="SettingsAlignmentChoice_Click"><Path Data="M1,1 H17 M6,5 H17 M1,9 H17 M6,13 H17" Stroke="White" StrokeThickness="1.5" Width="18" Height="14" Stretch="Fill" IsHitTestVisible="False"/></ToggleButton></UniformGrid></StackPanel></Grid></StackPanel></Border><Border  Background="#151515" CornerRadius="14" BorderBrush="#292929" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><TextBlock x:Name="LblLyricColorTitle" Text="LYRIC COLOR" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,0,10" TextWrapping="Wrap"/><ComboBox x:Name="CmbLyricColor" Style="{StaticResource DarkComboBox}" Margin="0,0,0,12" SelectionChanged="CmbLyricColor_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed" FontSize="12" MinHeight="34"/><TextBlock x:Name="LblLyricFontTitle" Text="LYRIC FONT" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,0,10" TextWrapping="Wrap"/><ComboBox x:Name="CmbLyricFont" Style="{StaticResource DarkComboBox}" Margin="0,0,0,12" MaxDropDownHeight="260" SelectionChanged="CmbLyricFont_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed" FontSize="12" MinHeight="34"/><WrapPanel Margin="0,0,0,12"><ToggleButton x:Name="SettingsBold" Click="SettingsTypography_Click" Tag="bold" Style="{StaticResource SettingsChoiceStyle}" Margin="0,0,8,0"/><ToggleButton x:Name="SettingsItalic" Click="SettingsTypography_Click" Tag="italic" Style="{StaticResource SettingsChoiceStyle}"/></WrapPanel><Expander x:Name="SettingsAdvancedTypography" Foreground="#AAAAAA"><StackPanel Margin="0,10,0,0"><TextBlock x:Name="LblLyricWeightTitle" Text="LYRIC WEIGHT" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,10"/><ComboBox x:Name="CmbLyricWeight" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbLyricWeight_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed" Margin="0,0,0,12" FontSize="12" MinHeight="34"/><TextBlock x:Name="LblLyricStyleTitle" Text="LYRIC STYLE" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,10"/><ComboBox x:Name="CmbLyricStyle" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbLyricStyle_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed" Margin="0,0,0,12" FontSize="12" MinHeight="34"/></StackPanel></Expander></StackPanel></Border></StackPanel></ScrollViewer>
-<ScrollViewer x:Name="SettingsTranslateScroll" MaxHeight="340" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel x:Name="SettingsPanelTranslate"><TextBlock x:Name="LblTranslateTitle" Text="TRANSLATE LYRICS" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><UniformGrid Columns="2" Margin="-3,0,-3,18"><ToggleButton x:Name="TransOriginal" Content="Orig" Style="{StaticResource SettingsChoiceStyle}" FontSize="12" Click="BtnTrans_Click" Tag="original" Margin="3" IsChecked="True" Height="37" Padding="5,6"/><ToggleButton x:Name="TransRomanized" Content="Rom" Style="{StaticResource SettingsChoiceStyle}" FontSize="12" Click="BtnTrans_Click" Tag="romanized" Margin="3" Height="37" Padding="5,6"/><ToggleButton x:Name="TransEn" Content="EN" Style="{StaticResource SettingsChoiceStyle}" FontSize="12" Click="BtnTrans_Click" Tag="en" Margin="3" Height="37" Padding="5,6"/><ToggleButton x:Name="TransEs" Content="ES" Style="{StaticResource SettingsChoiceStyle}" FontSize="12" Click="BtnTrans_Click" Tag="es" Margin="3" Height="37" Padding="5,6"/><ToggleButton x:Name="TransFr" Content="FR" Style="{StaticResource SettingsChoiceStyle}" FontSize="12" Click="BtnTrans_Click" Tag="fr" Margin="3" Height="37" Padding="5,6"/><ToggleButton x:Name="TransPt" Content="PT" Style="{StaticResource SettingsChoiceStyle}" FontSize="12" Click="BtnTrans_Click" Tag="pt" Margin="3" Height="37" Padding="5,6"/></UniformGrid><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock x:Name="LblKeepOriginal" Text="Also show original lyrics" Foreground="#CDCDCD" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,10,0"/><ToggleButton x:Name="ChkKeepOriginal" Grid.Column="1" Style="{StaticResource ToggleSwitchNoLabelStyle}" Click="ChkKeepOriginal_Click" VerticalAlignment="Center"/></Grid><Border x:Name="SettingsTranslationNotice" Visibility="Collapsed" Background="#161616" CornerRadius="10" Padding="12" Margin="0,18,0,0"><StackPanel><ProgressBar x:Name="SettingsTranslationProgress" Height="4" IsIndeterminate="True" Foreground="#E5E5E5"/><TextBlock x:Name="SettingsTranslationNoticeText" Foreground="#E0E0E0" FontSize="12" Margin="0,10,0,0" TextWrapping="Wrap"/></StackPanel></Border></StackPanel></ScrollViewer>
-<ScrollViewer x:Name="SettingsAppScroll" MaxHeight="340" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel x:Name="SettingsPanelApp"><TextBlock x:Name="LblAppLangTitle" Text="APP LANGUAGE" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><ComboBox x:Name="CmbAppLang" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbAppLang_SelectionChanged" DropDownOpened="CmbAppLang_DropDownOpened" DropDownClosed="CmbAppLang_DropDownClosed" Visibility="Collapsed">
+                                    </ComboBox><UniformGrid Columns="3" x:Name="SettingsAlignmentSegment"><ToggleButton Tag="left" Style="{StaticResource SettingsChoiceStyle}" Height="34" Margin="0,0,3,0" Padding="0" Click="SettingsAlignmentChoice_Click"><Path Data="M1,1 H17 M1,5 H12 M1,9 H17 M1,13 H12" Stroke="White" StrokeThickness="1.5" Width="18" Height="14" Stretch="Fill" IsHitTestVisible="False"/></ToggleButton><ToggleButton Tag="center" Style="{StaticResource SettingsChoiceStyle}" Height="34" Margin="0,0,3,0" Padding="0" Click="SettingsAlignmentChoice_Click"><Path Data="M1,1 H17 M4,5 H14 M1,9 H17 M4,13 H14" Stroke="White" StrokeThickness="1.5" Width="18" Height="14" Stretch="Fill" IsHitTestVisible="False"/></ToggleButton><ToggleButton Tag="right" Style="{StaticResource SettingsChoiceStyle}" Height="34" Margin="0,0,3,0" Padding="0" Click="SettingsAlignmentChoice_Click"><Path Data="M1,1 H17 M6,5 H17 M1,9 H17 M6,13 H17" Stroke="White" StrokeThickness="1.5" Width="18" Height="14" Stretch="Fill" IsHitTestVisible="False"/></ToggleButton></UniformGrid></StackPanel></Grid></StackPanel></Border><Border  Background="{DynamicResource Settings.Raised}" CornerRadius="14" BorderBrush="{DynamicResource Settings.Border}" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><TextBlock x:Name="LblLyricColorTitle" Text="LYRIC COLOR" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,0,10" TextWrapping="Wrap"/><ComboBox x:Name="CmbLyricColor" Style="{StaticResource DarkComboBox}" Margin="0,0,0,12" SelectionChanged="CmbLyricColor_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed" FontSize="12" MinHeight="34"/><TextBlock x:Name="LblLyricFontTitle" Text="LYRIC FONT" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" Margin="0,0,0,10" TextWrapping="Wrap"/><ComboBox x:Name="CmbLyricFont" Style="{StaticResource DarkComboBox}" Margin="0,0,0,12" MaxDropDownHeight="260" SelectionChanged="CmbLyricFont_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed" FontSize="12" MinHeight="34"/><WrapPanel Margin="0,0,0,12"><ToggleButton x:Name="SettingsBold" Click="SettingsTypography_Click" Tag="bold" Style="{StaticResource SettingsChoiceStyle}" Margin="0,0,8,0"/><ToggleButton x:Name="SettingsItalic" Click="SettingsTypography_Click" Tag="italic" Style="{StaticResource SettingsChoiceStyle}"/></WrapPanel><Expander x:Name="SettingsAdvancedTypography" Foreground="#AAAAAA"><StackPanel Margin="0,10,0,0"><TextBlock x:Name="LblLyricWeightTitle" Text="LYRIC WEIGHT" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,10"/><ComboBox x:Name="CmbLyricWeight" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbLyricWeight_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed" Margin="0,0,0,12" FontSize="12" MinHeight="34"/><TextBlock x:Name="LblLyricStyleTitle" Text="LYRIC STYLE" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,10"/><ComboBox x:Name="CmbLyricStyle" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbLyricStyle_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed" Margin="0,0,0,12" FontSize="12" MinHeight="34"/></StackPanel></Expander></StackPanel></Border></StackPanel></ScrollViewer>
+<ScrollViewer x:Name="SettingsTranslateScroll" MaxHeight="340" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel x:Name="SettingsPanelTranslate"><TextBlock x:Name="LblTranslateTitle" Text="TRANSLATE LYRICS" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><UniformGrid Columns="2" Margin="-3,0,-3,10"><ToggleButton x:Name="TransOriginal" Content="Orig" Style="{StaticResource TranslationModeSwitch}" FontSize="12" Click="BtnTrans_Click" Tag="original" Margin="3" IsChecked="True" Height="37" Padding="5,6"/><ToggleButton x:Name="TransRomanized" Content="Rom" Style="{StaticResource TranslationModeSwitch}" FontSize="12" Click="BtnTrans_Click" Tag="romanized" Margin="3" Height="37" Padding="5,6"/></UniformGrid>
+    <Grid Margin="0,0,0,14"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock x:Name="LblKeepOriginal" Text="Also show original lyrics" Foreground="#CDCDCD" FontSize="12" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,10,0"/><ToggleButton x:Name="ChkKeepOriginal" Grid.Column="1" Style="{StaticResource ToggleSwitchNoLabelStyle}" Click="ChkKeepOriginal_Click" VerticalAlignment="Center"/></Grid>
+    <TextBlock x:Name="LblTranslationSource" Text="Source language" Foreground="#EFEFEF" Margin="0,0,0,6"/>
+    <ComboBox x:Name="CmbOfflineSource" Style="{StaticResource SearchLanguageCombo}"
+              DropDownOpened="LanguagePicker_Opened" DropDownClosed="LanguagePicker_Closed"
+              MinHeight="34" Margin="0,0,0,10" SelectionChanged="OfflineSource_SelectionChanged"
+              AutomationProperties.Name="{Binding Text, ElementName=LblTranslationSource}"/>
+    <TextBlock x:Name="LblTranslationSourceNotice" Foreground="#FFF0CA8C" FontSize="11" TextWrapping="Wrap"
+               Margin="0,0,0,10" Visibility="Collapsed" AutomationProperties.LiveSetting="Polite"/>
+    <TextBlock x:Name="LblTranslationTarget" Text="Translate to" Foreground="#EFEFEF" Margin="0,0,0,6"/>
+    <ComboBox x:Name="CmbTranslationTarget" SelectionChanged="TranslationTarget_SelectionChanged" Style="{StaticResource SearchLanguageCombo}"
+              DropDownOpened="LanguagePicker_Opened" DropDownClosed="LanguagePicker_Closed"
+              MinHeight="34" Margin="0,0,0,6"
+              AutomationProperties.Name="{Binding Text, ElementName=LblTranslationTarget}"/>
+    <ToggleButton x:Name="BtnTranslateTarget" Style="{StaticResource TranslationModeSwitch}" Content="Translate"
+                  Margin="0,0,0,12" Click="BtnTranslateTarget_Click"/>
+    <Border Background="{DynamicResource Settings.Raised}" BorderBrush="{DynamicResource Settings.Border}"
+            BorderThickness="1" CornerRadius="12" Margin="0,0,0,14" Padding="12">
+        <StackPanel>
+            <TextBlock x:Name="LblTranslationAddonsHint" Foreground="#CDCDCD" FontSize="11" TextWrapping="Wrap" Margin="0,0,0,8"/>
+            <Button x:Name="BtnTranslationAddons" Style="{StaticResource TranslationAction}"
+                    Click="BtnOpenAddons_Click" HorizontalAlignment="Stretch"/>
+        </StackPanel>
+    </Border>
+<Border x:Name="SettingsTranslationNotice" Visibility="Collapsed" Background="{DynamicResource Settings.Raised}" CornerRadius="10" Padding="12" Margin="0,18,0,0"><StackPanel><TextBlock x:Name="SettingsTranslationNoticeText" Foreground="#E0E0E0" FontSize="12" Margin="0,10,0,0" TextWrapping="Wrap"/></StackPanel></Border></StackPanel></ScrollViewer>
+<ScrollViewer x:Name="SettingsAppScroll" MaxHeight="340" Visibility="Collapsed" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel x:Name="SettingsPanelApp">
+<TextBlock x:Name="LblAppLangTitle" Text="APP LANGUAGE" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><ComboBox x:Name="CmbAppLang" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbAppLang_SelectionChanged" DropDownOpened="CmbAppLang_DropDownOpened" DropDownClosed="CmbAppLang_DropDownClosed" Visibility="Collapsed">
                                 <ComboBoxItem Tag="en" Content="English"/>
                                 <ComboBoxItem Tag="pt" Content="Português"/>
                                 <ComboBoxItem Tag="es" Content="Español"/>
                                 <ComboBoxItem Tag="id" Content="Bahasa Indonesia"/>
-                            </ComboBox><UniformGrid x:Name="SettingsLanguageSegment" Columns="2" Margin="-3,0,-3,18"><ToggleButton Content="English" Tag="en" Click="SettingsLanguageChoice_Click" Style="{StaticResource SettingsChoiceStyle}" Height="37" Margin="3" Padding="5,6"/><ToggleButton Content="Português" Tag="pt" Click="SettingsLanguageChoice_Click" Style="{StaticResource SettingsChoiceStyle}" Height="37" Margin="3" Padding="5,6"/><ToggleButton Content="Español" Tag="es" Click="SettingsLanguageChoice_Click" Style="{StaticResource SettingsChoiceStyle}" Height="37" Margin="3" Padding="5,6"/><ToggleButton Content="Bahasa Indonesia" Tag="id" Click="SettingsLanguageChoice_Click" Style="{StaticResource SettingsChoiceStyle}" Height="37" Margin="3" Padding="5,6"/></UniformGrid><Border  Background="#151515" CornerRadius="14" BorderBrush="#292929" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><TextBlock x:Name="LblLockShortcutTitle" Text="OVERLAY LOCK SHORTCUT" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><Button x:Name="BtnSetLockShortcut" Content="None (click to set)" Style="{StaticResource SquareGlassButton}" Padding="10,6" FontSize="12" Click="BtnSetLockShortcut_Click" KeyDown="BtnSetLockShortcut_KeyDown" Margin="0,0,0,8" HorizontalAlignment="Left"/><TextBlock x:Name="LblLockShortcutHint" Text="(also available on top-left)" Foreground="#66FFFFFF" FontSize="11" VerticalAlignment="Center" Margin="0" TextWrapping="Wrap" Width="Auto"/></StackPanel></Border><Border Background="#151515" CornerRadius="14" BorderBrush="#292929" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><TextBlock x:Name="LblUserThemeTitle" Text="THEME" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><ComboBox x:Name="CmbUserTheme" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbUserTheme_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed" Margin="0,0,0,12" FontSize="12" MinHeight="34"/></StackPanel></Border><Border  Background="#151515" CornerRadius="14" BorderBrush="#292929" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock x:Name="LblTelemetryTitle" Foreground="#EEEEEE" FontSize="12" FontWeight="Bold" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,10,0"/><ToggleButton x:Name="ChkTelemetry" Grid.Column="1" Style="{StaticResource ToggleSwitchNoLabelStyle}" Click="ChkTelemetry_Click" VerticalAlignment="Center"/></Grid><TextBlock x:Name="LblTelemetryHint" Foreground="#AAAAAA" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0"/></StackPanel></Border></StackPanel></ScrollViewer>
+                            </ComboBox><UniformGrid x:Name="SettingsLanguageSegment" Columns="2" Margin="-3,0,-3,18"><ToggleButton Content="English" Tag="en" Click="SettingsLanguageChoice_Click" Style="{StaticResource SettingsChoiceStyle}" Height="37" Margin="3" Padding="5,6"/><ToggleButton Content="Português" Tag="pt" Click="SettingsLanguageChoice_Click" Style="{StaticResource SettingsChoiceStyle}" Height="37" Margin="3" Padding="5,6"/><ToggleButton Content="Español" Tag="es" Click="SettingsLanguageChoice_Click" Style="{StaticResource SettingsChoiceStyle}" Height="37" Margin="3" Padding="5,6"/><ToggleButton Content="Bahasa Indonesia" Tag="id" Click="SettingsLanguageChoice_Click" Style="{StaticResource SettingsChoiceStyle}" Height="37" Margin="3" Padding="5,6"/></UniformGrid><Border  Background="{DynamicResource Settings.Raised}" CornerRadius="14" BorderBrush="{DynamicResource Settings.Border}" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><TextBlock x:Name="LblLockShortcutTitle" Text="OVERLAY LOCK SHORTCUT" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><Button x:Name="BtnSetLockShortcut" Content="None (click to set)" Style="{StaticResource SquareGlassButton}" Padding="10,6" FontSize="12" Click="BtnSetLockShortcut_Click" KeyDown="BtnSetLockShortcut_KeyDown" Margin="0,0,0,8" HorizontalAlignment="Left"/><TextBlock x:Name="LblLockShortcutHint" Text="(also available on top-left)" Foreground="#66FFFFFF" FontSize="11" VerticalAlignment="Center" Margin="0" TextWrapping="Wrap" Width="Auto"/></StackPanel></Border><Border Background="{DynamicResource Settings.Raised}" CornerRadius="14" BorderBrush="{DynamicResource Settings.Border}" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><TextBlock x:Name="LblUserThemeTitle" Text="THEME" Foreground="#EFEFEF" FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10" TextWrapping="Wrap"/><ComboBox x:Name="CmbUserTheme" Style="{StaticResource DarkComboBox}" SelectionChanged="CmbUserTheme_SelectionChanged" DropDownOpened="LyricCombo_DropDownOpened" DropDownClosed="LyricCombo_DropDownClosed" Margin="0,0,0,12" FontSize="12" MinHeight="34"/></StackPanel></Border>
+<Border  Background="{DynamicResource Settings.Raised}" CornerRadius="14" BorderBrush="{DynamicResource Settings.Border}" BorderThickness="1" Padding="17" Margin="0,0,0,10"><StackPanel><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions><TextBlock x:Name="LblTelemetryTitle" Foreground="#EEEEEE" FontSize="12" FontWeight="Bold" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,10,0"/><ToggleButton x:Name="ChkTelemetry" Grid.Column="1" Style="{StaticResource ToggleSwitchNoLabelStyle}" Click="ChkTelemetry_Click" VerticalAlignment="Center"/></Grid><TextBlock x:Name="LblTelemetryHint" Foreground="#AAAAAA" FontSize="11" TextWrapping="Wrap" Margin="0,10,0,0"/></StackPanel></Border></StackPanel></ScrollViewer>
 </Grid></Border></Grid></Border></Popup>
 
         <Border x:Name="OpacityPreviewOverlay" Panel.ZIndex="45" Visibility="Collapsed" CornerRadius="12" IsHitTestVisible="False">
@@ -1035,6 +1227,12 @@
             </Grid>
         </Border>
 
+        <Border x:Name="AddonsPage" Panel.ZIndex="80" Visibility="Collapsed" Focusable="True"
+                BorderBrush="{DynamicResource Settings.Border}" BorderThickness="1" CornerRadius="12"
+                Padding="20,14" PreviewKeyDown="AddonsPage_PreviewKeyDown">
+            <ContentControl x:Name="AddonsPageContent" HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"/>
+        </Border>
+
         <Grid x:Name="DarkDialogOverlay" Panel.ZIndex="90" Visibility="Collapsed" Background="#CC050508"
               Focusable="True" PreviewKeyDown="DarkDialogOverlay_PreviewKeyDown">
             <Border Background="#FF141418" BorderBrush="#3AFFFFFF" BorderThickness="1" CornerRadius="14"
@@ -1044,6 +1242,8 @@
                                TextWrapping="Wrap" Margin="0,0,0,8"/>
                     <TextBlock x:Name="LblDarkDialogBody" Foreground="#CCFFFFFF" FontSize="13"
                                TextWrapping="Wrap" Margin="0,0,0,18"/>
+                    <CheckBox x:Name="ChkHideJapaneseNotice" Visibility="Collapsed" Foreground="#EEEEEE"
+                              Margin="0,0,0,14"/>
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
                         <Button x:Name="BtnDarkDialogNo" Style="{StaticResource SquareGlassButton}" MinWidth="88" Height="32"
                                 Padding="12,6" Margin="0,0,8,0" Click="BtnDarkDialogNo_Click"/>

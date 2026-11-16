@@ -1,0 +1,11 @@
+koroman-1.0.16.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+koroman-1.0.16.dist-info/METADATA,sha256=LWlhZZ6nCCR9DSzY73Wrim9d_HOPVHihh8YO-R3PZf8,7558
+koroman-1.0.16.dist-info/RECORD,,
+koroman-1.0.16.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+koroman-1.0.16.dist-info/WHEEL,sha256=aeYiig01lYGDzBgS8HxWXOg3uV61G9ijOsup-k9o1sk,91
+koroman-1.0.16.dist-info/licenses/LICENSE,sha256=zf-MhQ-gCDOq9yw2A2MEsX_Vi8tX2dODhYCtXahkH_8,1099
+koroman-1.0.16.dist-info/top_level.txt,sha256=baOJb-QnAjPuB4AYr7R0fRtrBYSO03eM7TGwhkZKiec,8
+koroman/__init__.py,sha256=tseijpY1LTfTxbSIv-cHzgCfQgQvkE7pxCcBqVJxM1Y,480
+koroman/__pycache__/__init__.cpython-313.pyc,,
+koroman/__pycache__/core.cpython-313.pyc,,
+koroman/core.py,sha256=NTDjaYB9B5mfPwtFdPXhTUi63Y909Sdfg-0dQM1586c,24773

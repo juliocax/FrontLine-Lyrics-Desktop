@@ -5,7 +5,7 @@ HERE="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 LINUX_DIR="$(realpath "$HERE/..")"
 ROOT="$(realpath "$LINUX_DIR/..")"
 ARCH="$(dpkg --print-architecture)"
-DEB="${1:-$LINUX_DIR/dist-linux/frontline-lyrics_1.0.0-1_${ARCH}.deb}"
+DEB="${1:-$LINUX_DIR/dist-linux/frontline-lyrics_1.1.0-1_${ARCH}.deb}"
 [[ -f "$DEB" ]] || { echo "No .deb found: $DEB" >&2; echo "Build it with: $LINUX_DIR/packaging-deb/build-deb.sh" >&2; exit 1; }
 [[ "$ARCH" == amd64 ]] || { echo 'This prototype currently targets amd64 only' >&2; exit 1; }
 command -v dpkg-deb >/dev/null || { echo 'dpkg-deb is required' >&2; exit 1; }
@@ -39,4 +39,4 @@ fi
 [[ -f "$PAYLOAD/usr/share/applications/frontline-lyrics.desktop" ]] || { echo "Desktop entry missing" >&2; exit 1; }
 printf '\nReady: %s\n' "$HERE"
 printf 'Now run: cd "%s" && snapcraft pack\n' "$HERE"
-printf 'Use: sudo snap install ./frontline-lyrics_1.0.0_amd64.snap --dangerous\n'
+printf 'Use: sudo snap install ./frontline-lyrics_1.1.0_amd64.snap --dangerous\n'

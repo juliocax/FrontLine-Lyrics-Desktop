@@ -1538,6 +1538,90 @@ FL_TRANSLATIONS.id.linux100 = {
   "imagePending": "Tangkapan layar segera tersedia"
 };
 
+// Additional labels for the Linux v1.1.0 tutorial.
+FL_TRANSLATIONS.en.linux110 = {
+  "title": "How to use FrontLine Lyrics for Linux 1.1.0",
+  "lyricMode": "Choose Original to display the lyrics as written or Romanization to display their pronunciation in Latin characters when available.",
+  "languages": "Use Translate from and To to select the source and target languages. You can search both lists or leave the source on Automatic detection.",
+  "translateToggle": "Turn Translate on to show the translation as the main lyrics. With it off, the main lyrics follow your Original or Romanization choice.",
+  "addons": "Open Manage add-ons to install or remove offline translation models and the optional UniDic Lite dictionary for Japanese romanization.",
+  "audioOutput": "Choose the system default or a specific audio output for recognition. Click Listen and check the signal meter here while FrontLine captures audio."
+};
+FL_TRANSLATIONS.pt.linux110 = {
+  "title": "Como usar o FrontLine Lyrics para Linux 1.1.0",
+  "lyricMode": "Escolha Original para exibir a letra como foi escrita ou Romanização para acompanhar a pronúncia em caracteres latinos, quando disponível.",
+  "languages": "Use Traduzir de e Para para escolher os idiomas de origem e destino. Você pode pesquisar nas duas listas ou deixar a origem em Detecção automática.",
+  "translateToggle": "Ative Traduzir para exibir a tradução como letra principal. Com a opção desativada, a letra segue a escolha entre Original e Romanização.",
+  "addons": "Abra Gerenciar complementos para instalar ou remover os modelos de tradução offline e o dicionário opcional UniDic Lite para romanização do japonês.",
+  "audioOutput": "Escolha a saída padrão do sistema ou uma saída específica para o reconhecimento. Clique em Ouvir e confira o medidor de sinal aqui durante a captura."
+};
+FL_TRANSLATIONS.es.linux110 = {
+  "title": "Cómo usar FrontLine Lyrics para Linux 1.1.0",
+  "lyricMode": "Elige Original para ver la letra tal como está escrita o Romanización para seguir la pronunciación en caracteres latinos cuando esté disponible.",
+  "languages": "Usa Traducir de y A para elegir los idiomas de origen y destino. Puedes buscar en ambas listas o dejar el origen en Detección automática.",
+  "translateToggle": "Activa Traducir para mostrar la traducción como letra principal. Al desactivarlo, la letra sigue la opción Original o Romanización.",
+  "addons": "Abre Gestionar complementos para instalar o quitar los modelos de traducción sin conexión y el diccionario opcional UniDic Lite para romanizar japonés.",
+  "audioOutput": "Elige la salida predeterminada del sistema o una salida específica. Pulsa Escuchar y comprueba aquí el nivel de señal durante la captura."
+};
+FL_TRANSLATIONS.fr.linux110 = {
+  "title": "Comment utiliser FrontLine Lyrics pour Linux 1.1.0",
+  "lyricMode": "Choisissez Original pour afficher les paroles telles qu’elles sont écrites ou Romanisation pour suivre leur prononciation en caractères latins, si disponible.",
+  "languages": "Utilisez Traduire de et Vers pour choisir les langues source et cible. Vous pouvez effectuer une recherche dans les deux listes ou laisser la détection automatique.",
+  "translateToggle": "Activez Traduire pour afficher la traduction en premier. Si la traduction est désactivée, l’affichage suit votre choix entre Original et Romanisation.",
+  "addons": "Ouvrez Gérer les modules complémentaires pour installer ou supprimer les modèles de traduction hors ligne et le dictionnaire facultatif UniDic Lite pour le japonais.",
+  "audioOutput": "Choisissez la sortie système par défaut ou une sortie précise. Cliquez sur Écouter et vérifiez ici le niveau du signal pendant la capture."
+};
+FL_TRANSLATIONS.id.linux110 = {
+  "title": "Cara menggunakan FrontLine Lyrics untuk Linux 1.1.0",
+  "lyricMode": "Pilih Asli untuk melihat lirik sebagaimana ditulis atau Romanisasi untuk mengikuti pelafalan dalam aksara Latin jika tersedia.",
+  "languages": "Gunakan Terjemahkan dari dan Ke untuk memilih bahasa sumber dan tujuan. Kamu dapat mencari di kedua daftar atau memilih Deteksi otomatis.",
+  "translateToggle": "Aktifkan Terjemahkan untuk menjadikan terjemahan sebagai lirik utama. Jika dimatikan, lirik mengikuti pilihan Asli atau Romanisasi.",
+  "addons": "Buka Kelola add-on untuk memasang atau menghapus model terjemahan luring dan kamus opsional UniDic Lite untuk romanisasi bahasa Jepang.",
+  "audioOutput": "Pilih keluaran bawaan sistem atau keluaran tertentu. Pilih Dengarkan dan periksa tingkat sinyal di sini saat audio direkam."
+};
+
+// Windows 1.7.0 tutorial additions.
+FL_TRANSLATIONS.en.doc170 = {
+  "title": "How to use FrontLine Lyrics 1.7.0",
+  "originalRomanization": "Original and Romanization: switch between the lyrics as written and their reading in Latin characters, when available.",
+  "manageAddonsButton": "Manage add-ons: open the add-ons screen.",
+  "addonsTitle": "Manage add-ons",
+  "japaneseRomanization": "Japanese romanization: the optional UniDic Lite dictionary improves kana and kanji reading.",
+  "translationModels": "Translation models: in Manage models, choose the source and target languages, and FrontLine downloads the missing models for offline translation."
+};
+FL_TRANSLATIONS.pt.doc170 = {
+  "title": "Como usar o FrontLine Lyrics 1.7.0",
+  "originalRomanization": "Original e Romanização: alterne entre a letra como foi escrita e a leitura em caracteres latinos, quando disponível.",
+  "manageAddonsButton": "Gerenciar complementos: abre a tela de complementos.",
+  "addonsTitle": "Gerenciar complementos",
+  "japaneseRomanization": "Romanização japonesa: o dicionário opcional UniDic Lite melhora a leitura de kana e kanji.",
+  "translationModels": "Modelos de tradução: em Gerenciar modelos, escolha os idiomas de origem e destino, e o FrontLine baixa os modelos que faltam para traduzir offline."
+};
+FL_TRANSLATIONS.es.doc170 = {
+  "title": "Cómo usar FrontLine Lyrics 1.7.0",
+  "originalRomanization": "Original y Romanización: alterna entre la letra tal como está escrita y su lectura en caracteres latinos, cuando esté disponible.",
+  "manageAddonsButton": "Gestionar complementos: abre la pantalla de complementos.",
+  "addonsTitle": "Gestionar complementos",
+  "japaneseRomanization": "Romanización japonesa: el diccionario opcional UniDic Lite mejora la lectura de kana y kanji.",
+  "translationModels": "Modelos de traducción: en Gestionar modelos, elige los idiomas de origen y destino, y FrontLine descarga los modelos que faltan para traducir sin conexión."
+};
+FL_TRANSLATIONS.fr.doc170 = {
+  "title": "Comment utiliser FrontLine Lyrics 1.7.0",
+  "originalRomanization": "Original et Romanisation : basculez entre les paroles telles qu’elles sont écrites et leur lecture en caractères latins, lorsqu’elle est disponible.",
+  "manageAddonsButton": "Gérer les modules complémentaires : ouvre l’écran des modules complémentaires.",
+  "addonsTitle": "Gérer les modules complémentaires",
+  "japaneseRomanization": "Romanisation japonaise : le dictionnaire facultatif UniDic Lite améliore la lecture des kana et des kanji.",
+  "translationModels": "Modèles de traduction : dans Gérer les modèles, choisissez les langues source et cible, et FrontLine télécharge les modèles manquants pour traduire hors ligne."
+};
+FL_TRANSLATIONS.id.doc170 = {
+  "title": "Cara menggunakan FrontLine Lyrics 1.7.0",
+  "originalRomanization": "Asli dan Romanisasi: beralih antara lirik sebagaimana ditulis dan bacaannya dalam aksara Latin, jika tersedia.",
+  "manageAddonsButton": "Kelola add-on: membuka layar add-on.",
+  "addonsTitle": "Kelola add-on",
+  "japaneseRomanization": "Romanisasi bahasa Jepang: kamus opsional UniDic Lite meningkatkan pembacaan kana dan kanji.",
+  "translationModels": "Model terjemahan: di Kelola model, pilih bahasa sumber dan tujuan, lalu FrontLine mengunduh model yang kurang untuk menerjemahkan secara luring."
+};
+
 function flTranslate(lang, path) {
   const parts = path.split(".");
   let node = FL_TRANSLATIONS[lang] || FL_TRANSLATIONS.en;

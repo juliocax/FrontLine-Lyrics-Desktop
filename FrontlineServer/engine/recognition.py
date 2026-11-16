@@ -6,6 +6,7 @@ Audio fingerprint recognition (Shazam) and the drift math used to keep the
 import logging
 import asyncio
 import os
+import sys
 
 from engine import service_health
 from typing import Optional, Tuple
@@ -38,11 +39,15 @@ class ShazamRecognizer:
             return None, None, 0.0, ""
         except Exception as e:
             # Only definite transport errors; a normal no-match is NOT an internet failure.
+            linux_audio = sys.platform.startswith("linux")
+            network_types = (ConnectionError, TimeoutError, asyncio.TimeoutError)
+            if not linux_audio:
+                network_types += (OSError,)
             try:
                 import aiohttp
-                network_types = (OSError, ConnectionError, TimeoutError, asyncio.TimeoutError, aiohttp.ClientError)
+                network_types += (aiohttp.ClientConnectionError if linux_audio else aiohttp.ClientError,)
             except ImportError:
-                network_types = (OSError, ConnectionError, TimeoutError, asyncio.TimeoutError)
+                pass
             chain = []
             current = e
             while current is not None and len(chain) < 6:
@@ -51,7 +56,7 @@ class ShazamRecognizer:
                 if current in chain:
                     break
             self.last_connection_error = any(isinstance(x, network_types) for x in chain)
-            if self.last_connection_error:
+            if self.last_connection_error and not linux_audio:
                 service_health.record_attempt("connection_error", immediate=True)
             service_health.debug("Shazam exception=%s network=%s detail=%r", type(e).__name__, self.last_connection_error, str(e))
             logging.error(f"Shazam recognition error: {e}")
