@@ -1580,6 +1580,48 @@ FL_TRANSLATIONS.id.linux110 = {
   "audioOutput": "Pilih keluaran bawaan sistem atau keluaran tertentu. Pilih Dengarkan dan periksa tingkat sinyal di sini saat audio direkam."
 };
 
+// Windows 1.7.0 tutorial additions.
+FL_TRANSLATIONS.en.doc170 = {
+  "title": "How to use FrontLine Lyrics 1.7.0",
+  "originalRomanization": "Original and Romanization: switch between the lyrics as written and their reading in Latin characters, when available.",
+  "manageAddonsButton": "Manage add-ons: open the add-ons screen.",
+  "addonsTitle": "Manage add-ons",
+  "japaneseRomanization": "Japanese romanization: the optional UniDic Lite dictionary improves kana and kanji reading.",
+  "translationModels": "Translation models: in Manage models, choose the source and target languages, and FrontLine downloads the missing models for offline translation."
+};
+FL_TRANSLATIONS.pt.doc170 = {
+  "title": "Como usar o FrontLine Lyrics 1.7.0",
+  "originalRomanization": "Original e Romanização: alterne entre a letra como foi escrita e a leitura em caracteres latinos, quando disponível.",
+  "manageAddonsButton": "Gerenciar complementos: abre a tela de complementos.",
+  "addonsTitle": "Gerenciar complementos",
+  "japaneseRomanization": "Romanização japonesa: o dicionário opcional UniDic Lite melhora a leitura de kana e kanji.",
+  "translationModels": "Modelos de tradução: em Gerenciar modelos, escolha os idiomas de origem e destino, e o FrontLine baixa os modelos que faltam para traduzir offline."
+};
+FL_TRANSLATIONS.es.doc170 = {
+  "title": "Cómo usar FrontLine Lyrics 1.7.0",
+  "originalRomanization": "Original y Romanización: alterna entre la letra tal como está escrita y su lectura en caracteres latinos, cuando esté disponible.",
+  "manageAddonsButton": "Gestionar complementos: abre la pantalla de complementos.",
+  "addonsTitle": "Gestionar complementos",
+  "japaneseRomanization": "Romanización japonesa: el diccionario opcional UniDic Lite mejora la lectura de kana y kanji.",
+  "translationModels": "Modelos de traducción: en Gestionar modelos, elige los idiomas de origen y destino, y FrontLine descarga los modelos que faltan para traducir sin conexión."
+};
+FL_TRANSLATIONS.fr.doc170 = {
+  "title": "Comment utiliser FrontLine Lyrics 1.7.0",
+  "originalRomanization": "Original et Romanisation : basculez entre les paroles telles qu’elles sont écrites et leur lecture en caractères latins, lorsqu’elle est disponible.",
+  "manageAddonsButton": "Gérer les modules complémentaires : ouvre l’écran des modules complémentaires.",
+  "addonsTitle": "Gérer les modules complémentaires",
+  "japaneseRomanization": "Romanisation japonaise : le dictionnaire facultatif UniDic Lite améliore la lecture des kana et des kanji.",
+  "translationModels": "Modèles de traduction : dans Gérer les modèles, choisissez les langues source et cible, et FrontLine télécharge les modèles manquants pour traduire hors ligne."
+};
+FL_TRANSLATIONS.id.doc170 = {
+  "title": "Cara menggunakan FrontLine Lyrics 1.7.0",
+  "originalRomanization": "Asli dan Romanisasi: beralih antara lirik sebagaimana ditulis dan bacaannya dalam aksara Latin, jika tersedia.",
+  "manageAddonsButton": "Kelola add-on: membuka layar add-on.",
+  "addonsTitle": "Kelola add-on",
+  "japaneseRomanization": "Romanisasi bahasa Jepang: kamus opsional UniDic Lite meningkatkan pembacaan kana dan kanji.",
+  "translationModels": "Model terjemahan: di Kelola model, pilih bahasa sumber dan tujuan, lalu FrontLine mengunduh model yang kurang untuk menerjemahkan secara luring."
+};
+
 function flTranslate(lang, path) {
   const parts = path.split(".");
   let node = FL_TRANSLATIONS[lang] || FL_TRANSLATIONS.en;
