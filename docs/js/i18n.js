@@ -1582,6 +1582,9 @@ FL_TRANSLATIONS.id.linux110 = {
 
 // Windows 1.7.0 tutorial additions.
 FL_TRANSLATIONS.en.doc170 = {
+  "lyricsBelowTranslation": "Show lyrics below the translation: display the original or romanized lyrics below the translation, according to the selected mode.",
+  "sourceLanguage": "Source language: choose the lyrics language or leave Automatic enabled.",
+  "targetLanguageAndTranslate": "Choose the target language and enable Translate to show the translation as the main lyrics.",
   "title": "How to use FrontLine Lyrics 1.7.0",
   "originalRomanization": "Original and Romanization: switch between the lyrics as written and their reading in Latin characters, when available.",
   "manageAddonsButton": "Manage add-ons: open the add-ons screen.",
@@ -1590,6 +1593,9 @@ FL_TRANSLATIONS.en.doc170 = {
   "translationModels": "Translation models: in Manage models, choose the source and target languages, and FrontLine downloads the missing models for offline translation."
 };
 FL_TRANSLATIONS.pt.doc170 = {
+  "lyricsBelowTranslation": "Mostrar letra abaixo da tradução: exiba a letra original ou romanizada abaixo da tradução, conforme o modo selecionado.",
+  "sourceLanguage": "Idioma de origem: escolha o idioma da letra ou deixe a detecção automática ativada.",
+  "targetLanguageAndTranslate": "Escolha o idioma de destino e ative Traduzir para exibir a tradução como letra principal.",
   "title": "Como usar o FrontLine Lyrics 1.7.0",
   "originalRomanization": "Original e Romanização: alterne entre a letra como foi escrita e a leitura em caracteres latinos, quando disponível.",
   "manageAddonsButton": "Gerenciar complementos: abre a tela de complementos.",
@@ -1598,6 +1604,9 @@ FL_TRANSLATIONS.pt.doc170 = {
   "translationModels": "Modelos de tradução: em Gerenciar modelos, escolha os idiomas de origem e destino, e o FrontLine baixa os modelos que faltam para traduzir offline."
 };
 FL_TRANSLATIONS.es.doc170 = {
+  "lyricsBelowTranslation": "Mostrar letra debajo de la traducción: muestra la letra original o romanizada debajo de la traducción, según el modo seleccionado.",
+  "sourceLanguage": "Idioma de origen: elige el idioma de la letra o deja activada la detección automática.",
+  "targetLanguageAndTranslate": "Elige el idioma de destino y activa Traducir para mostrar la traducción como letra principal.",
   "title": "Cómo usar FrontLine Lyrics 1.7.0",
   "originalRomanization": "Original y Romanización: alterna entre la letra tal como está escrita y su lectura en caracteres latinos, cuando esté disponible.",
   "manageAddonsButton": "Gestionar complementos: abre la pantalla de complementos.",
@@ -1606,6 +1615,9 @@ FL_TRANSLATIONS.es.doc170 = {
   "translationModels": "Modelos de traducción: en Gestionar modelos, elige los idiomas de origen y destino, y FrontLine descarga los modelos que faltan para traducir sin conexión."
 };
 FL_TRANSLATIONS.fr.doc170 = {
+  "lyricsBelowTranslation": "Afficher les paroles sous la traduction : affichez les paroles originales ou romanisées sous la traduction, selon le mode sélectionné.",
+  "sourceLanguage": "Langue source : choisissez la langue des paroles ou laissez la détection automatique activée.",
+  "targetLanguageAndTranslate": "Choisissez la langue cible et activez Traduire pour afficher la traduction comme paroles principales.",
   "title": "Comment utiliser FrontLine Lyrics 1.7.0",
   "originalRomanization": "Original et Romanisation : basculez entre les paroles telles qu’elles sont écrites et leur lecture en caractères latins, lorsqu’elle est disponible.",
   "manageAddonsButton": "Gérer les modules complémentaires : ouvre l’écran des modules complémentaires.",
@@ -1614,6 +1626,9 @@ FL_TRANSLATIONS.fr.doc170 = {
   "translationModels": "Modèles de traduction : dans Gérer les modèles, choisissez les langues source et cible, et FrontLine télécharge les modèles manquants pour traduire hors ligne."
 };
 FL_TRANSLATIONS.id.doc170 = {
+  "lyricsBelowTranslation": "Tampilkan lirik di bawah terjemahan: tampilkan lirik asli atau romanisasi di bawah terjemahan sesuai mode yang dipilih.",
+  "sourceLanguage": "Bahasa sumber: pilih bahasa lirik atau biarkan deteksi otomatis aktif.",
+  "targetLanguageAndTranslate": "Pilih bahasa tujuan dan aktifkan Terjemahkan untuk menampilkan terjemahan sebagai lirik utama.",
   "title": "Cara menggunakan FrontLine Lyrics 1.7.0",
   "originalRomanization": "Asli dan Romanisasi: beralih antara lirik sebagaimana ditulis dan bacaannya dalam aksara Latin, jika tersedia.",
   "manageAddonsButton": "Kelola add-on: membuka layar add-on.",
