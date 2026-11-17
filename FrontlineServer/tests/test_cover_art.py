@@ -1,4 +1,6 @@
 from pathlib import Path
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 
 from engine import cover_art
 
@@ -40,7 +42,7 @@ def test_smtc_thumbnail_to_file_uri_writes_and_returns_uri(tmp_path, monkeypatch
     monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
     uri = cover_art.smtc_thumbnail_to_file_uri(b"fake-jpeg-bytes", ("song", "artist"))
     assert uri.startswith("file://")
-    assert Path.from_uri(uri).exists()
+    assert Path(url2pathname(urlparse(uri).path)).exists()
 
 
 def test_smtc_thumbnail_to_file_uri_reuses_cached_file(tmp_path, monkeypatch):
